@@ -4,211 +4,487 @@ import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="NeuralDoc RAG",
-    page_icon="⚡",
+    page_icon="N",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-# Hide Streamlit chrome
 st.markdown("""
 <style>
 [data-testid="stHeader"],[data-testid="stToolbar"],
 [data-testid="collapsedControl"],#MainMenu,footer,
 section[data-testid="stSidebar"]{display:none!important;}
 .block-container{padding:0!important;max-width:100%!important;}
-[data-testid="stAppViewContainer"]{background:#020008!important;}
-iframe{border:none!important;}
+[data-testid="stAppViewContainer"]{background:#030010!important;}
+[data-testid="stMain"]{background:transparent!important;}
+iframe{border:none!important;display:block!important;}
 </style>
 """, unsafe_allow_html=True)
 
-components.html("""
-<!DOCTYPE html>
-<html lang="en">
+page = """<!DOCTYPE html>
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{min-height:100%;background:#020008;font-family:'Syne',sans-serif;color:#fff;overflow-x:hidden;}
-
-body::after{
-  content:'';position:fixed;inset:0;z-index:0;
-  background:
-    radial-gradient(ellipse 75% 60% at 15% 15%,rgba(120,0,255,.28) 0%,transparent 55%),
-    radial-gradient(ellipse 60% 75% at 85% 85%,rgba(0,255,178,.2) 0%,transparent 55%),
-    radial-gradient(ellipse 50% 50% at 50% 50%,rgba(255,0,120,.1) 0%,transparent 65%);
-  animation:meshAnim 14s ease-in-out infinite alternate;
-  pointer-events:none;
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{
+  min-height:100vh;
+  background:#030010;
+  font-family:'Syne',sans-serif;
+  color:#fff;
+  overflow-x:hidden;
 }
-@keyframes meshAnim{0%{filter:hue-rotate(0deg);}50%{filter:hue-rotate(25deg) brightness(1.1);}100%{filter:hue-rotate(-20deg);}}
 
-.grid{position:fixed;inset:0;z-index:0;
-  background-image:linear-gradient(rgba(123,0,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(123,0,255,.08) 1px,transparent 1px);
-  background-size:60px 60px;animation:gridP 5s ease-in-out infinite;pointer-events:none;}
-@keyframes gridP{0%,100%{opacity:.4;}50%{opacity:.9;}}
+/* Background */
+.bg{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 55% at 12% 12%, rgba(110,0,240,0.32) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 65% at 88% 88%, rgba(0,220,160,0.22) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 45% at 55% 45%, rgba(220,0,100,0.12) 0%, transparent 60%);
+  animation:bgShift 16s ease-in-out infinite alternate;
+}
+@keyframes bgShift{
+  0%{filter:hue-rotate(0deg);}
+  100%{filter:hue-rotate(22deg) brightness(1.08);}
+}
+.grid{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(100,0,255,0.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(100,0,255,0.06) 1px,transparent 1px);
+  background-size:56px 56px;
+  animation:gridBreathe 6s ease-in-out infinite;
+}
+@keyframes gridBreathe{0%,100%{opacity:0.4;}50%{opacity:0.85;}}
 
-.orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.32;pointer-events:none;z-index:0;animation:orbF linear infinite;}
-.o1{width:520px;height:520px;background:#7B00FF;top:-200px;left:-200px;animation-duration:22s;}
-.o2{width:440px;height:440px;background:#00FFB2;bottom:-160px;right:-160px;animation-duration:28s;animation-delay:-10s;}
-.o3{width:340px;height:340px;background:#FF0080;top:38%;left:57%;animation-duration:20s;animation-delay:-5s;}
-@keyframes orbF{0%{transform:translate(0,0) scale(1);}33%{transform:translate(50px,-70px) scale(1.1);}66%{transform:translate(-40px,50px) scale(.92);}100%{transform:translate(0,0) scale(1);}}
+.orb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;animation:orbDrift linear infinite;}
+.orb1{width:480px;height:480px;background:rgba(110,0,240,0.28);top:-180px;left:-160px;animation-duration:24s;}
+.orb2{width:400px;height:400px;background:rgba(0,210,150,0.2);bottom:-140px;right:-140px;animation-duration:30s;animation-delay:-12s;}
+.orb3{width:300px;height:300px;background:rgba(220,0,90,0.16);top:42%;left:58%;animation-duration:21s;animation-delay:-7s;}
+@keyframes orbDrift{
+  0%{transform:translate(0,0) scale(1);}
+  33%{transform:translate(44px,-60px) scale(1.08);}
+  66%{transform:translate(-35px,44px) scale(0.93);}
+  100%{transform:translate(0,0) scale(1);}
+}
 
-.wrap{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:0 32px 100px;}
+/* Layout */
+.wrap{
+  position:relative;z-index:1;
+  max-width:1200px;margin:0 auto;
+  padding:0 40px 120px;
+}
 
-/* NAV */
-nav{width:100%;max-width:1200px;display:flex;align-items:center;justify-content:space-between;padding:32px 0 0;animation:slideD .7s ease both;}
-@keyframes slideD{from{opacity:0;transform:translateY(-24px);}to{opacity:1;transform:translateY(0);}}
-.logo{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:4px;background:linear-gradient(135deg,#00FFB2,#7B00FF,#FF0080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.badge{font-family:'JetBrains Mono',monospace;font-size:11px;color:#00FFB2;border:1px solid rgba(0,255,178,.35);padding:5px 14px;border-radius:20px;background:rgba(0,255,178,.06);letter-spacing:2px;}
+/* Nav */
+nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:36px 0 0;
+  animation:fadeDown 0.7s ease both;
+}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-20px);}to{opacity:1;transform:translateY(0);}}
+.logo{
+  font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:5px;
+  background:linear-gradient(135deg,#00DFA0,#6B00F0,#E0005A);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.nav-tag{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:#00DFA0;letter-spacing:2px;
+  border:1px solid rgba(0,223,160,0.3);
+  padding:5px 14px;border-radius:20px;
+  background:rgba(0,223,160,0.06);
+}
 
-/* HERO */
-.hero{width:100%;max-width:960px;text-align:center;padding:72px 0 48px;animation:heroU .9s ease .15s both;}
-@keyframes heroU{from{opacity:0;transform:translateY(44px);}to{opacity:1;transform:translateY(0);}}
-.pill{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#FF0080;border:1px solid rgba(255,0,128,.35);background:rgba(255,0,128,.07);padding:6px 18px;border-radius:30px;margin-bottom:28px;letter-spacing:2px;animation:pillG 3s ease-in-out infinite;}
-@keyframes pillG{0%,100%{box-shadow:0 0 0 rgba(255,0,128,0);}50%{box-shadow:0 0 22px rgba(255,0,128,.35);}}
-.dot{width:6px;height:6px;border-radius:50%;background:#FF0080;display:inline-block;animation:dotB 1.6s ease-in-out infinite;}
-@keyframes dotB{0%,100%{opacity:1;}50%{opacity:.15;}}
-h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(72px,11vw,130px);line-height:.88;letter-spacing:3px;color:#fff;}
-.g1{background:linear-gradient(90deg,#7B00FF,#FF0080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block;animation:g1s 5s ease-in-out infinite alternate;}
-.g2{background:linear-gradient(90deg,#00FFB2,#7B00FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block;}
-@keyframes g1s{from{filter:hue-rotate(0deg);}to{filter:hue-rotate(35deg);}}
-.sub{font-size:17px;color:rgba(255,255,255,.5);max-width:580px;margin:24px auto 0;line-height:1.75;}
-.sub b{color:#00FFB2;font-weight:700;}
+/* Hero */
+.hero{
+  padding:80px 0 56px;
+  text-align:center;
+  animation:fadeUp 0.9s ease 0.2s both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(40px);}to{opacity:1;transform:translateY(0);}}
+
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:#E0005A;letter-spacing:2.5px;
+  border:1px solid rgba(224,0,90,0.3);background:rgba(224,0,90,0.07);
+  padding:6px 18px;border-radius:30px;margin-bottom:32px;
+  animation:eyebrowGlow 3.5s ease-in-out infinite;
+}
+@keyframes eyebrowGlow{
+  0%,100%{box-shadow:0 0 0 transparent;}
+  50%{box-shadow:0 0 20px rgba(224,0,90,0.3);}
+}
+.pulse-dot{
+  width:6px;height:6px;border-radius:50%;background:#E0005A;
+  animation:pulseDot 1.6s ease-in-out infinite;
+}
+@keyframes pulseDot{0%,100%{opacity:1;}50%{opacity:0.15;}}
+
+.hero-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(68px,10.5vw,124px);
+  line-height:0.88;letter-spacing:3px;color:#fff;
+  margin-bottom:0;
+}
+.t-purple{
+  background:linear-gradient(90deg,#6B00F0,#E0005A);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  display:inline-block;
+  animation:purpleShift 5s ease-in-out infinite alternate;
+}
+@keyframes purpleShift{from{filter:hue-rotate(0deg);}to{filter:hue-rotate(30deg);}}
+.t-teal{
+  background:linear-gradient(90deg,#00DFA0,#6B00F0);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  display:inline-block;
+}
+
+.hero-desc{
+  font-size:17px;color:rgba(255,255,255,0.52);
+  max-width:560px;margin:26px auto 0;line-height:1.8;
+}
+.hero-desc strong{color:#00DFA0;font-weight:700;}
 
 /* CTA */
-.cta{margin-top:48px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
-.btn{display:inline-block;padding:15px 42px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;border-radius:50px;text-decoration:none;letter-spacing:.5px;transition:transform .3s,box-shadow .3s;cursor:pointer;}
-.btn-p{background:linear-gradient(135deg,#7B00FF,#FF0080);color:#fff;box-shadow:0 0 40px rgba(123,0,255,.45);animation:bP 3s ease-in-out infinite;}
-@keyframes bP{0%,100%{box-shadow:0 0 40px rgba(123,0,255,.45);}50%{box-shadow:0 0 65px rgba(123,0,255,.75);}}
-.btn-p:hover{transform:translateY(-4px) scale(1.04);}
-.btn-s{background:transparent;color:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.18);}
-.btn-s:hover{border-color:rgba(0,255,178,.55);color:#00FFB2;transform:translateY(-4px);}
+.cta{
+  margin-top:48px;
+  display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
+}
+.btn{
+  padding:14px 40px;font-family:'Syne',sans-serif;
+  font-size:15px;font-weight:700;border-radius:50px;
+  cursor:pointer;border:none;letter-spacing:0.5px;
+  transition:transform 0.3s ease,box-shadow 0.3s ease;
+  text-decoration:none;display:inline-block;
+}
+.btn-primary{
+  background:linear-gradient(135deg,#6B00F0,#E0005A);
+  color:#fff;
+  box-shadow:0 0 36px rgba(107,0,240,0.45);
+  animation:primaryGlow 3s ease-in-out infinite;
+}
+@keyframes primaryGlow{
+  0%,100%{box-shadow:0 0 36px rgba(107,0,240,0.45);}
+  50%{box-shadow:0 0 58px rgba(107,0,240,0.72);}
+}
+.btn-primary:hover{transform:translateY(-4px) scale(1.03);}
+.btn-secondary{
+  background:transparent;color:rgba(255,255,255,0.65);
+  border:1px solid rgba(255,255,255,0.16)!important;
+}
+.btn-secondary:hover{
+  border-color:rgba(0,223,160,0.5)!important;
+  color:#00DFA0;transform:translateY(-4px);
+}
 
-/* STATS */
-.stats{display:flex;width:100%;max-width:880px;margin:64px 0 0;border:1px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;background:rgba(255,255,255,.025);backdrop-filter:blur(24px);animation:fU .9s ease .35s both;}
-@keyframes fU{from{opacity:0;transform:translateY(32px);}to{opacity:1;transform:translateY(0);}}
-.stat{flex:1;padding:28px 16px;text-align:center;border-right:1px solid rgba(255,255,255,.07);transition:background .35s;}
+/* Stats */
+.stats{
+  display:flex;
+  max-width:860px;margin:70px auto 0;
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:18px;overflow:hidden;
+  background:rgba(255,255,255,0.022);
+  backdrop-filter:blur(20px);
+  animation:fadeUp 0.9s ease 0.4s both;
+}
+.stat{
+  flex:1;padding:28px 16px;text-align:center;
+  border-right:1px solid rgba(255,255,255,0.06);
+  transition:background 0.3s;
+}
 .stat:last-child{border-right:none;}
-.stat:hover{background:rgba(123,0,255,.1);}
-.stat-n{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:2px;background:linear-gradient(135deg,#00FFB2,#7B00FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.stat-l{font-size:11px;color:rgba(255,255,255,.38);letter-spacing:2.5px;text-transform:uppercase;margin-top:3px;font-family:'JetBrains Mono',monospace;}
+.stat:hover{background:rgba(107,0,240,0.1);}
+.stat-val{
+  font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:2px;
+  background:linear-gradient(135deg,#00DFA0,#6B00F0);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.stat-lbl{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:rgba(255,255,255,0.35);letter-spacing:2.5px;
+  text-transform:uppercase;margin-top:4px;
+}
 
-/* SECTION */
-.sec{width:100%;max-width:1200px;margin-top:96px;}
-.sec-tag{font-family:'JetBrains Mono',monospace;font-size:11px;color:#7B00FF;letter-spacing:4px;text-transform:uppercase;margin-bottom:12px;}
-.sec-h{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:2px;color:#fff;line-height:1;margin-bottom:48px;}
-.sec-h span{background:linear-gradient(90deg,#00FFB2,#7B00FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+/* Section */
+.section{max-width:1200px;margin:96px auto 0;}
+.sec-tag{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:#6B00F0;letter-spacing:4px;text-transform:uppercase;margin-bottom:10px;
+}
+.sec-title{
+  font-family:'Bebas Neue',sans-serif;font-size:50px;
+  letter-spacing:2px;color:#fff;line-height:1;margin-bottom:48px;
+}
+.sec-title span{
+  background:linear-gradient(90deg,#00DFA0,#6B00F0);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
 
-/* CARDS */
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px;}
-.card{padding:30px;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);border-radius:20px;transition:transform .4s,border-color .4s,box-shadow .4s;animation:cIn .7s ease both;}
-.card:nth-child(1){animation-delay:.05s;}.card:nth-child(2){animation-delay:.12s;}.card:nth-child(3){animation-delay:.19s;}
-.card:nth-child(4){animation-delay:.26s;}.card:nth-child(5){animation-delay:.33s;}.card:nth-child(6){animation-delay:.40s;}
-@keyframes cIn{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
-.card:hover{transform:translateY(-8px);border-color:rgba(123,0,255,.35);box-shadow:0 16px 50px rgba(123,0,255,.15);}
-.ci{font-size:30px;margin-bottom:14px;display:inline-block;width:52px;height:52px;line-height:52px;text-align:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;}
-.ct{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:#fff;margin-bottom:8px;}
-.cd{font-size:13px;color:rgba(255,255,255,.42);line-height:1.7;}
-.cb{display:inline-block;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:20px;letter-spacing:1px;}
+/* Cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;}
+.card{
+  padding:28px;
+  background:rgba(255,255,255,0.025);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:18px;
+  transition:transform 0.4s,border-color 0.4s,box-shadow 0.4s;
+  animation:cardUp 0.7s ease both;
+}
+.card:nth-child(1){animation-delay:0.05s;}.card:nth-child(2){animation-delay:0.1s;}
+.card:nth-child(3){animation-delay:0.15s;}.card:nth-child(4){animation-delay:0.2s;}
+.card:nth-child(5){animation-delay:0.25s;}.card:nth-child(6){animation-delay:0.3s;}
+@keyframes cardUp{from{opacity:0;transform:translateY(26px);}to{opacity:1;transform:translateY(0);}}
+.card:hover{transform:translateY(-7px);border-color:rgba(107,0,240,0.35);box-shadow:0 14px 44px rgba(107,0,240,0.14);}
+.card-num{
+  font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:3px;
+  color:rgba(255,255,255,0.2);margin-bottom:14px;
+}
+.card-title{
+  font-family:'Syne',sans-serif;font-size:16px;font-weight:800;
+  color:#fff;margin-bottom:10px;
+}
+.card-body{font-size:13px;color:rgba(255,255,255,0.42);line-height:1.75;}
+.card-tech{
+  display:inline-block;margin-top:14px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  padding:3px 10px;border-radius:20px;letter-spacing:1px;
+}
 
-/* PIPELINE */
-.pipe{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:0;padding:44px;background:rgba(255,255,255,.018);border:1px solid rgba(255,255,255,.07);border-radius:22px;}
-.ps{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;min-width:100px;transition:all .3s;}
-.ps:hover{background:rgba(123,0,255,.18);border-color:rgba(123,0,255,.45);transform:translateY(-5px);box-shadow:0 14px 40px rgba(123,0,255,.22);}
-.pi{font-size:26px;}.pl{font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,.48);text-align:center;letter-spacing:1px;}
-.pa{color:rgba(255,255,255,.18);font-size:18px;padding:0 6px;flex-shrink:0;animation:aP 2.2s ease-in-out infinite;}
-.pa:nth-child(even){animation-delay:.55s;}
-@keyframes aP{0%,100%{color:rgba(255,255,255,.15);}50%{color:rgba(0,255,178,.65);}}
+/* Pipeline */
+.pipeline{
+  display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+  padding:44px;
+  background:rgba(255,255,255,0.018);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:20px;gap:0;
+}
+.step{
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding:18px 22px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:14px;min-width:100px;
+  transition:all 0.3s;cursor:default;
+}
+.step:hover{
+  background:rgba(107,0,240,0.18);
+  border-color:rgba(107,0,240,0.45);
+  transform:translateY(-5px);
+  box-shadow:0 12px 36px rgba(107,0,240,0.2);
+}
+.step-label{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:rgba(255,255,255,0.45);text-align:center;letter-spacing:1px;
+}
+.step-icon{
+  font-family:'Bebas Neue',sans-serif;font-size:11px;
+  letter-spacing:1px;color:rgba(255,255,255,0.6);
+}
+.arrow{
+  color:rgba(255,255,255,0.15);font-size:16px;
+  padding:0 6px;flex-shrink:0;
+  animation:arrowPulse 2.4s ease-in-out infinite;
+}
+.arrow:nth-child(even){animation-delay:0.6s;}
+@keyframes arrowPulse{
+  0%,100%{color:rgba(255,255,255,0.12);}
+  50%{color:rgba(0,223,160,0.7);}
+}
 
-/* TECH */
-.tech{display:flex;flex-wrap:wrap;gap:10px;}
-.tt{padding:7px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;border-radius:30px;border:1px solid;letter-spacing:1px;transition:transform .3s;}
-.tt:hover{transform:translateY(-2px);}
-.t1{color:#00FFB2;border-color:rgba(0,255,178,.3);background:rgba(0,255,178,.06);}
-.t2{color:#7B00FF;border-color:rgba(123,0,255,.3);background:rgba(123,0,255,.06);}
-.t3{color:#FF0080;border-color:rgba(255,0,128,.3);background:rgba(255,0,128,.06);}
-.t4{color:#FFB800;border-color:rgba(255,184,0,.3);background:rgba(255,184,0,.06);}
+/* Tech tags */
+.tags{display:flex;flex-wrap:wrap;gap:10px;}
+.tag{
+  padding:7px 16px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  border-radius:30px;border:1px solid;letter-spacing:1px;
+  transition:transform 0.3s;cursor:default;
+}
+.tag:hover{transform:translateY(-2px);}
+.tg{color:#00DFA0;border-color:rgba(0,223,160,0.3);background:rgba(0,223,160,0.06);}
+.tp{color:#6B00F0;border-color:rgba(107,0,240,0.3);background:rgba(107,0,240,0.06);}
+.tr{color:#E0005A;border-color:rgba(224,0,90,0.3);background:rgba(224,0,90,0.06);}
+.ty{color:#F0A800;border-color:rgba(240,168,0,0.3);background:rgba(240,168,0,0.06);}
 
-/* FOOTER */
-.foot{width:100%;max-width:1200px;margin-top:100px;padding-top:28px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
-.foot span{font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.22);}
+/* Footer */
+footer{
+  max-width:1200px;margin:96px auto 0;
+  padding-top:28px;
+  border-top:1px solid rgba(255,255,255,0.06);
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+}
+footer span{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:rgba(255,255,255,0.22);
+}
 </style>
 </head>
 <body>
 
+<div class="bg"></div>
 <div class="grid"></div>
-<div class="orb o1"></div>
-<div class="orb o2"></div>
-<div class="orb o3"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
 
 <div class="wrap">
+
+  <!-- NAV -->
   <nav>
     <div class="logo">NeuralDoc</div>
-    <div class="badge">&#9889; PRODUCTION RAG v1.0</div>
+    <div class="nav-tag">PRODUCTION RAG v1.0</div>
   </nav>
 
-  <section class="hero">
-    <div class="pill"><span class="dot"></span>&nbsp;ZERO HALLUCINATION TOLERANCE</div>
-    <h1><span class="g1">NEURAL</span><br><span class="g2">DOC</span> RAG</h1>
-    <p class="sub">A <b>production-grade</b> RAG system that answers questions from your documents with <b>inline citations</b>, hybrid retrieval, and a hard refusal trigger &mdash; no guessing, ever.</p>
-    <div class="cta">
-      <a href="http://localhost:8501/RAG_Chat" class="btn btn-p">&#9889; Launch App &rarr;</a>
-      <a href="#features" class="btn btn-s">How It Works &darr;</a>
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">
+      <span class="pulse-dot"></span>
+      ZERO HALLUCINATION TOLERANCE
     </div>
-  </section>
-
-  <div class="stats">
-    <div class="stat"><div class="stat-n">0%</div><div class="stat-l">Hallucination</div></div>
-    <div class="stat"><div class="stat-n">3&times;</div><div class="stat-l">Retrieval Methods</div></div>
-    <div class="stat"><div class="stat-n">100%</div><div class="stat-l">Local &amp; Private</div></div>
-    <div class="stat"><div class="stat-n">&infin;</div><div class="stat-l">Documents</div></div>
+    <h1 class="hero-title">
+      <span class="t-purple">NEURAL</span><br>
+      <span class="t-teal">DOC</span> RAG
+    </h1>
+    <p class="hero-desc">
+      A <strong>production-grade</strong> RAG system that answers questions
+      from your documents with <strong>inline citations</strong>,
+      hybrid retrieval, and a hard refusal trigger &mdash; no guessing, ever.
+    </p>
+    <div class="cta">
+      <a class="btn btn-primary" onclick="window.parent.location.href='/RAG_Chat'" href="#">
+        Launch App &rarr;
+      </a>
+      <a class="btn btn-secondary" href="#features">
+        How It Works &darr;
+      </a>
+    </div>
   </div>
 
-  <section class="sec" id="features">
-    <div class="sec-tag">// What It Does</div>
-    <div class="sec-h">SIX <span>PILLARS</span></div>
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-val">0%</div>
+      <div class="stat-lbl">Hallucination Rate</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">3x</div>
+      <div class="stat-lbl">Retrieval Methods</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">100%</div>
+      <div class="stat-lbl">Local & Private</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">inf</div>
+      <div class="stat-lbl">Documents Supported</div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="section" id="features">
+    <div class="sec-tag">// Capabilities</div>
+    <div class="sec-title">SIX <span>PILLARS</span></div>
     <div class="cards">
-      <div class="card"><div class="ci">&#128196;</div><div class="ct">Smart PDF Ingestion</div><div class="cd">Handles multi-column layouts, embedded tables, complex PDFs. Strips headers and footers automatically.</div><span class="cb" style="color:#00FFB2;background:rgba(0,255,178,.08);border:1px solid rgba(0,255,178,.2)">pdfplumber</span></div>
-      <div class="card"><div class="ci">&#9986;&#65039;</div><div class="ct">Semantic Chunking</div><div class="cd">Header-aware 500&ndash;800 token chunks. Every chunk carries source, page, and breadcrumb metadata.</div><span class="cb" style="color:#7B00FF;background:rgba(123,0,255,.08);border:1px solid rgba(123,0,255,.2)">tiktoken</span></div>
-      <div class="card"><div class="ci">&#128269;</div><div class="ct">Hybrid Retrieval</div><div class="cd">BM25 keyword search fused with dense vector search via Reciprocal Rank Fusion &mdash; catches what either misses.</div><span class="cb" style="color:#FF0080;background:rgba(255,0,128,.08);border:1px solid rgba(255,0,128,.2)">RRF Fusion</span></div>
-      <div class="card"><div class="ci">&#127942;</div><div class="ct">Cross-Encoder Reranking</div><div class="cd">Top-20 candidates re-scored with a cross-encoder. Only the best 5 reach the LLM &mdash; precision over recall.</div><span class="cb" style="color:#FFB800;background:rgba(255,184,0,.08);border:1px solid rgba(255,184,0,.2)">ms-marco</span></div>
-      <div class="card"><div class="ci">&#128206;</div><div class="ct">Attributed QA</div><div class="cd">Every claim has an inline citation [Source, p.X]. A References section is auto-appended. Always grounded.</div><span class="cb" style="color:#00C8FF;background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.2)">LangGraph</span></div>
-      <div class="card"><div class="ci">&#128683;</div><div class="ct">Hard Refusal Trigger</div><div class="cd">Insufficient context returns a fixed refusal &mdash; not a guess. Zero hallucination is a hard system constraint.</div><span class="cb" style="color:#FF5000;background:rgba(255,80,0,.08);border:1px solid rgba(255,80,0,.2)">Threshold Gate</span></div>
-    </div>
-  </section>
 
-  <section class="sec">
+      <div class="card">
+        <div class="card-num">01 &mdash; INGESTION</div>
+        <div class="card-title">Smart PDF Parsing</div>
+        <div class="card-body">Handles multi-column layouts, embedded tables, and complex document structures. Headers and footers stripped automatically.</div>
+        <span class="card-tech" style="color:#00DFA0;background:rgba(0,223,160,0.07);border:1px solid rgba(0,223,160,0.2)">pdfplumber</span>
+      </div>
+
+      <div class="card">
+        <div class="card-num">02 &mdash; CHUNKING</div>
+        <div class="card-title">Semantic Chunking</div>
+        <div class="card-body">Header-aware chunks of 500&ndash;800 tokens. Every chunk carries source path, page number, and section breadcrumb as metadata.</div>
+        <span class="card-tech" style="color:#6B00F0;background:rgba(107,0,240,0.07);border:1px solid rgba(107,0,240,0.2)">tiktoken</span>
+      </div>
+
+      <div class="card">
+        <div class="card-num">03 &mdash; RETRIEVAL</div>
+        <div class="card-title">Hybrid Search</div>
+        <div class="card-body">BM25 keyword search fused with dense vector search via Reciprocal Rank Fusion. Catches what either method alone misses.</div>
+        <span class="card-tech" style="color:#E0005A;background:rgba(224,0,90,0.07);border:1px solid rgba(224,0,90,0.2)">RRF Fusion</span>
+      </div>
+
+      <div class="card">
+        <div class="card-num">04 &mdash; RERANKING</div>
+        <div class="card-title">Cross-Encoder Precision</div>
+        <div class="card-body">Top 20 candidates re-scored with a cross-encoder model. Only the highest-confidence 5 reach the generation layer.</div>
+        <span class="card-tech" style="color:#F0A800;background:rgba(240,168,0,0.07);border:1px solid rgba(240,168,0,0.2)">ms-marco</span>
+      </div>
+
+      <div class="card">
+        <div class="card-num">05 &mdash; GENERATION</div>
+        <div class="card-title">Attributed Answers</div>
+        <div class="card-body">Every factual claim carries an inline citation [Source, p.X]. A full References section is appended to every response, always.</div>
+        <span class="card-tech" style="color:#00AAFF;background:rgba(0,170,255,0.07);border:1px solid rgba(0,170,255,0.2)">LangGraph</span>
+      </div>
+
+      <div class="card">
+        <div class="card-num">06 &mdash; SAFETY</div>
+        <div class="card-title">Hard Refusal Gate</div>
+        <div class="card-body">When retrieved context falls below the confidence threshold, the model issues a fixed refusal string. No speculation, no hallucination.</div>
+        <span class="card-tech" style="color:#FF6030;background:rgba(255,96,48,0.07);border:1px solid rgba(255,96,48,0.2)">Threshold Gate</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div class="section">
     <div class="sec-tag">// Architecture</div>
-    <div class="sec-h">THE <span>PIPELINE</span></div>
-    <div class="pipe">
-      <div class="ps"><div class="pi">&#128196;</div><div class="pl">PDF Parse</div></div><div class="pa">&rarr;</div>
-      <div class="ps"><div class="pi">&#9986;&#65039;</div><div class="pl">Chunk</div></div><div class="pa">&rarr;</div>
-      <div class="ps"><div class="pi">&#129504;</div><div class="pl">Embed</div></div><div class="pa">&rarr;</div>
-      <div class="ps"><div class="pi">&#128269;</div><div class="pl">Retrieve</div></div><div class="pa">&rarr;</div>
-      <div class="ps"><div class="pi">&#127942;</div><div class="pl">Rerank</div></div><div class="pa">&rarr;</div>
-      <div class="ps"><div class="pi">&#9889;</div><div class="pl">Generate</div></div><div class="pa">&rarr;</div>
-      <div class="ps"><div class="pi">&#128206;</div><div class="pl">Cite</div></div>
+    <div class="sec-title">THE <span>PIPELINE</span></div>
+    <div class="pipeline">
+      <div class="step"><div class="step-icon">PDF</div><div class="step-label">Parse</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="step"><div class="step-icon">SPLIT</div><div class="step-label">Chunk</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="step"><div class="step-icon">EMBED</div><div class="step-label">Vector</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="step"><div class="step-icon">BM25</div><div class="step-label">Keyword</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="step"><div class="step-icon">RRF</div><div class="step-label">Fuse</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="step"><div class="step-icon">RANK</div><div class="step-label">Rerank</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="step"><div class="step-icon">LLM</div><div class="step-label">Generate</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="step"><div class="step-icon">CITE</div><div class="step-label">Attribute</div></div>
     </div>
-  </section>
+  </div>
 
-  <section class="sec">
-    <div class="sec-tag">// Tech Stack</div>
-    <div class="sec-h">BUILT <span>WITH</span></div>
-    <div class="tech">
-      <span class="tt t1">pdfplumber</span><span class="tt t1">ChromaDB</span><span class="tt t1">sentence-transformers</span>
-      <span class="tt t2">LangGraph</span><span class="tt t2">langchain-ollama</span><span class="tt t2">llama3.1:8b</span>
-      <span class="tt t3">BM25 + RRF</span><span class="tt t3">cross-encoder</span>
-      <span class="tt t4">FastAPI</span><span class="tt t4">Streamlit</span><span class="tt t4">Python 3.14</span>
+  <!-- TECH STACK -->
+  <div class="section">
+    <div class="sec-tag">// Stack</div>
+    <div class="sec-title">BUILT <span>WITH</span></div>
+    <div class="tags">
+      <span class="tag tg">pdfplumber</span>
+      <span class="tag tg">ChromaDB</span>
+      <span class="tag tg">sentence-transformers</span>
+      <span class="tag tp">LangGraph</span>
+      <span class="tag tp">langchain-ollama</span>
+      <span class="tag tp">llama3.1:8b</span>
+      <span class="tag tr">BM25 + RRF</span>
+      <span class="tag tr">cross-encoder reranker</span>
+      <span class="tag ty">FastAPI</span>
+      <span class="tag ty">Streamlit</span>
+      <span class="tag ty">Python 3.14</span>
+      <span class="tag tg">tiktoken</span>
     </div>
-  </section>
+  </div>
 
-  <footer class="foot">
-    <span>NeuralDoc RAG &mdash; Production Grade</span>
-    <span>Built with Ollama &middot; ChromaDB &middot; LangGraph</span>
+  <!-- FOOTER -->
+  <footer>
+    <span>NeuralDoc &mdash; Production RAG System</span>
+    <span>Ollama &middot; ChromaDB &middot; LangGraph &middot; FastAPI</span>
   </footer>
-</div>
 
+</div>
 </body>
-</html>
-""", height=4200, scrolling=True)
+</html>"""
+
+components.html(page, height=3800, scrolling=True)
