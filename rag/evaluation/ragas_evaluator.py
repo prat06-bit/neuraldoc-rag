@@ -1,0 +1,272 @@
+"""
+RAGAS-style evaluation module.
+
+Computes three metrics without requiring the full RAGAS library,
+using Ollama as the judge LLM — no OpenAI key needed.
+
+Metrics
+-------
+faithfulness        : Are all claims in the answer supported by the context?
+                      Score = supported_claims / total_claims  (0-1)
+
+context_precision   : Are the retrieved chunks actually relevant to the query?
+                      Score = relevant_chunks / total_chunks  (0-1)
+
+answer_relevancy    : Does the answer actually address the question?
+                      Judged by LLM on a 0-1 scale.
+
+Usage
+-----
+    evaluator = RAGASEvaluator(cfg.generation)
+    result = evaluator.evaluate(
+        query="What is the PFS result?",
+        answer="The PFS was 9.2 months [sample, p.1]",
+        contexts=["At the interim analysis, median PFS was 9.2 months..."],
+        ground_truth="The PFS for combination therapy was 9.2 months."
+    )
+    print(result)
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from dataclasses import dataclass, field
+from typing import Any
+
+
+@dataclass
+class EvaluationResult:
+    faithfulness: float = 0.0
+    context_precision: float = 0.0
+    answer_relevancy: float = 0.0
+    details: dict[str, Any] = field(default_factory=dict)
+
+    def passed(self, threshold: float = 0.85) -> bool:
+        return self.faithfulness >= threshold
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "faithfulness": round(self.faithfulness, 4),
+            "context_precision": round(self.context_precision, 4),
+            "answer_relevancy": round(self.answer_relevancy, 4),
+            "passed": self.passed(),
+            "details": self.details,
+        }
+
+
+class RAGASEvaluator:
+    """
+    LLM-as-judge evaluator using Ollama.
+
+    Parameters
+    ----------
+    config : GenerationConfig — uses ollama_model and ollama_base_url.
+    """
+
+    def __init__(self, config: Any) -> None:
+        self.config = config
+        self._llm = None
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def evaluate(
+        self,
+        query: str,
+        answer: str,
+        contexts: list[str],
+        ground_truth: str = "",
+    ) -> EvaluationResult:
+        """
+        Run all three metrics and return an EvaluationResult.
+
+        Parameters
+        ----------
+        query        : The original question.
+        answer       : The generated answer to evaluate.
+        contexts     : List of retrieved chunk texts used for generation.
+        ground_truth : Reference answer (used for citation check if provided).
+        """
+        faithfulness = self._score_faithfulness(answer, contexts)
+        context_precision = self._score_context_precision(query, contexts)
+        answer_relevancy = self._score_answer_relevancy(query, answer)
+
+        details: dict[str, Any] = {
+            "query": query,
+            "answer_preview": answer[:200],
+            "num_contexts": len(contexts),
+            "ground_truth": ground_truth,
+        }
+
+        # Citation check — verify ground truth key facts appear in answer
+        if ground_truth:
+            details["citations_present"] = self._check_citations(
+                answer, ground_truth
+            )
+
+        return EvaluationResult(
+            faithfulness=faithfulness,
+            context_precision=context_precision,
+            answer_relevancy=answer_relevancy,
+            details=details,
+        )
+
+    # ------------------------------------------------------------------
+    # Metric 1: Faithfulness
+    # ------------------------------------------------------------------
+
+    def _score_faithfulness(self, answer: str, contexts: list[str]) -> float:
+        """
+        Decompose answer into claims, verify each against context.
+        Score = supported / total.
+        """
+        if not answer or not contexts:
+            return 0.0
+
+        combined_context = "\n\n".join(contexts)
+
+        prompt = f"""You are a strict fact-checker.
+
+CONTEXT:
+{combined_context}
+
+ANSWER:
+{answer}
+
+Task: List each factual claim in the ANSWER. For each claim, check if it is DIRECTLY stated or clearly implied by the CONTEXT.
+
+Respond with ONLY valid JSON, no other text:
+{{"claims": [{{"claim": "...", "supported": true}}, {{"claim": "...", "supported": false}}]}}"""""
+
+        try:
+            response = self._ask_llm(prompt)
+            data = self._parse_json(response)
+            claims: list[dict[str, Any]] = data.get("claims", [])
+            if not claims:
+                return 1.0
+            supported = sum(1 for c in claims if c.get("supported", False))
+            return supported / len(claims)
+        except Exception:
+            # Fallback: heuristic — check if key phrases from answer exist in context
+            return self._heuristic_faithfulness(answer, combined_context)
+
+    # ------------------------------------------------------------------
+    # Metric 2: Context Precision
+    # ------------------------------------------------------------------
+
+    def _score_context_precision(self, query: str, contexts: list[str]) -> float:
+        """
+        Ask LLM whether each retrieved chunk is relevant to the query.
+        Score = relevant_chunks / total_chunks.
+        """
+        if not contexts:
+            return 0.0
+
+        relevant = 0
+        for ctx in contexts:
+            prompt = f"""Is the following PASSAGE relevant to answering the QUESTION?
+Answer with ONLY "yes" or "no".
+
+QUESTION: {query}
+
+PASSAGE: {ctx[:500]}
+
+Answer:"""
+            try:
+                response = self._ask_llm(prompt).strip().lower()
+                if response.startswith("yes"):
+                    relevant += 1
+            except Exception:
+                # Heuristic fallback: keyword overlap
+                query_words = set(query.lower().split())
+                ctx_words = set(ctx.lower().split())
+                if len(query_words & ctx_words) >= 2:
+                    relevant += 1
+
+        return relevant / len(contexts)
+
+    # ------------------------------------------------------------------
+    # Metric 3: Answer Relevancy
+    # ------------------------------------------------------------------
+
+    def _score_answer_relevancy(self, query: str, answer: str) -> float:
+        """
+        Ask LLM to score how well the answer addresses the question (0.0-1.0).
+        """
+        if not answer:
+            return 0.0
+
+        prompt = f"""Rate how well the ANSWER addresses the QUESTION on a scale of 0.0 to 1.0.
+1.0 = completely and directly answers the question.
+0.5 = partially answers the question.
+0.0 = does not answer the question at all.
+
+QUESTION: {query}
+
+ANSWER: {answer[:600]}
+
+Respond with ONLY a decimal number between 0.0 and 1.0 (e.g. 0.85). No other text."""
+
+        try:
+            response = self._ask_llm(prompt).strip()
+            score = float(re.search(r"[01]?\.\d+|[01]", response).group())  # type: ignore[union-attr]
+            return max(0.0, min(1.0, score))
+        except Exception:
+            # Heuristic: if answer is non-empty and not a refusal
+            refusal = "does not contain sufficient evidence"
+            return 0.1 if refusal in answer.lower() else 0.7
+
+    # ------------------------------------------------------------------
+    # LLM helper
+    # ------------------------------------------------------------------
+
+    def _ask_llm(self, prompt: str) -> str:
+        """Send a prompt to Ollama and return the response text."""
+        if self._llm is None:
+            try:
+                from langchain_ollama import ChatOllama  # type: ignore[import-untyped]
+            except ImportError as exc:
+                raise ImportError(
+                    "langchain-ollama required. Install: uv add langchain-ollama"
+                ) from exc
+            self._llm = ChatOllama(
+                model=self.config.ollama_model,
+                base_url=self.config.ollama_base_url,
+                temperature=0.0,
+            )
+
+        from langchain_core.messages import HumanMessage  # type: ignore[import-untyped]
+        response = self._llm.invoke([HumanMessage(content=prompt)])
+        return str(response.content)
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _parse_json(text: str) -> dict[str, Any]:
+        """Extract and parse first JSON object from text."""
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if not match:
+            raise ValueError("No JSON found in response.")
+        return json.loads(match.group())
+
+    @staticmethod
+    def _heuristic_faithfulness(answer: str, context: str) -> float:
+        """Simple word-overlap fallback when LLM call fails."""
+        sentences = [s.strip() for s in re.split(r"[.!?]", answer) if len(s.strip()) > 20]
+        if not sentences:
+            return 1.0
+        supported = sum(
+            1 for s in sentences
+            if any(word in context.lower() for word in s.lower().split() if len(word) > 5)
+        )
+        return supported / len(sentences)
+
+    @staticmethod
+    def _check_citations(answer: str, ground_truth: str) -> bool:
+        """Check if key numbers/facts from ground_truth appear in answer."""
+        numbers = re.findall(r"\d+\.?\d*", ground_truth)
+        return all(num in answer for num in numbers[:3])

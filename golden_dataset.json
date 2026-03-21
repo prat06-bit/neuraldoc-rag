@@ -1,0 +1,27 @@
+[
+  {
+    "query": "What was the median progression-free survival for combination therapy?",
+    "ground_truth": "The median PFS for combination therapy (Arm A) was 9.2 months.",
+    "expected_citations": ["sample"]
+  },
+  {
+    "query": "What was the hazard ratio for disease progression in the trial?",
+    "ground_truth": "The hazard ratio for disease progression or death was 0.71 (95% CI 0.58-0.87, p=0.0008).",
+    "expected_citations": ["sample"]
+  },
+  {
+    "query": "What percentage of patients in Arm A experienced grade 3-4 adverse events?",
+    "ground_truth": "28.6% of patients in Arm A (combination therapy) experienced grade 3-4 adverse events.",
+    "expected_citations": ["sample"]
+  },
+  {
+    "query": "What was the objective response rate for monotherapy?",
+    "ground_truth": "The objective response rate for Arm B (monotherapy) was 29.7%.",
+    "expected_citations": ["sample"]
+  },
+  {
+    "query": "What is the capital of France?",
+    "ground_truth": "INSUFFICIENT_EVIDENCE",
+    "expected_citations": []
+  }
+]
