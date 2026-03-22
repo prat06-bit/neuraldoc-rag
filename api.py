@@ -3,15 +3,15 @@ FastAPI backend for the Production RAG System.
 
 Endpoints
 ---------
-POST /query          — run a RAG query, returns answer + citations
-POST /ingest         — upload and index a PDF
-GET  /health         — health check
-GET  /config         — show current config
-POST /config/update  — update model/provider at runtime (upgrade path)
+POST   /query          — run a RAG query
+POST   /ingest         — upload and index a PDF
+DELETE /index          — clear all indexed chunks (wipe ChromaDB)
+GET    /health         — health check
+GET    /config         — show current config
+POST   /config/update  — update model/provider at runtime
 
 Start
 -----
-    uv add fastapi uvicorn python-multipart
     uv run uvicorn api:app --reload --port 8000
 """
 
@@ -26,17 +26,13 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from rag.config import GenerationConfig, load_config
+from rag.config import load_config
 from rag.ingestion.chunker import Chunker
 from rag.ingestion.pdf_parser import ParserFactory
 from rag.retrieval.hybrid_retriever import HybridRetriever
 from rag.retrieval.vector_store import VectorStore
 from rag.generation.graph import RAGGraph
 from rag.exceptions import InsufficientEvidenceError
-
-# ---------------------------------------------------------------------------
-# App setup
-# ---------------------------------------------------------------------------
 
 app = FastAPI(
     title="Production RAG API",
@@ -54,8 +50,9 @@ app.add_middleware(
 UPLOAD_DIR = Path("uploaded_pdfs")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
+
 # ---------------------------------------------------------------------------
-# Global pipeline state (lazy init)
+# Pipeline state
 # ---------------------------------------------------------------------------
 
 class PipelineState:
@@ -68,7 +65,7 @@ class PipelineState:
         self.all_chunks: list = []
 
     def is_ready(self) -> bool:
-        return self.graph is not None and self.retriever is not None
+        return self.graph is not None and self.retriever is not None and len(self.all_chunks) > 0
 
     def init_pipeline(self) -> None:
         self.store = VectorStore(self.cfg.retrieval)
@@ -76,12 +73,10 @@ class PipelineState:
         self.graph = RAGGraph(self.cfg.generation, self.retriever)
 
     def rebuild_graph(self) -> None:
-        """Rebuild only the graph (after config change)."""
         if self.retriever:
             self.graph = RAGGraph(self.cfg.generation, self.retriever)
 
     def ingest_pdf(self, pdf_path: str) -> int:
-        """Parse, chunk and index a PDF. Returns chunk count."""
         if self.store is None or self.retriever is None:
             self.init_pipeline()
 
@@ -101,11 +96,29 @@ class PipelineState:
         self.indexed_files.append(pdf_path)
         return len(chunks)
 
+    def clear_index(self) -> None:
+        """Wipe ChromaDB, reset BM25, clear all state."""
+        if self.store is not None:
+            self.store.clear()
+
+        # Re-initialise fresh store and retriever
+        self.store = VectorStore(self.cfg.retrieval)
+        self.retriever = HybridRetriever(self.store, self.cfg.retrieval)
+        self.graph = None
+        self.all_chunks = []
+        self.indexed_files = []
+
+        # Also delete uploaded PDFs so re-index starts clean
+        if UPLOAD_DIR.exists():
+            shutil.rmtree(UPLOAD_DIR)
+            UPLOAD_DIR.mkdir(exist_ok=True)
+
 
 state = PipelineState()
 
+
 # ---------------------------------------------------------------------------
-# Request / Response schemas
+# Schemas
 # ---------------------------------------------------------------------------
 
 class QueryRequest(BaseModel):
@@ -122,10 +135,10 @@ class QueryResponse(BaseModel):
 
 
 class ConfigUpdateRequest(BaseModel):
-    provider: str | None = None          # "ollama" or "openai"
-    ollama_model: str | None = None      # e.g. "llama3.3:70b"
+    provider: str | None = None
+    ollama_model: str | None = None
     ollama_base_url: str | None = None
-    openai_model: str | None = None      # e.g. "gpt-4o"
+    openai_model: str | None = None
     temperature: float | None = None
     similarity_threshold: float | None = None
 
@@ -167,17 +180,6 @@ def get_config() -> dict[str, Any]:
 
 @app.post("/config/update")
 def update_config(req: ConfigUpdateRequest) -> dict[str, Any]:
-    """
-    Hot-swap model or provider at runtime — no restart needed.
-
-    Example — upgrade to 70B judge:
-        POST /config/update
-        {"provider": "ollama", "ollama_model": "llama3.3:70b"}
-
-    Example — switch to OpenAI:
-        POST /config/update
-        {"provider": "openai", "openai_model": "gpt-4o"}
-    """
     gen = state.cfg.generation
 
     if req.provider is not None:
@@ -193,11 +195,10 @@ def update_config(req: ConfigUpdateRequest) -> dict[str, Any]:
     if req.similarity_threshold is not None:
         state.cfg.retrieval.similarity_threshold = req.similarity_threshold
 
-    # Rebuild graph with new config
     state.rebuild_graph()
 
     return {
-        "message": "Config updated. Graph rebuilt with new settings.",
+        "message": "Config updated.",
         "current": {
             "provider": gen.provider,
             "model": gen.ollama_model if gen.provider == "ollama" else gen.openai_model,
@@ -207,7 +208,6 @@ def update_config(req: ConfigUpdateRequest) -> dict[str, Any]:
 
 @app.post("/ingest", response_model=IngestResponse)
 async def ingest_pdf(file: UploadFile = File(...)) -> IngestResponse:
-    """Upload and index a PDF file."""
     if not file.filename or not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
 
@@ -227,9 +227,22 @@ async def ingest_pdf(file: UploadFile = File(...)) -> IngestResponse:
     )
 
 
+@app.delete("/index")
+def clear_index() -> dict[str, str]:
+    """
+    Wipe the entire vector store, BM25 index, and all uploaded files.
+    Call this before indexing a new document set to avoid stale results.
+    """
+    try:
+        state.clear_index()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    return {"message": "Index cleared. All chunks and uploaded files removed."}
+
+
 @app.post("/query", response_model=QueryResponse)
 def query(req: QueryRequest) -> QueryResponse:
-    """Run a RAG query against all indexed documents."""
     if not state.is_ready():
         raise HTTPException(
             status_code=400,
