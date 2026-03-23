@@ -95,18 +95,11 @@ Respond with ONLY valid JSON, no other text:
             supported = sum(1 for c in claims if c.get("supported", False))
             return supported / len(claims)
         except Exception:
-            # Fallback: heuristic — check if key phrases from answer exist in context
             return self._heuristic_faithfulness(answer, combined_context)
 
-    # ------------------------------------------------------------------
     # Metric 2: Context Precision
-    # ------------------------------------------------------------------
 
     def _score_context_precision(self, query: str, contexts: list[str]) -> float:
-        """
-        Ask LLM whether each retrieved chunk is relevant to the query.
-        Score = relevant_chunks / total_chunks.
-        """
         if not contexts:
             return 0.0
 
