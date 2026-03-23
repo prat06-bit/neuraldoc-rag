@@ -1,10 +1,10 @@
-"""NeuralDoc RAG — Single file app, no sidebar."""
+"""NeuralDoc RAG — Pastel Minimal Redesign."""
 import requests
 import streamlit as st
 
 st.set_page_config(
-    page_title="NeuralDoc RAG",
-    page_icon="N",
+    page_title="NeuralDoc",
+    page_icon="✦",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -16,20 +16,78 @@ if "messages" not in st.session_state:
 
 API_BASE = "http://localhost:8000"
 
-# Global reset — hides ALL Streamlit chrome including sidebar toggle
+# ── Global reset ──────────────────────────────────────────────────────────────
 st.html("""<style>
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
-[data-testid="stHeader"],[data-testid="stToolbar"],[data-testid="stDecoration"],
-[data-testid="stStatusWidget"],[data-testid="collapsedControl"],
-section[data-testid="stSidebar"],#MainMenu,footer {
-  display:none!important; height:0!important; }
-html,body { margin:0!important; padding:0!important; background:#030010!important; }
-[data-testid="stAppViewContainer"],[data-testid="stMain"],
-[data-testid="stMainBlockContainer"],.block-container {
-  background:transparent!important; padding:0!important;
-  margin:0!important; max-width:100%!important; border:none!important; }
-[data-testid="stVerticalBlock"] { gap:0!important; }
-[data-testid="stVerticalBlock"]>div { margin:0!important; padding:0!important; }
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg:          #F7F6FF;
+  --surface:     #FFFFFF;
+  --surface2:    #F0EFF9;
+  --border:      rgba(139,92,246,0.1);
+  --border-soft: rgba(0,0,0,0.06);
+
+  --violet-50:   #F5F3FF;
+  --violet-100:  #EDE9FE;
+  --violet-200:  #DDD6FE;
+  --violet-400:  #A78BFA;
+  --violet-500:  #8B5CF6;
+  --violet-600:  #7C3AED;
+
+  --mint-bg:     #ECFDF5;
+  --mint-text:   #059669;
+  --rose-bg:     #FFF1F2;
+  --rose-text:   #E11D48;
+  --amber-bg:    #FFFBEB;
+  --amber-text:  #D97706;
+  --sky-bg:      #F0F9FF;
+  --sky-text:    #0284C7;
+
+  --text-1:      #18181B;
+  --text-2:      #52525B;
+  --text-3:      #A1A1AA;
+
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-full: 9999px;
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.09), 0 4px 8px rgba(0,0,0,0.04);
+  --shadow-violet: 0 4px 14px rgba(139,92,246,0.25);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+/* Kill all Streamlit chrome */
+[data-testid="stHeader"],
+[data-testid="stToolbar"],
+[data-testid="stDecoration"],
+[data-testid="stStatusWidget"],
+[data-testid="collapsedControl"],
+section[data-testid="stSidebar"],
+#MainMenu, footer { display:none!important; height:0!important; }
+
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"],
+.block-container {
+  background: transparent!important;
+  padding: 0!important;
+  margin: 0!important;
+  max-width: 100%!important;
+  border: none!important;
+}
+
+[data-testid="stVerticalBlock"] { gap: 0!important; }
+[data-testid="stVerticalBlock"] > div { margin: 0!important; padding: 0!important; }
 </style>""")
 
 
@@ -38,209 +96,513 @@ html,body { margin:0!important; padding:0!important; background:#030010!importan
 # ═════════════════════════════════════════════════════════════════════════════
 if st.session_state.page == "landing":
 
-    st.html("""<style>
-    [data-testid="stAppViewContainer"]{background:#030010!important;}
-    .bg{position:fixed;inset:0;z-index:0;pointer-events:none;
-      background:radial-gradient(ellipse 70% 55% at 12% 12%,rgba(110,0,240,.35),transparent 55%),
-                radial-gradient(ellipse 55% 65% at 88% 88%,rgba(0,210,150,.22),transparent 55%),
-                radial-gradient(ellipse 40% 40% at 50% 40%,rgba(210,0,90,.12),transparent 60%),#030010;
-      animation:bgS 16s ease-in-out infinite alternate;}
-    @keyframes bgS{0%{filter:hue-rotate(0deg);}100%{filter:hue-rotate(20deg) brightness(1.06);}}
-    .gl{position:fixed;inset:0;z-index:0;pointer-events:none;
-      background-image:linear-gradient(rgba(100,0,255,.07) 1px,transparent 1px),
-                       linear-gradient(90deg,rgba(100,0,255,.07) 1px,transparent 1px);
-      background-size:58px 58px;animation:gP 6s ease-in-out infinite;}
-    @keyframes gP{0%,100%{opacity:.35;}50%{opacity:.8;}}
-    .orb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;animation:oD linear infinite;}
-    .o1{width:500px;height:500px;background:rgba(110,0,240,.28);top:-200px;left:-180px;animation-duration:23s;}
-    .o2{width:420px;height:420px;background:rgba(0,200,140,.2);bottom:-150px;right:-150px;animation-duration:29s;animation-delay:-11s;}
-    .o3{width:320px;height:320px;background:rgba(210,0,80,.16);top:38%;left:54%;animation-duration:20s;animation-delay:-6s;}
-    @keyframes oD{0%{transform:translate(0,0) scale(1);}33%{transform:translate(42px,-56px) scale(1.08);}
-      66%{transform:translate(-32px,42px) scale(.93);}100%{transform:translate(0,0) scale(1);}}
-    .nav{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;
-      max-width:1200px;margin:0 auto;padding:36px 48px 0;animation:fD .7s ease both;}
-    @keyframes fD{from{opacity:0;transform:translateY(-18px);}to{opacity:1;transform:translateY(0);}}
-    .logo{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:6px;
-      background:linear-gradient(135deg,#00DFA0,#6B00F0,#E0005A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-    .npill{font-family:'JetBrains Mono',monospace;font-size:12px;color:#00DFA0;letter-spacing:2px;
-      border:1px solid rgba(0,223,160,.35);padding:6px 16px;border-radius:20px;background:rgba(0,223,160,.06);}
-    .hero{position:relative;z-index:10;max-width:1000px;margin:0 auto;padding:68px 48px 0;
-      text-align:center;animation:fU .9s ease .2s both;}
-    @keyframes fU{from{opacity:0;transform:translateY(36px);}to{opacity:1;transform:translateY(0);}}
-    .eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;
-      font-size:12px;color:#E0005A;letter-spacing:3px;border:1px solid rgba(224,0,90,.3);
-      background:rgba(224,0,90,.07);padding:8px 20px;border-radius:30px;margin-bottom:32px;
-      animation:eG 3.5s ease-in-out infinite;}
-    @keyframes eG{0%,100%{box-shadow:none;}50%{box-shadow:0 0 22px rgba(224,0,90,.35);}}
-    .edot{width:7px;height:7px;border-radius:50%;background:#E0005A;animation:dB 1.6s ease-in-out infinite;flex-shrink:0;}
-    @keyframes dB{0%,100%{opacity:1;}50%{opacity:.1;}}
-    .htitle{font-family:'Bebas Neue',sans-serif;font-size:clamp(80px,11vw,132px);line-height:.88;letter-spacing:4px;color:#fff;margin:0;}
-    .t1{background:linear-gradient(90deg,#6B00F0,#E0005A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block;animation:t1S 5s ease-in-out infinite alternate;}
-    @keyframes t1S{from{filter:hue-rotate(0deg);}to{filter:hue-rotate(28deg);}}
-    .t2{background:linear-gradient(90deg,#00DFA0,#6B00F0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block;}
-    .hdesc{font-family:'Syne',sans-serif;font-size:19px;color:rgba(255,255,255,.55);max-width:600px;margin:28px auto 0;line-height:1.85;}
-    .hdesc strong{color:#00DFA0;font-weight:700;}
+    st.html("""
+    <style>
+    body, [data-testid="stAppViewContainer"] { background: var(--bg)!important; }
+
+    /* Subtle background texture */
+    .land-root {
+      min-height: 100vh;
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+    }
+    .land-root::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 10%, rgba(167,139,250,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 80% 80%, rgba(139,92,246,0.08) 0%, transparent 55%),
+        radial-gradient(ellipse 30% 30% at 60% 30%, rgba(196,181,253,0.1) 0%, transparent 50%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* Navbar */
+    .land-nav {
+      position: relative; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+      max-width: 1100px; margin: 0 auto;
+      padding: 28px 40px 0;
+      animation: fadeDown 0.5s ease both;
+    }
+    @keyframes fadeDown { from{opacity:0;transform:translateY(-12px);} to{opacity:1;transform:translateY(0);} }
+    .land-logo {
+      font-family: 'Instrument Serif', serif;
+      font-size: 22px; color: var(--text-1);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .land-logo-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--violet-500);
+    }
+    .land-nav-badge {
+      font-size: 11px; font-weight: 500; color: var(--violet-600);
+      background: var(--violet-100); border: 1px solid var(--violet-200);
+      padding: 5px 14px; border-radius: var(--radius-full);
+      letter-spacing: 0.3px;
+    }
+
+    /* Hero */
+    .land-hero {
+      position: relative; z-index: 10;
+      max-width: 780px; margin: 0 auto;
+      padding: 80px 40px 0;
+      text-align: center;
+      animation: fadeUp 0.6s ease 0.1s both;
+    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+
+    .land-eyebrow {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 500; color: var(--violet-600);
+      background: var(--violet-50); border: 1px solid var(--violet-200);
+      padding: 5px 14px; border-radius: var(--radius-full);
+      margin-bottom: 28px; letter-spacing: 0.3px;
+    }
+    .land-eyebrow-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--violet-500);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(0.8);} }
+
+    .land-h1 {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(42px, 6vw, 68px);
+      font-weight: 400; color: var(--text-1);
+      line-height: 1.1; letter-spacing: -1px;
+      margin-bottom: 20px;
+    }
+    .land-h1 em {
+      font-style: italic; color: var(--violet-500);
+    }
+    .land-sub {
+      font-size: 17px; color: var(--text-2);
+      line-height: 1.75; max-width: 520px;
+      margin: 0 auto 40px; font-weight: 400;
+    }
+    .land-sub strong { color: var(--text-1); font-weight: 600; }
+
+    /* Stats row */
+    .land-stats {
+      display: flex; justify-content: center;
+      gap: 0; max-width: 600px; margin: 56px auto 0;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      animation: fadeUp 0.6s ease 0.3s both;
+    }
+    .land-stat {
+      flex: 1; padding: 24px 16px; text-align: center;
+      border-right: 1px solid var(--border-soft);
+      transition: background 0.2s;
+    }
+    .land-stat:last-child { border-right: none; }
+    .land-stat:hover { background: var(--violet-50); }
+    .land-stat-val {
+      font-family: 'Instrument Serif', serif;
+      font-size: 32px; color: var(--violet-500);
+      line-height: 1; margin-bottom: 4px;
+    }
+    .land-stat-lbl {
+      font-size: 11px; font-weight: 500;
+      color: var(--text-3); letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* Features */
+    .land-features {
+      position: relative; z-index: 10;
+      max-width: 1100px; margin: 88px auto 0; padding: 0 40px;
+      animation: fadeUp 0.6s ease 0.4s both;
+    }
+    .land-section-label {
+      font-size: 11px; font-weight: 600; color: var(--violet-500);
+      letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .land-section-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: 36px; color: var(--text-1);
+      margin-bottom: 40px; font-weight: 400;
+    }
+    .land-section-title em { font-style: italic; color: var(--violet-500); }
+    .land-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .land-card {
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s;
+    }
+    .land-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--violet-200);
+    }
+    .land-card-icon {
+      width: 40px; height: 40px; border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; margin-bottom: 16px;
+    }
+    .land-card-num {
+      font-size: 10px; font-weight: 600; color: var(--text-3);
+      letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .land-card-title {
+      font-size: 16px; font-weight: 600; color: var(--text-1); margin-bottom: 8px;
+    }
+    .land-card-body {
+      font-size: 13.5px; color: var(--text-2); line-height: 1.75;
+    }
+    .land-card-tag {
+      display: inline-block; margin-top: 14px;
+      font-size: 10px; font-weight: 500;
+      padding: 3px 10px; border-radius: var(--radius-full);
+      letter-spacing: 0.3px;
+    }
+
+    /* Pipeline */
+    .land-pipeline {
+      position: relative; z-index: 10;
+      max-width: 1100px; margin: 88px auto 0; padding: 0 40px;
+    }
+    .land-pipe-row {
+      display: flex; align-items: center; flex-wrap: wrap;
+      gap: 0;
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-xl);
+      padding: 32px 40px;
+      box-shadow: var(--shadow-sm);
+    }
+    .land-pipe-step {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 6px;
+      padding: 12px 16px;
+      border-radius: var(--radius-lg);
+      min-width: 76px;
+      transition: all 0.2s;
+      cursor: default;
+    }
+    .land-pipe-step:hover {
+      background: var(--violet-50);
+      transform: translateY(-2px);
+    }
+    .land-pipe-icon {
+      font-size: 20px; margin-bottom: 2px;
+    }
+    .land-pipe-lbl {
+      font-size: 11px; font-weight: 600;
+      color: var(--text-2); letter-spacing: 0.3px;
+    }
+    .land-pipe-sub {
+      font-size: 10px; color: var(--text-3);
+    }
+    .land-pipe-arrow {
+      color: var(--violet-200); font-size: 16px;
+      flex-shrink: 0; padding: 0 4px;
+      animation: arrowPulse 2.5s ease-in-out infinite;
+    }
+    .land-pipe-arrow:nth-child(even) { animation-delay: 0.5s; }
+    @keyframes arrowPulse { 0%,100%{color:var(--violet-200);} 50%{color:var(--violet-500);} }
+
+    /* Stack tags */
+    .land-stack {
+      position: relative; z-index: 10;
+      max-width: 1100px; margin: 88px auto 0; padding: 0 40px;
+    }
+    .land-tags { display: flex; flex-wrap: wrap; gap: 10px; }
+    .land-tag {
+      padding: 7px 16px;
+      font-size: 12px; font-weight: 500;
+      border-radius: var(--radius-full);
+      border: 1px solid;
+      transition: transform 0.2s; cursor: default;
+    }
+    .land-tag:hover { transform: translateY(-2px); }
+    .t-violet { color: var(--violet-600); border-color: var(--violet-200); background: var(--violet-50); }
+    .t-mint   { color: var(--mint-text); border-color: #A7F3D0; background: var(--mint-bg); }
+    .t-rose   { color: var(--rose-text); border-color: #FECDD3; background: var(--rose-bg); }
+    .t-amber  { color: var(--amber-text); border-color: #FDE68A; background: var(--amber-bg); }
+
+    /* Footer */
+    .land-footer {
+      position: relative; z-index: 10;
+      max-width: 1100px; margin: 80px auto 0;
+      padding: 24px 40px 64px;
+      border-top: 1px solid var(--border-soft);
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 12px;
+    }
+    .land-footer span {
+      font-size: 12px; color: var(--text-3); font-weight: 400;
+    }
     </style>
-    <div class="bg"></div><div class="gl"></div>
-    <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
-    <nav class="nav"><div class="logo">NeuralDoc</div><div class="npill">PRODUCTION RAG v1.0</div></nav>
-    <div class="hero">
-      <div class="eyebrow"><span class="edot"></span>ZERO HALLUCINATION TOLERANCE</div>
-      <h1 class="htitle"><span class="t1">NEURAL</span><br><span class="t2">DOC</span> RAG</h1>
-      <p class="hdesc">A <strong>production-grade</strong> RAG system that answers questions from
-        your documents with <strong>inline citations</strong>, hybrid retrieval,
-        and a hard refusal trigger &mdash; no guessing, ever.</p>
-    </div>""")
+
+    <div class="land-root">
+      <nav class="land-nav">
+        <div class="land-logo">
+          <div class="land-logo-dot"></div>
+          NeuralDoc
+        </div>
+        <div class="land-nav-badge">Production RAG v1.0</div>
+      </nav>
+
+      <div class="land-hero">
+        <div class="land-eyebrow">
+          <span class="land-eyebrow-dot"></span>
+          Zero hallucination tolerance
+        </div>
+        <h1 class="land-h1">
+          Ask anything.<br><em>Know everything.</em>
+        </h1>
+        <p class="land-sub">
+          A <strong>production-grade</strong> RAG system that answers questions
+          from your documents with <strong>inline citations</strong>,
+          hybrid retrieval, and a hard refusal trigger &mdash; no guessing, ever.
+        </p>
+      </div>
+
+      <div class="land-stats">
+        <div class="land-stat">
+          <div class="land-stat-val">0%</div>
+          <div class="land-stat-lbl">Hallucination rate</div>
+        </div>
+        <div class="land-stat">
+          <div class="land-stat-val">3×</div>
+          <div class="land-stat-lbl">Retrieval methods</div>
+        </div>
+        <div class="land-stat">
+          <div class="land-stat-val">100%</div>
+          <div class="land-stat-lbl">Local & private</div>
+        </div>
+        <div class="land-stat">
+          <div class="land-stat-val">∞</div>
+          <div class="land-stat-lbl">Documents</div>
+        </div>
+      </div>
+
+      <div class="land-features">
+        <div class="land-section-label">Capabilities</div>
+        <div class="land-section-title">Six <em>pillars</em> of precision</div>
+        <div class="land-cards">
+          <div class="land-card">
+            <div class="land-card-icon" style="background:var(--mint-bg);">📄</div>
+            <div class="land-card-num">01 — Ingestion</div>
+            <div class="land-card-title">Smart PDF Parsing</div>
+            <div class="land-card-body">Multi-column layouts, embedded tables, complex structures. Headers and footers stripped automatically.</div>
+            <span class="land-card-tag" style="color:var(--mint-text);background:var(--mint-bg);border:1px solid #A7F3D0;">pdfplumber</span>
+          </div>
+          <div class="land-card">
+            <div class="land-card-icon" style="background:var(--violet-50);">✂️</div>
+            <div class="land-card-num">02 — Chunking</div>
+            <div class="land-card-title">Semantic Chunking</div>
+            <div class="land-card-body">Header-aware chunks of 500–800 tokens. Every chunk carries source, page, and section breadcrumb.</div>
+            <span class="land-card-tag" style="color:var(--violet-600);background:var(--violet-50);border:1px solid var(--violet-200);">tiktoken</span>
+          </div>
+          <div class="land-card">
+            <div class="land-card-icon" style="background:var(--sky-bg);">🔍</div>
+            <div class="land-card-num">03 — Retrieval</div>
+            <div class="land-card-title">Hybrid Search</div>
+            <div class="land-card-body">BM25 keyword search fused with dense vector search via Reciprocal Rank Fusion.</div>
+            <span class="land-card-tag" style="color:var(--sky-text);background:var(--sky-bg);border:1px solid #BAE6FD;">RRF Fusion</span>
+          </div>
+          <div class="land-card">
+            <div class="land-card-icon" style="background:var(--amber-bg);">⚡</div>
+            <div class="land-card-num">04 — Reranking</div>
+            <div class="land-card-title">Cross-Encoder Precision</div>
+            <div class="land-card-body">Top 20 candidates re-scored. Only the highest-confidence 5 reach the generation layer.</div>
+            <span class="land-card-tag" style="color:var(--amber-text);background:var(--amber-bg);border:1px solid #FDE68A;">ms-marco</span>
+          </div>
+          <div class="land-card">
+            <div class="land-card-icon" style="background:#FFF0F9;">✍️</div>
+            <div class="land-card-num">05 — Generation</div>
+            <div class="land-card-title">Attributed Answers</div>
+            <div class="land-card-body">Every claim carries an inline citation [Source, p.X]. Full References section on every response.</div>
+            <span class="land-card-tag" style="color:#9333EA;background:#FAF5FF;border:1px solid #E9D5FF;">LangGraph</span>
+          </div>
+          <div class="land-card">
+            <div class="land-card-icon" style="background:var(--rose-bg);">🛡️</div>
+            <div class="land-card-num">06 — Safety</div>
+            <div class="land-card-title">Hard Refusal Gate</div>
+            <div class="land-card-body">Context below confidence threshold triggers a fixed refusal. No speculation, no hallucination.</div>
+            <span class="land-card-tag" style="color:var(--rose-text);background:var(--rose-bg);border:1px solid #FECDD3;">Threshold Gate</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="land-pipeline">
+        <div class="land-section-label" style="margin-top:0;">Architecture</div>
+        <div class="land-section-title">The <em>pipeline</em></div>
+        <div class="land-pipe-row">
+          <div class="land-pipe-step"><div class="land-pipe-icon">📄</div><div class="land-pipe-lbl">Parse</div><div class="land-pipe-sub">pdfplumber</div></div>
+          <div class="land-pipe-arrow">→</div>
+          <div class="land-pipe-step"><div class="land-pipe-icon">✂️</div><div class="land-pipe-lbl">Chunk</div><div class="land-pipe-sub">tiktoken</div></div>
+          <div class="land-pipe-arrow">→</div>
+          <div class="land-pipe-step"><div class="land-pipe-icon">🔢</div><div class="land-pipe-lbl">Embed</div><div class="land-pipe-sub">miniLM</div></div>
+          <div class="land-pipe-arrow">→</div>
+          <div class="land-pipe-step"><div class="land-pipe-icon">🔤</div><div class="land-pipe-lbl">BM25</div><div class="land-pipe-sub">keyword</div></div>
+          <div class="land-pipe-arrow">→</div>
+          <div class="land-pipe-step"><div class="land-pipe-icon">🔀</div><div class="land-pipe-lbl">Fuse</div><div class="land-pipe-sub">RRF</div></div>
+          <div class="land-pipe-arrow">→</div>
+          <div class="land-pipe-step"><div class="land-pipe-icon">📊</div><div class="land-pipe-lbl">Rerank</div><div class="land-pipe-sub">cross-enc</div></div>
+          <div class="land-pipe-arrow">→</div>
+          <div class="land-pipe-step"><div class="land-pipe-icon">🤖</div><div class="land-pipe-lbl">Generate</div><div class="land-pipe-sub">llama3.1</div></div>
+          <div class="land-pipe-arrow">→</div>
+          <div class="land-pipe-step"><div class="land-pipe-icon">📌</div><div class="land-pipe-lbl">Cite</div><div class="land-pipe-sub">attributed</div></div>
+        </div>
+      </div>
+
+      <div class="land-stack">
+        <div class="land-section-label" style="margin-top:0;">Stack</div>
+        <div class="land-section-title">Built <em>with</em></div>
+        <div class="land-tags">
+          <span class="land-tag t-mint">pdfplumber</span>
+          <span class="land-tag t-mint">ChromaDB</span>
+          <span class="land-tag t-mint">sentence-transformers</span>
+          <span class="land-tag t-violet">LangGraph</span>
+          <span class="land-tag t-violet">langchain-ollama</span>
+          <span class="land-tag t-violet">llama3.1:8b</span>
+          <span class="land-tag t-rose">BM25 + RRF</span>
+          <span class="land-tag t-rose">cross-encoder reranker</span>
+          <span class="land-tag t-amber">FastAPI</span>
+          <span class="land-tag t-amber">Streamlit</span>
+          <span class="land-tag t-amber">Python 3.14</span>
+        </div>
+      </div>
+
+      <div class="land-footer">
+        <span>NeuralDoc — Production RAG System</span>
+        <span>Ollama · ChromaDB · LangGraph · FastAPI</span>
+      </div>
+    </div>
+    """)
 
     # Launch button
     st.html("""<style>
-    [data-testid="stButton"]>button{display:block!important;width:100%!important;padding:18px 0!important;
-      font-family:'Syne',sans-serif!important;font-size:18px!important;font-weight:700!important;
-      border-radius:50px!important;letter-spacing:.5px!important;
-      background:linear-gradient(135deg,#6B00F0,#E0005A)!important;
-      color:#fff!important;border:none!important;
-      animation:bGL 3s ease-in-out infinite!important;transition:transform .3s!important;}
-    @keyframes bGL{0%,100%{box-shadow:0 0 44px rgba(107,0,240,.55);}50%{box-shadow:0 0 70px rgba(107,0,240,.82);}}
-    [data-testid="stButton"]>button:hover{transform:translateY(-4px) scale(1.03)!important;}
+    .launch-wrap {
+      position: relative; z-index: 20;
+      display: flex; justify-content: center;
+      padding: 40px 0 0; margin-top: -20px;
+      background: transparent;
+    }
+    [data-testid="stButton"] > button {
+      background: var(--violet-500) !important;
+      color: white !important;
+      border: none !important;
+      border-radius: var(--radius-full) !important;
+      font-family: 'Plus Jakarta Sans', sans-serif !important;
+      font-size: 15px !important;
+      font-weight: 600 !important;
+      padding: 14px 40px !important;
+      letter-spacing: 0.2px !important;
+      box-shadow: var(--shadow-violet) !important;
+      transition: all 0.2s ease !important;
+      min-width: 200px !important;
+    }
+    [data-testid="stButton"] > button:hover {
+      background: var(--violet-600) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 8px 20px rgba(139,92,246,0.35) !important;
+    }
+    [data-testid="stButton"] > button:active {
+      transform: scale(0.97) !important;
+    }
     </style>""")
-    st.html('<div style="height:44px;position:relative;z-index:10;"></div>')
-    _l, _mid, _r = st.columns([3, 2, 3])
-    with _mid:
-        if st.button("Launch App →", key="go_chat", use_container_width=True):
+
+    _l, _m, _r = st.columns([3, 2, 3])
+    with _m:
+        if st.button("Open App →", key="go_chat", use_container_width=True):
             st.session_state.page = "chat"
             st.rerun()
-    st.html('<div style="height:20px;"></div>')
-
-    # Stats
-    st.html("""<style>
-    .stats{position:relative;z-index:10;display:flex;max-width:900px;margin:52px auto 0;
-      border:1px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;background:rgba(255,255,255,.025);}
-    .stat{flex:1;padding:30px 16px;text-align:center;border-right:1px solid rgba(255,255,255,.07);transition:background .3s;}
-    .stat:last-child{border-right:none;}.stat:hover{background:rgba(107,0,240,.1);}
-    .sv{font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:3px;
-      background:linear-gradient(135deg,#00DFA0,#6B00F0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-    .sl{font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.38);letter-spacing:3px;text-transform:uppercase;margin-top:5px;}
-    </style>
-    <div class="stats">
-      <div class="stat"><div class="sv">0%</div><div class="sl">Hallucination Rate</div></div>
-      <div class="stat"><div class="sv">3x</div><div class="sl">Retrieval Methods</div></div>
-      <div class="stat"><div class="sv">100%</div><div class="sl">Local &amp; Private</div></div>
-      <div class="stat"><div class="sv">inf</div><div class="sl">Documents Supported</div></div>
-    </div>""")
-
-    # Feature cards
-    st.html("""<style>
-    .section{position:relative;z-index:10;max-width:1200px;margin:88px auto 0;padding:0 48px;}
-    .stag{font-family:'JetBrains Mono',monospace;font-size:12px;color:#6B00F0;letter-spacing:4px;text-transform:uppercase;margin-bottom:12px;}
-    .sh{font-family:'Bebas Neue',sans-serif;font-size:56px;letter-spacing:2px;color:#fff;line-height:1;margin-bottom:44px;}
-    .sh span{background:linear-gradient(90deg,#00DFA0,#6B00F0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px;}
-    .card{padding:28px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:18px;transition:transform .4s,border-color .4s,box-shadow .4s;}
-    .card:hover{transform:translateY(-8px);border-color:rgba(107,0,240,.4);box-shadow:0 16px 50px rgba(107,0,240,.16);}
-    .cn{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.25);margin-bottom:14px;}
-    .ct{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:10px;}
-    .cb{font-family:'Syne',sans-serif;font-size:14px;color:rgba(255,255,255,.45);line-height:1.8;}
-    .ctch{display:inline-block;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 12px;border-radius:20px;letter-spacing:1px;}
-    </style>
-    <div class="section">
-      <div class="stag">// Capabilities</div>
-      <div class="sh">SIX <span>PILLARS</span></div>
-      <div class="cards">
-        <div class="card"><div class="cn">01 &mdash; INGESTION</div><div class="ct">Smart PDF Parsing</div><div class="cb">Handles multi-column layouts, embedded tables, and complex structures. Headers and footers stripped automatically.</div><span class="ctch" style="color:#00DFA0;background:rgba(0,223,160,.07);border:1px solid rgba(0,223,160,.2)">pdfplumber</span></div>
-        <div class="card"><div class="cn">02 &mdash; CHUNKING</div><div class="ct">Semantic Chunking</div><div class="cb">Header-aware chunks of 500&ndash;800 tokens. Every chunk carries source, page, and section breadcrumb as metadata.</div><span class="ctch" style="color:#6B00F0;background:rgba(107,0,240,.07);border:1px solid rgba(107,0,240,.2)">tiktoken</span></div>
-        <div class="card"><div class="cn">03 &mdash; RETRIEVAL</div><div class="ct">Hybrid Search</div><div class="cb">BM25 keyword search fused with dense vector search via Reciprocal Rank Fusion. Catches what either method alone misses.</div><span class="ctch" style="color:#E0005A;background:rgba(224,0,90,.07);border:1px solid rgba(224,0,90,.2)">RRF Fusion</span></div>
-        <div class="card"><div class="cn">04 &mdash; RERANKING</div><div class="ct">Cross-Encoder Precision</div><div class="cb">Top 20 candidates re-scored by a cross-encoder. Only the highest-confidence 5 reach the generation layer.</div><span class="ctch" style="color:#F0A800;background:rgba(240,168,0,.07);border:1px solid rgba(240,168,0,.2)">ms-marco</span></div>
-        <div class="card"><div class="cn">05 &mdash; GENERATION</div><div class="ct">Attributed Answers</div><div class="cb">Every claim carries an inline citation [Source, p.X]. A full References section is appended to every response.</div><span class="ctch" style="color:#00AAFF;background:rgba(0,170,255,.07);border:1px solid rgba(0,170,255,.2)">LangGraph</span></div>
-        <div class="card"><div class="cn">06 &mdash; SAFETY</div><div class="ct">Hard Refusal Gate</div><div class="cb">Context below the confidence threshold triggers a fixed refusal string. No speculation, no hallucination, by design.</div><span class="ctch" style="color:#FF6030;background:rgba(255,96,48,.07);border:1px solid rgba(255,96,48,.2)">Threshold Gate</span></div>
-      </div>
-    </div>""")
-
-    # Pipeline
-    st.html("""<style>
-    .pipe-wrap{position:relative;z-index:10;max-width:1200px;margin:88px auto 0;padding:0 48px;}
-    .pipe{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;padding:44px;
-      background:rgba(255,255,255,.018);border:1px solid rgba(255,255,255,.07);border-radius:20px;}
-    .step{display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 22px;
-      background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;
-      min-width:92px;transition:all .3s;}
-    .step:hover{background:rgba(107,0,240,.2);border-color:rgba(107,0,240,.5);transform:translateY(-6px);}
-    .si{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:rgba(255,255,255,.7);}
-    .slb{font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.4);letter-spacing:1px;}
-    .arr{color:rgba(255,255,255,.18);font-size:18px;padding:0 5px;flex-shrink:0;animation:aP 2.4s ease-in-out infinite;}
-    .arr:nth-child(even){animation-delay:.6s;}
-    @keyframes aP{0%,100%{color:rgba(255,255,255,.14);}50%{color:rgba(0,223,160,.72);}}
-    </style>
-    <div class="pipe-wrap">
-      <div class="stag">// Architecture</div>
-      <div class="sh">THE <span>PIPELINE</span></div>
-      <div class="pipe">
-        <div class="step"><div class="si">PDF</div><div class="slb">Parse</div></div><div class="arr">&rarr;</div>
-        <div class="step"><div class="si">SPLIT</div><div class="slb">Chunk</div></div><div class="arr">&rarr;</div>
-        <div class="step"><div class="si">EMBED</div><div class="slb">Vector</div></div><div class="arr">&rarr;</div>
-        <div class="step"><div class="si">BM25</div><div class="slb">Keyword</div></div><div class="arr">&rarr;</div>
-        <div class="step"><div class="si">RRF</div><div class="slb">Fuse</div></div><div class="arr">&rarr;</div>
-        <div class="step"><div class="si">RANK</div><div class="slb">Rerank</div></div><div class="arr">&rarr;</div>
-        <div class="step"><div class="si">LLM</div><div class="slb">Generate</div></div><div class="arr">&rarr;</div>
-        <div class="step"><div class="si">CITE</div><div class="slb">Attribute</div></div>
-      </div>
-    </div>""")
-
-    # Stack + footer
-    st.html("""<style>
-    .stack{position:relative;z-index:10;max-width:1200px;margin:88px auto 0;padding:0 48px;}
-    .tags{display:flex;flex-wrap:wrap;gap:12px;}
-    .tag{padding:9px 18px;font-family:'JetBrains Mono',monospace;font-size:12px;border-radius:30px;border:1px solid;letter-spacing:1px;transition:transform .3s;cursor:default;}
-    .tag:hover{transform:translateY(-3px);}
-    .tg{color:#00DFA0;border-color:rgba(0,223,160,.3);background:rgba(0,223,160,.06);}
-    .tp{color:#6B00F0;border-color:rgba(107,0,240,.3);background:rgba(107,0,240,.06);}
-    .tr{color:#E0005A;border-color:rgba(224,0,90,.3);background:rgba(224,0,90,.06);}
-    .ty{color:#F0A800;border-color:rgba(240,168,0,.3);background:rgba(240,168,0,.06);}
-    .foot{position:relative;z-index:10;max-width:1200px;margin:80px auto 0;padding:24px 48px 72px;
-      border-top:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
-    .foot span{font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.25);}
-    </style>
-    <div class="stack">
-      <div class="stag">// Stack</div>
-      <div class="sh">BUILT <span>WITH</span></div>
-      <div class="tags">
-        <span class="tag tg">pdfplumber</span><span class="tag tg">ChromaDB</span><span class="tag tg">sentence-transformers</span>
-        <span class="tag tp">LangGraph</span><span class="tag tp">langchain-ollama</span><span class="tag tp">llama3.1:8b</span>
-        <span class="tag tr">BM25 + RRF</span><span class="tag tr">cross-encoder reranker</span>
-        <span class="tag ty">FastAPI</span><span class="tag ty">Streamlit</span><span class="tag ty">Python 3.14</span>
-      </div>
-    </div>
-    <div class="foot">
-      <span>NeuralDoc &mdash; Production RAG System</span>
-      <span>Ollama &middot; ChromaDB &middot; LangGraph &middot; FastAPI</span>
-    </div>""")
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# CHAT PAGE — No sidebar, horizontal layout
+# CHAT PAGE — Pastel minimal dashboard
 # ═════════════════════════════════════════════════════════════════════════════
 else:
     st.html("""<style>
-    [data-testid="stAppViewContainer"]{background:#030010!important;}
-    [data-testid="stAppViewContainer"]::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-      background:radial-gradient(ellipse 65% 50% at 10% 10%,rgba(110,0,240,.18),transparent 60%),
-                radial-gradient(ellipse 50% 65% at 90% 90%,rgba(0,200,140,.12),transparent 60%);}
-    [data-testid="stMain"],[data-testid="stMainBlockContainer"],.block-container {
-      padding:1.5rem 2rem 3rem!important; max-width:1400px!important; background:transparent!important;}
-    .stTextInput input{background:rgba(107,0,240,.07)!important;border:1px solid rgba(107,0,240,.3)!important;
-      color:#fff!important;border-radius:8px!important;padding:12px 16px!important;
-      font-size:14px!important;font-family:'Syne',sans-serif!important;}
-    .stTextInput input:focus{border-color:rgba(107,0,240,.65)!important;box-shadow:0 0 18px rgba(107,0,240,.18)!important;}
-    .stTextInput input::placeholder{color:rgba(255,255,255,.3)!important;}
-    .stTextInput label,.stFileUploader label{display:none!important;}
-    .stButton>button{background:linear-gradient(135deg,#6B00F0,#E0005A)!important;color:#fff!important;
-      border:none!important;border-radius:8px!important;font-family:'Syne',sans-serif!important;
-      font-weight:700!important;font-size:13px!important;letter-spacing:.5px!important;
-      padding:10px 0!important;transition:transform .2s,box-shadow .2s!important;}
-    .stButton>button:hover{transform:translateY(-2px)!important;box-shadow:0 8px 28px rgba(107,0,240,.4)!important;}
-    [data-testid="stFileUploaderDropzone"]{background:rgba(107,0,240,.04)!important;
-      border:1px dashed rgba(107,0,240,.35)!important;border-radius:12px!important;}
-    [data-testid="stFileUploaderDropzone"] *{color:rgba(255,255,255,.6)!important;}
-    hr{border-color:rgba(255,255,255,.07)!important;}
+    body, [data-testid="stAppViewContainer"] {
+      background: var(--bg) !important;
+    }
+    [data-testid="stMain"],
+    [data-testid="stMainBlockContainer"],
+    .block-container {
+      padding: 0 !important;
+      background: transparent !important;
+      max-width: 100% !important;
+    }
+
+    /* Inputs */
+    .stTextInput input {
+      background: var(--surface) !important;
+      border: 1.5px solid var(--border-soft) !important;
+      border-radius: var(--radius-md) !important;
+      color: var(--text-1) !important;
+      font-family: 'Plus Jakarta Sans', sans-serif !important;
+      font-size: 14px !important;
+      padding: 11px 16px !important;
+      box-shadow: var(--shadow-sm) !important;
+      transition: border-color 0.15s, box-shadow 0.15s !important;
+    }
+    .stTextInput input:focus {
+      border-color: var(--violet-400) !important;
+      box-shadow: 0 0 0 3px var(--violet-100) !important;
+      outline: none !important;
+    }
+    .stTextInput input::placeholder { color: var(--text-3) !important; }
+    .stTextInput label, .stFileUploader label { display: none !important; }
+
+    /* Buttons */
+    .stButton > button {
+      background: var(--violet-500) !important;
+      color: white !important;
+      border: none !important;
+      border-radius: var(--radius-md) !important;
+      font-family: 'Plus Jakarta Sans', sans-serif !important;
+      font-weight: 600 !important;
+      font-size: 13px !important;
+      padding: 10px 0 !important;
+      box-shadow: 0 2px 8px rgba(139,92,246,0.2) !important;
+      transition: all 0.15s ease !important;
+    }
+    .stButton > button:hover {
+      background: var(--violet-600) !important;
+      transform: translateY(-1px) !important;
+      box-shadow: var(--shadow-violet) !important;
+    }
+    .stButton > button:active { transform: scale(0.97) !important; }
+
+    /* File uploader */
+    [data-testid="stFileUploaderDropzone"] {
+      background: var(--surface) !important;
+      border: 1.5px dashed var(--violet-200) !important;
+      border-radius: var(--radius-lg) !important;
+      transition: all 0.2s !important;
+    }
+    [data-testid="stFileUploaderDropzone"]:hover {
+      border-color: var(--violet-400) !important;
+      background: var(--violet-50) !important;
+    }
+    [data-testid="stFileUploaderDropzone"] * { color: var(--text-2) !important; }
+
+    /* Selectbox */
+    .stSelectbox [data-baseweb="select"] > div {
+      background: var(--surface) !important;
+      border: 1.5px solid var(--border-soft) !important;
+      border-radius: var(--radius-md) !important;
+      color: var(--text-1) !important;
+      font-family: 'Plus Jakarta Sans', sans-serif !important;
+    }
+    hr { border-color: var(--border-soft) !important; }
     </style>""")
 
     def get_health():
@@ -249,7 +611,8 @@ else:
             r["_reachable"] = True
             return r
         except Exception:
-            return {"pipeline_ready":False,"total_chunks":0,"indexed_files":[],"_reachable":False}
+            return {"pipeline_ready": False, "total_chunks": 0,
+                    "indexed_files": [], "_reachable": False}
 
     h = get_health()
     api_ok = h.get("_reachable", False)
@@ -257,51 +620,90 @@ else:
     chunks = h.get("total_chunks", 0)
     files = h.get("indexed_files", [])
 
-    # Top nav bar
-    n1, n2, n3, n4 = st.columns([1, 1, 5, 1])
-    with n1:
+    # ── Top navigation bar ────────────────────────────────────────────────────
+    st.html(f"""<style>
+    .app-topbar {{
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-soft);
+      position: sticky; top: 0; z-index: 100;
+    }}
+    .app-logo {{
+      font-family: 'Instrument Serif', serif;
+      font-size: 18px; color: var(--text-1);
+      display: flex; align-items: center; gap: 7px;
+    }}
+    .app-logo-dot {{
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--violet-500);
+    }}
+    .app-status {{
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 500;
+      padding: 5px 12px; border-radius: var(--radius-full);
+      border: 1px solid;
+    }}
+    .app-status-dot {{
+      width: 5px; height: 5px; border-radius: 50%;
+    }}
+    .status-ready   {{ color: var(--mint-text);  background: var(--mint-bg);  border-color: #A7F3D0; }}
+    .status-warn    {{ color: var(--amber-text); background: var(--amber-bg); border-color: #FDE68A; }}
+    .status-offline {{ color: var(--rose-text);  background: var(--rose-bg);  border-color: #FECDD3; }}
+    </style>
+    <div class="app-topbar">
+      <div class="app-logo">
+        <div class="app-logo-dot"></div>
+        NeuralDoc
+      </div>
+      <div class="app-status {'status-ready' if ready else 'status-warn' if api_ok else 'status-offline'}">
+        <div class="app-status-dot" style="background:{'var(--mint-text)' if ready else 'var(--amber-text)' if api_ok else 'var(--rose-text)'};"></div>
+        {'Ready · ' + str(chunks) + ' chunks indexed' if ready else ('API online · No documents indexed' if api_ok else 'API offline')}
+      </div>
+    </div>""")
+
+    # Nav buttons row
+    nb1, nb2, nb_gap = st.columns([1, 1, 8])
+    with nb1:
+        st.html('<div style="padding:12px 16px 0;"></div>')
         if st.button("← Home", key="back_home", use_container_width=True):
             st.session_state.page = "landing"
             st.rerun()
-    with n2:
+    with nb2:
+        st.html('<div style="padding:12px 16px 0;"></div>')
         if st.button("Clear Chat", key="clr_chat", use_container_width=True):
             st.session_state.messages = []
             st.rerun()
-    with n3:
-        sc = "#00DFA0" if ready else ("#FFB800" if api_ok else "#E0005A")
-        sl = f"READY · {chunks} chunks indexed" if ready else ("API online · No documents indexed" if api_ok else "API OFFLINE · Run: uv run uvicorn api:app --reload --port 8000")
-        st.html(f"""<div style="display:inline-flex;align-items:center;gap:8px;margin-top:4px;
-          font-family:'JetBrains Mono',monospace;font-size:11px;color:{sc};
-          border:1px solid {sc}33;background:{sc}0D;padding:6px 14px;border-radius:6px;letter-spacing:1px;">
-          <span style="width:6px;height:6px;border-radius:50%;background:{sc};display:inline-block;"></span>
-          {sl}</div>""")
-    with n4:
-        st.html("""<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;
-          background:linear-gradient(135deg,#00DFA0,#6B00F0);-webkit-background-clip:text;
-          -webkit-text-fill-color:transparent;text-align:right;padding-top:4px;">NeuralDoc</div>""")
 
-    st.html('<div style="height:20px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:20px;"></div>')
+    st.html('<div style="height:24px;"></div>')
 
-    # ── HORIZONTAL LAYOUT ─────────────────────────────────────────────────────
+    # ── Main layout ───────────────────────────────────────────────────────────
     col_chat, col_upload = st.columns([3, 2], gap="large")
 
-    # ── RIGHT: Upload ─────────────────────────────────────────────────────────
+    # ── RIGHT: Upload panel ───────────────────────────────────────────────────
     with col_upload:
+        st.html("""<div style="padding:0 24px 0 0;">""")
+
+        # Panel header
         uh1, uh2 = st.columns([3, 1])
         with uh1:
-            st.html("""<div style="margin-bottom:12px;">
-              <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#E0005A;
-                   letter-spacing:4px;margin-bottom:6px;">// INDEX DOCUMENTS</div>
-              <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:2px;
-                   color:#fff;line-height:1;">UPLOAD
-                <span style="background:linear-gradient(90deg,#E0005A,#F0A800);
-                  -webkit-background-clip:text;-webkit-text-fill-color:transparent;"> PDF</span>
+            st.html("""
+            <div style="margin-bottom:16px;">
+              <div style="font-size:10px;font-weight:600;color:var(--violet-500);
+                letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">
+                Knowledge Base
+              </div>
+              <div style="font-family:'Instrument Serif',serif;font-size:26px;
+                color:var(--text-1);line-height:1.1;">
+                Upload <em style="font-style:italic;color:var(--violet-500);">documents</em>
               </div>
             </div>""")
         with uh2:
-            st.html('<div style="height:38px"></div>')
-            if st.button("Clear Index", key="clear_idx", use_container_width=True,
-                         help="Wipe all indexed documents before uploading a new PDF."):
+            st.html('<div style="height:32px;"></div>')
+            if st.button("Clear", key="clear_idx", use_container_width=True,
+                         help="Wipe all indexed documents"):
                 try:
                     resp = requests.delete(f"{API_BASE}/index", timeout=15)
                     if resp.status_code == 200:
@@ -312,136 +714,250 @@ else:
                 except requests.exceptions.ConnectionError:
                     st.error("API offline.")
 
-        st.html("""<style>@keyframes dP{0%,100%{border-color:rgba(107,0,240,.35);}
-          50%{border-color:rgba(107,0,240,.7);box-shadow:0 0 24px rgba(107,0,240,.12);}}</style>
-        <div style="padding:18px 20px;background:rgba(107,0,240,.04);border:1px dashed rgba(107,0,240,.38);
-          border-radius:12px;margin-bottom:12px;text-align:center;animation:dP 4s ease-in-out infinite;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;
-               color:rgba(255,255,255,.4);margin-bottom:4px;">DROP PDF BELOW</div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,.25);">
-            Parsed &rarr; Chunked &rarr; Embedded &rarr; Indexed</div>
+        # Upload area hint
+        st.html("""
+        <div style="background:var(--violet-50);border:1.5px dashed var(--violet-200);
+          border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:12px;
+          text-align:center;">
+          <div style="font-size:20px;margin-bottom:6px;">📎</div>
+          <div style="font-size:13px;font-weight:500;color:var(--text-2);margin-bottom:3px;">
+            Drop your PDF below
+          </div>
+          <div style="font-size:11px;color:var(--text-3);">
+            Parsed → Chunked → Embedded → Indexed
+          </div>
         </div>""")
 
         uploaded = st.file_uploader("Upload PDF", type=["pdf"], label_visibility="hidden")
 
         if uploaded:
-            st.html(f"""<div style="padding:10px 14px;background:rgba(0,223,160,.06);
-              border:1px solid rgba(0,223,160,.22);border-radius:8px;margin-bottom:10px;">
-              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#00DFA0;">
-                {uploaded.name} &mdash; {uploaded.size//1024} KB</div></div>""")
-            if st.button("Index Now", use_container_width=True, key="idx_btn"):
+            st.html(f"""
+            <div style="background:var(--mint-bg);border:1px solid #A7F3D0;
+              border-radius:var(--radius-md);padding:10px 14px;margin-bottom:10px;
+              display:flex;align-items:center;gap:8px;">
+              <span style="font-size:14px;">📄</span>
+              <div>
+                <div style="font-size:13px;font-weight:500;color:var(--text-1);">{uploaded.name}</div>
+                <div style="font-size:11px;color:var(--mint-text);">{uploaded.size//1024} KB</div>
+              </div>
+            </div>""")
+            if st.button("Index Document", use_container_width=True, key="idx_btn"):
                 with st.spinner("Processing PDF..."):
                     try:
                         resp = requests.post(f"{API_BASE}/ingest",
-                            files={"file":(uploaded.name, uploaded, "application/pdf")}, timeout=120)
+                            files={"file": (uploaded.name, uploaded, "application/pdf")},
+                            timeout=120)
                         if resp.status_code == 200:
                             d = resp.json()
-                            st.success(f"Indexed {d['chunks_indexed']} chunks from {d['filename']}")
+                            st.success(f"✓ Indexed {d['chunks_indexed']} chunks from {d['filename']}")
                             st.rerun()
                         else:
                             st.error(f"Error: {resp.text}")
                     except requests.exceptions.ConnectionError:
-                        st.error("API offline.")
+                        st.error("API offline. Run: uv run uvicorn api:app --reload --port 8000")
                     except Exception as e:
                         st.error(str(e))
 
+        # Indexed files
         if files:
-            st.html('<div style="height:8px"></div>')
+            st.html("""<div style="font-size:11px;font-weight:600;color:var(--text-3);
+              letter-spacing:1px;text-transform:uppercase;margin:16px 0 8px;">
+              Indexed files</div>""")
             for f in files:
                 fname = f.replace("\\", "/").split("/")[-1]
-                st.html(f"""<div style="padding:7px 12px;background:rgba(0,223,160,.07);
-                  border:1px solid rgba(0,223,160,.2);border-radius:8px;margin-top:6px;
-                  font-family:'JetBrains Mono',monospace;font-size:11px;color:#00DFA0;">
-                  {fname}</div>""")
+                st.html(f"""
+                <div style="background:var(--surface);border:1px solid var(--border-soft);
+                  border-radius:var(--radius-md);padding:10px 14px;margin-bottom:6px;
+                  display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-sm);">
+                  <span style="font-size:14px;">📄</span>
+                  <span style="font-size:13px;font-weight:500;color:var(--text-1);">{fname}</span>
+                  <span style="margin-left:auto;font-size:10px;font-weight:600;padding:2px 8px;
+                    border-radius:var(--radius-full);color:var(--mint-text);
+                    background:var(--mint-bg);border:1px solid #A7F3D0;">indexed</span>
+                </div>""")
 
-        st.html("""<div style="margin-top:20px;padding:18px 20px;background:rgba(255,255,255,.018);
-          border:1px solid rgba(255,255,255,.06);border-radius:12px;">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;
-               color:rgba(255,255,255,.25);letter-spacing:3px;margin-bottom:12px;">NOTES</div>
-          <div style="font-size:13px;color:rgba(255,255,255,.38);line-height:1.9;font-family:'Syne',sans-serif;">
-            Click <b style="color:rgba(255,255,255,.6)">Clear Index</b> before uploading a new document.<br>
-            Ask precise questions for best results.<br>
-            Every answer includes inline source citations.<br>
+        # Notes card
+        st.html("""
+        <div style="margin-top:20px;background:var(--surface);
+          border:1px solid var(--border-soft);border-radius:var(--radius-lg);
+          padding:18px 20px;box-shadow:var(--shadow-sm);">
+          <div style="font-size:11px;font-weight:600;color:var(--text-3);
+            letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">Tips</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.9;">
+            Click <b style="color:var(--text-1);font-weight:600;">Clear</b> before switching documents.<br>
+            Ask precise questions for best citation accuracy.<br>
+            Every answer includes inline source references.<br>
             Unanswerable queries return a refusal, not a guess.
-          </div></div>""")
-
-    # ── LEFT: Chat ────────────────────────────────────────────────────────────
-    with col_chat:
-        st.html("""<div style="margin-bottom:16px;">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6B00F0;
-               letter-spacing:4px;margin-bottom:6px;">// DOCUMENT QA</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:2px;
-               color:#fff;line-height:1;">ASK YOUR
-            <span style="background:linear-gradient(90deg,#6B00F0,#E0005A);
-              -webkit-background-clip:text;-webkit-text-fill-color:transparent;"> DOCS</span>
           </div>
         </div>""")
 
-        # Chat messages
+        st.html("</div>")
+
+    # ── LEFT: Chat panel ──────────────────────────────────────────────────────
+    with col_chat:
+        st.html("""<div style="padding:0 0 0 24px;">""")
+
+        # Chat header
+        st.html(f"""
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px;">
+          <div>
+            <div style="font-size:10px;font-weight:600;color:var(--violet-500);
+              letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">
+              Document QA
+            </div>
+            <div style="font-family:'Instrument Serif',serif;font-size:26px;
+              color:var(--text-1);line-height:1.1;">
+              Ask your <em style="font-style:italic;color:var(--violet-500);">documents</em>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;padding-bottom:4px;">
+            <div style="font-size:11px;font-weight:500;color:var(--text-3);
+              background:var(--surface2);padding:4px 10px;border-radius:var(--radius-full);
+              border:1px solid var(--border-soft);">{chunks} chunks</div>
+            <div style="font-size:11px;font-weight:500;
+              padding:4px 10px;border-radius:var(--radius-full);border:1px solid;
+              {'color:var(--mint-text);background:var(--mint-bg);border-color:#A7F3D0;' if ready else 'color:var(--rose-text);background:var(--rose-bg);border-color:#FECDD3;'}">
+              {'● Ready' if ready else '○ Not ready'}</div>
+          </div>
+        </div>""")
+
+        # Messages area
         if st.session_state.messages:
             html = ""
             for m in st.session_state.messages:
                 if m["role"] == "user":
-                    html += f"""<div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
-                      <div style="max-width:78%;padding:14px 18px;background:rgba(107,0,240,.2);
-                        border:1px solid rgba(107,0,240,.35);border-radius:18px 4px 18px 18px;
-                        font-size:15px;color:rgba(255,255,255,.9);line-height:1.7;font-family:'Syne',sans-serif;">
-                        {m['content']}</div></div>"""
+                    html += f"""
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+                      <div style="max-width:75%;padding:12px 16px;
+                        background:var(--violet-500);color:white;
+                        border-radius:16px 4px 16px 16px;
+                        font-size:14px;line-height:1.65;
+                        font-family:'Plus Jakarta Sans',sans-serif;
+                        box-shadow:0 2px 8px rgba(139,92,246,0.2);">
+                        {m['content']}
+                      </div>
+                    </div>"""
                 else:
                     refs = ""
                     if m.get("references"):
                         refs = '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;">'
                         for ref in m["references"]:
-                            refs += f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;padding:2px 9px;border-radius:4px;color:#00DFA0;background:rgba(0,223,160,.08);border:1px solid rgba(0,223,160,.2);">ref: {ref}</span>'
+                            refs += f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;padding:2px 9px;border-radius:var(--radius-full);color:var(--sky-text);background:var(--sky-bg);border:1px solid #BAE6FD;cursor:default;">📌 {ref}</span>'
                         refs += "</div>"
-                    rfsd = '<div style="margin-top:8px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:#E0005A;background:rgba(224,0,90,.08);border:1px solid rgba(224,0,90,.2);padding:5px 10px;border-radius:6px;display:inline-block;">REFUSAL — Insufficient evidence</div>' if m.get("refused") else ""
-                    lat = f'<div style="margin-top:6px;font-family:\'JetBrains Mono\',monospace;font-size:10px;color:rgba(255,255,255,.2);">{m.get("latency_ms","")} ms</div>' if m.get("latency_ms") else ""
-                    html += f"""<div style="display:flex;margin-bottom:14px;gap:12px;align-items:flex-start;">
-                      <div style="width:32px;height:32px;border-radius:8px;flex-shrink:0;margin-top:2px;
-                        background:linear-gradient(135deg,#6B00F0,#E0005A);display:flex;align-items:center;
-                        justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:11px;color:#fff;letter-spacing:1px;">AI</div>
-                      <div style="max-width:85%;padding:14px 18px;background:rgba(255,255,255,.04);
-                        border:1px solid rgba(255,255,255,.09);border-radius:4px 18px 18px 18px;
-                        font-size:15px;color:rgba(255,255,255,.88);line-height:1.75;font-family:'Syne',sans-serif;">
-                        {m['content']}{refs}{rfsd}{lat}</div></div>"""
-            st.html(f"""<div style="max-height:55vh;overflow-y:auto;padding:4px 2px 12px;
-              scrollbar-width:thin;scrollbar-color:rgba(107,0,240,.4) transparent;">{html}</div>""")
+                    rfsd = '<div style="margin-top:8px;font-size:12px;font-weight:500;color:var(--rose-text);background:var(--rose-bg);border:1px solid #FECDD3;padding:6px 12px;border-radius:var(--radius-md);display:inline-block;">⚠ Insufficient evidence — refusal triggered</div>' if m.get("refused") else ""
+                    lat = f'<div style="margin-top:6px;font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--text-3);">{m.get("latency_ms","")} ms</div>' if m.get("latency_ms") else ""
+                    html += f"""
+                    <div style="display:flex;margin-bottom:16px;gap:10px;align-items:flex-start;">
+                      <div style="width:28px;height:28px;border-radius:var(--radius-md);flex-shrink:0;
+                        margin-top:2px;background:var(--violet-100);
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:13px;border:1px solid var(--violet-200);">✦</div>
+                      <div style="max-width:85%;padding:12px 16px;
+                        background:var(--surface);border:1px solid var(--border-soft);
+                        border-radius:4px 16px 16px 16px;
+                        font-size:14px;color:var(--text-1);line-height:1.75;
+                        font-family:'Plus Jakarta Sans',sans-serif;
+                        box-shadow:var(--shadow-sm);">
+                        {m['content']}{refs}{rfsd}{lat}
+                      </div>
+                    </div>"""
+            st.html(f"""
+            <div style="max-height:50vh;overflow-y:auto;padding:4px 2px 12px;
+              scrollbar-width:thin;scrollbar-color:var(--violet-200) transparent;">
+              {html}
+            </div>""")
         else:
-            st.html("""<div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,.22);">
-              <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:3px;
-                margin-bottom:10px;background:linear-gradient(90deg,rgba(107,0,240,.5),rgba(0,223,160,.5));
-                -webkit-background-clip:text;-webkit-text-fill-color:transparent;">AWAITING INPUT</div>
-              <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:1px;">
-                Upload a PDF on the right, then ask questions here</div></div>""")
+            st.html("""
+            <div style="text-align:center;padding:56px 20px;
+              background:linear-gradient(145deg, var(--surface), #FAFAFF);
+              border:1px solid var(--border-soft);
+              border-radius:var(--radius-xl);margin-bottom:16px;
+              box-shadow:var(--shadow-sm);position:relative;overflow:hidden;">
+              
+              <!-- Subtle colorful background blur -->
+              <div style="position:absolute;top:-40px;left:-40px;width:120px;height:120px;background:var(--mint-bg);border-radius:50%;filter:blur(40px);z-index:0;"></div>
+              <div style="position:absolute;bottom:-40px;right:-40px;width:120px;height:120px;background:var(--rose-bg);border-radius:50%;filter:blur(40px);z-index:0;"></div>
+              
+              <div style="position:relative;z-index:1;">
+                <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg, var(--violet-100), var(--sky-bg));
+                  display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;
+                  color:var(--violet-600);border:1px solid var(--violet-200);box-shadow:var(--shadow-sm);">✦</div>
+                <div style="font-family:'Instrument Serif',serif;font-size:26px;
+                  color:var(--text-1);margin-bottom:8px;">
+                  Ask anything
+                </div>
+                <div style="font-size:14px;color:var(--text-2);max-width:320px;margin:0 auto;line-height:1.7;">
+                  Upload a PDF on the right, then ask questions here. Every answer is <span style="color:var(--mint-text);font-weight:600;">cited</span>.
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:24px;">
+                  <span style="font-size:12px;font-weight:600;color:var(--mint-text);background:var(--mint-bg);
+                    border:1px solid #A7F3D0;padding:6px 14px;border-radius:var(--radius-full);
+                    box-shadow:0 1px 2px rgba(5,150,105,0.05);cursor:default;">What is the main finding?</span>
+                  <span style="font-size:12px;font-weight:600;color:var(--sky-text);background:var(--sky-bg);
+                    border:1px solid #BAE6FD;padding:6px 14px;border-radius:var(--radius-full);
+                    box-shadow:0 1px 2px rgba(2,132,199,0.05);cursor:default;">Summarise section 3</span>
+                  <span style="font-size:12px;font-weight:600;color:var(--rose-text);background:var(--rose-bg);
+                    border:1px solid #FECDD3;padding:6px 14px;border-radius:var(--radius-full);
+                    box-shadow:0 1px 2px rgba(225,29,72,0.05);cursor:default;">What are the key risks?</span>
+                </div>
+              </div>
+            </div>""")
 
-        st.html("<div style='height:12px'></div>")
-        qc, bc = st.columns([5, 1])
+        st.html("<div style='height:8px'></div>")
+
+        # Input styling
+        st.html("""
+        <style>
+        .stTextInput input {
+          border: 2px solid transparent !important;
+          background-image: linear-gradient(var(--surface), var(--surface)), linear-gradient(135deg, var(--violet-200), var(--sky-text), var(--mint-text)) !important;
+          background-origin: border-box !important;
+          background-clip: padding-box, border-box !important;
+          box-shadow: var(--shadow-md) !important;
+          transition: all 0.3s ease !important;
+        }
+        .stTextInput input:focus {
+          background-image: linear-gradient(var(--surface), var(--surface)), linear-gradient(135deg, var(--violet-400), var(--sky-text), var(--mint-text)) !important;
+          box-shadow: 0 4px 14px rgba(139,92,246,0.15) !important;
+        }
+        </style>
+        """)
+
+        qc, bc = st.columns([6, 1])
         with qc:
             query = st.text_input(
                 "Your question",
-                placeholder="Type your question here...",
+                placeholder="Ask anything about your documents...",
                 label_visibility="hidden",
                 key="q_in"
             )
         with bc:
-            ask = st.button("Send", use_container_width=True)
+            ask = st.button("Send →", use_container_width=True)
 
         if ask and query:
             if not ready:
                 st.warning("Upload and index a PDF first.")
             else:
-                with st.spinner("Retrieving and generating answer..."):
+                with st.spinner("Thinking..."):
                     try:
-                        resp = requests.post(f"{API_BASE}/query", json={"query": query}, timeout=120)
+                        resp = requests.post(
+                            f"{API_BASE}/query",
+                            json={"query": query},
+                            timeout=120
+                        )
                         if resp.status_code == 200:
                             d = resp.json()
                             st.session_state.messages.extend([
                                 {"role": "user", "content": query},
                                 {"role": "assistant", "content": d["answer"],
-                                 "references": d["references"], "refused": d["refused"],
-                                 "latency_ms": d["latency_ms"]}])
+                                 "references": d["references"],
+                                 "refused": d["refused"],
+                                 "latency_ms": d["latency_ms"]}
+                            ])
                             st.rerun()
                         else:
                             st.error(f"API error: {resp.json().get('detail', resp.text)}")
                     except requests.exceptions.ConnectionError:
                         st.error("Cannot reach API. Run: uv run uvicorn api:app --reload --port 8000")
+
+        st.html("</div>")
