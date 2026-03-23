@@ -49,7 +49,6 @@ class RAGASEvaluator:
             "ground_truth": ground_truth,
         }
 
-        # Citation check — verify ground truth key facts appear in answer
         if ground_truth:
             details["citations_present"] = self._check_citations(
                 answer, ground_truth
