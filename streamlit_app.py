@@ -1,4 +1,4 @@
-"""NeuralDoc RAG — Pastel Minimal."""
+"""NeuralDoc RAG — Pixel-perfect pastel redesign."""
 import requests
 import streamlit as st
 
@@ -18,41 +18,41 @@ API_BASE = "http://localhost:8000"
 
 # ── Global reset ──────────────────────────────────────────────────────────────
 st.html("""<style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg:          #F7F6FF;
+  --bg:          #F8F7FF;
   --surface:     #FFFFFF;
-  --surface2:    #F0EFF9;
-  --border:      rgba(139,92,246,0.1);
-  --border-soft: rgba(0,0,0,0.07);
+  --surface2:    #F4F0FF;
+  --border:      #F1F1F9;
+  --border2:     #E9DFFF;
 
-  --violet-50:   #F5F3FF;
-  --violet-100:  #EDE9FE;
-  --violet-200:  #DDD6FE;
-  --violet-400:  #A78BFA;
-  --violet-500:  #8B5CF6;
-  --violet-600:  #7C3AED;
+  --purple:      #8B5CF6;
+  --purple-dark: #7C3AED;
+  --purple-pale: #A084F6;
+  --purple-bg:   #F3EDFF;
+
+  --text-1:  #18181B;
+  --text-2:  #71717A;
+  --text-3:  #A1A1AA;
+  --text-4:  #B0A7C3;
 
   --mint-bg:   #ECFDF5; --mint-text:  #059669;
-  --rose-bg:   #FFF1F2; --rose-text:  #E11D48;
-  --amber-bg:  #FFFBEB; --amber-text: #D97706;
-  --sky-bg:    #F0F9FF; --sky-text:   #0284C7;
+  --rose-bg:   #FCA5A5; --rose-text:  #B91C1C;
+  --amber-bg:  #FDE68A; --amber-text: #B45309;
 
-  --text-1: #18181B;
-  --text-2: #52525B;
-  --text-3: #A1A1AA;
+  --r-sm:   8px;  --r-md:  12px; --r-lg: 16px;
+  --r-xl:   18px; --r-2xl: 24px; --r-full: 9999px;
 
-  --r-sm:   6px;  --r-md:  10px; --r-lg: 16px;
-  --r-xl:   24px; --r-full: 9999px;
-
-  --sh-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
-  --sh-md: 0 4px 12px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
-  --sh-lg: 0 8px 32px rgba(0,0,0,0.09), 0 4px 8px rgba(0,0,0,0.04);
-  --sh-v:  0 4px 14px rgba(139,92,246,0.25);
+  --sh: 0 4px 24px rgba(139,92,246,0.08);
 }
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: var(--bg)!important; font-family: 'Plus Jakarta Sans', sans-serif!important; }
+html, body {
+  background: var(--bg)!important;
+  font-family: 'Inter', sans-serif!important;
+  color: var(--text-1)!important;
+}
 
 [data-testid="stHeader"],[data-testid="stToolbar"],[data-testid="stDecoration"],
 [data-testid="stStatusWidget"],[data-testid="collapsedControl"],
@@ -74,255 +74,296 @@ section[data-testid="stSidebar"],#MainMenu,footer {
 # ═════════════════════════════════════════════════════════════════════════════
 if st.session_state.page == "landing":
 
-    # Button style — must come before columns
     st.html("""<style>
     [data-testid="stAppViewContainer"] { background: var(--bg)!important; }
+
+    /* Button override for landing */
     [data-testid="stButton"]>button {
-      background: var(--violet-500)!important; color: white!important;
-      border: none!important; border-radius: var(--r-full)!important;
-      font-family: 'Plus Jakarta Sans', sans-serif!important;
-      font-size: 15px!important; font-weight: 600!important;
-      padding: 14px 48px!important; letter-spacing: 0.2px!important;
-      box-shadow: var(--sh-v)!important; transition: all 0.2s!important;
-      min-width: 180px!important;
+      background: var(--purple)!important;
+      color: white!important;
+      border: none!important;
+      border-radius: var(--r-full)!important;
+      font-family: 'Inter', sans-serif!important;
+      font-size: 17px!important;
+      font-weight: 500!important;
+      padding: 16px 0!important;
+      letter-spacing: 0!important;
+      box-shadow: none!important;
+      transition: background 0.18s, transform 0.15s!important;
+      width: 100%!important;
     }
     [data-testid="stButton"]>button:hover {
-      background: var(--violet-600)!important;
-      transform: translateY(-2px)!important;
-      box-shadow: 0 8px 20px rgba(139,92,246,0.35)!important;
+      background: var(--purple-dark)!important;
+      transform: translateY(-1px)!important;
     }
-    [data-testid="stButton"]>button:active { transform: scale(0.97)!important; }
+    [data-testid="stButton"]>button:active {
+      transform: scale(0.98)!important;
+    }
     </style>""")
 
-    # Nav
-    st.html("""<style>
-    .ln { position:relative; z-index:10; display:flex; align-items:center;
-      justify-content:space-between; max-width:1100px; margin:0 auto;
-      padding:28px 40px 0; animation:fD 0.5s ease both; }
-    @keyframes fD{from{opacity:0;transform:translateY(-12px);}to{opacity:1;transform:translateY(0);}}
-    .ln-logo { font-family:'Instrument Serif',serif; font-size:20px; color:var(--text-1);
-      display:flex; align-items:center; gap:7px; }
-    .ln-dot { width:7px; height:7px; border-radius:50%; background:var(--violet-500); }
-    .ln-badge { font-size:11px; font-weight:500; color:var(--violet-600);
-      background:var(--violet-100); border:1px solid var(--violet-200);
-      padding:5px 14px; border-radius:var(--r-full); }
-    .land-bg { position:fixed; inset:0; pointer-events:none; z-index:0;
-      background:
-        radial-gradient(ellipse 60% 50% at 20% 10%, rgba(167,139,250,0.12), transparent 60%),
-        radial-gradient(ellipse 40% 40% at 80% 80%, rgba(139,92,246,0.07), transparent 55%); }
-    </style>
-    <div class="land-bg"></div>
-    <nav class="ln">
-      <div class="ln-logo"><div class="ln-dot"></div>NeuralDoc</div>
-      <div class="ln-badge">Production RAG v1.0</div>
-    </nav>""")
+    # Full background wrapper
+    st.html("""<div style="
+      min-height:100vh;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, #EDE9FE 0%, #F8F7FF 55%, #F8F7FF 100%);
+      position:relative;
+    ">
 
-    # Hero — button rendered by Streamlit INSIDE the hero container
-    st.html("""<style>
-    .hero-wrap { position:relative; z-index:10; max-width:720px;
-      margin:0 auto; padding:72px 40px 0; text-align:center; animation:fU 0.6s ease 0.1s both; }
-    @keyframes fU{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
-    .h-pill { display:inline-flex; align-items:center; gap:6px;
-      font-size:12px; font-weight:500; color:var(--violet-600);
-      background:var(--violet-50); border:1px solid var(--violet-200);
-      padding:5px 14px; border-radius:var(--r-full); margin-bottom:24px; }
-    .h-dot { width:5px; height:5px; border-radius:50%; background:var(--violet-500);
-      animation:dp 2s ease-in-out infinite; }
-    @keyframes dp{0%,100%{opacity:1;}50%{opacity:0.3;}}
-    .h-title { font-family:'Instrument Serif',serif; font-size:clamp(40px,6vw,64px);
-      font-weight:400; color:var(--text-1); line-height:1.08;
-      letter-spacing:-1px; margin-bottom:18px; }
-    .h-title em { font-style:italic; color:var(--violet-500); }
-    .h-sub { font-size:16px; color:var(--text-2); line-height:1.75;
-      max-width:480px; margin:0 auto 0; font-weight:400; }
-    .h-sub strong { color:var(--text-1); font-weight:600; }
-    </style>
-    <div class="hero-wrap">
-      <div class="h-pill"><span class="h-dot"></span>Zero hallucination tolerance</div>
-      <h1 class="h-title">Ask anything.<br><em>Know everything.</em></h1>
-      <p class="h-sub">A <strong>production-grade</strong> RAG system that answers
-        questions from your documents with <strong>inline citations</strong>,
-        hybrid retrieval, and a hard refusal trigger — no guessing, ever.</p>
+    <!-- NAVBAR -->
+    <nav style="
+      display:flex; align-items:center; justify-content:space-between;
+      max-width:1200px; margin:0 auto;
+      padding:28px 48px 0;
+    ">
+      <div style="display:flex;align-items:center;gap:9px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--purple-pale);flex-shrink:0;"></div>
+        <span style="font-family:'Inter',sans-serif;font-size:19px;font-weight:500;color:var(--text-1);letter-spacing:-0.3px;">NeuralDoc</span>
+      </div>
+      <div style="
+        font-family:'Inter',sans-serif; font-size:13px; font-weight:500;
+        color:var(--purple-pale); text-transform:uppercase; letter-spacing:0.5px;
+        border:1px solid var(--border2); background:var(--purple-bg);
+        padding:7px 18px; border-radius:var(--r-full);
+      ">Production RAG v1.0</div>
+    </nav>
+
+    <!-- HERO -->
+    <section style="
+      max-width:780px; margin:0 auto;
+      padding:72px 48px 0; text-align:center;
+    ">
+      <!-- Badge -->
+      <div style="
+        display:inline-flex; align-items:center; gap:7px;
+        font-family:'Inter',sans-serif; font-size:14px; font-weight:400;
+        color:var(--text-1);
+        border:1px solid var(--border2); background:var(--surface);
+        padding:7px 18px; border-radius:var(--r-full);
+        margin-bottom:36px;
+      ">
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--purple-pale);flex-shrink:0;"></div>
+        Zero hallucination tolerance
+      </div>
+
+      <!-- Headline -->
+      <h1 style="
+        font-family:'Playfair Display',serif;
+        font-size:clamp(48px,6.5vw,72px);
+        font-weight:700; color:var(--text-1);
+        line-height:1.05; letter-spacing:-1.5px;
+        margin-bottom:6px;
+      ">Ask anything.</h1>
+      <h1 style="
+        font-family:'Playfair Display',serif;
+        font-size:clamp(48px,6.5vw,72px);
+        font-weight:400; font-style:italic;
+        color:var(--purple-pale);
+        line-height:1.05; letter-spacing:-1.5px;
+        margin-bottom:28px;
+      ">Know everything.</h1>
+
+      <!-- Description -->
+      <p style="
+        font-family:'Inter',sans-serif; font-size:18px;
+        color:var(--text-1); line-height:1.75;
+        max-width:560px; margin:0 auto 44px;
+      ">
+        A <strong>production-grade</strong> RAG system that answers questions from
+        your documents with <strong>inline citations</strong>, hybrid retrieval,
+        and a hard refusal trigger — no guessing, ever.
+      </p>
+    </section>
     </div>""")
 
-    # Button sits directly under hero — inside the page flow, no gap
-    st.html('<div style="position:relative;z-index:10;height:36px;"></div>')
-    _l, _m, _r = st.columns([3, 2, 3])
+    # Open App button — rendered by Streamlit in correct position
+    _l, _m, _r = st.columns([2, 2, 2])
     with _m:
         if st.button("Open App", key="go_chat", use_container_width=True):
             st.session_state.page = "chat"
             st.rerun()
 
-    # Stats
-    st.html("""<style>
-    .stats { display:flex; max-width:580px; margin:52px auto 0;
-      border:1px solid var(--border-soft); border-radius:var(--r-xl);
-      overflow:hidden; background:var(--surface); box-shadow:var(--sh-sm);
-      position:relative; z-index:10; }
-    .stat { flex:1; padding:22px 12px; text-align:center;
-      border-right:1px solid var(--border-soft); transition:background 0.2s; }
-    .stat:last-child { border-right:none; }
-    .stat:hover { background:var(--violet-50); }
-    .s-val { font-family:'Instrument Serif',serif; font-size:30px;
-      color:var(--violet-500); line-height:1; margin-bottom:4px; }
-    .s-lbl { font-size:10px; font-weight:600; color:var(--text-3);
-      letter-spacing:0.8px; text-transform:uppercase; }
-    </style>
-    <div class="stats">
-      <div class="stat"><div class="s-val">0%</div><div class="s-lbl">Hallucination</div></div>
-      <div class="stat"><div class="s-val">3x</div><div class="s-lbl">Retrieval methods</div></div>
-      <div class="stat"><div class="s-val">100%</div><div class="s-lbl">Local & private</div></div>
-      <div class="stat"><div class="s-val">inf</div><div class="s-lbl">Documents</div></div>
-    </div>""")
+    # Stats + rest of page
+    st.html("""<div style="
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, #EDE9FE 0%, #F8F7FF 55%, #F8F7FF 100%);
+      padding-bottom: 80px;
+    ">
 
-    # Features
-    st.html("""<style>
-    .sec { position:relative; z-index:10;
-      max-width:1100px; margin:80px auto 0; padding:0 40px; }
-    .sec-tag { font-size:10px; font-weight:600; color:var(--violet-500);
-      letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; }
-    .sec-title { font-family:'Instrument Serif',serif; font-size:34px;
-      color:var(--text-1); margin-bottom:36px; font-weight:400; }
-    .sec-title em { font-style:italic; color:var(--violet-500); }
-    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:14px; }
-    .card { background:var(--surface); border:1px solid var(--border-soft);
-      border-radius:var(--r-xl); padding:24px; box-shadow:var(--sh-sm);
-      transition:transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s; }
-    .card:hover { transform:translateY(-4px); box-shadow:var(--sh-lg); border-color:var(--violet-200); }
-    .c-num { font-size:10px; font-weight:600; color:var(--text-3);
-      letter-spacing:1.5px; text-transform:uppercase; margin-bottom:10px; }
-    .c-title { font-size:15px; font-weight:600; color:var(--text-1); margin-bottom:7px; }
-    .c-body { font-size:13px; color:var(--text-2); line-height:1.75; }
-    .c-tag { display:inline-block; margin-top:12px; font-size:10px; font-weight:500;
-      padding:3px 10px; border-radius:var(--r-full); border:1px solid; }
-    </style>
-    <div class="sec">
-      <div class="sec-tag">Capabilities</div>
-      <div class="sec-title">Six <em>pillars</em> of precision</div>
-      <div class="grid">
-        <div class="card">
-          <div class="c-num">01 — Ingestion</div>
-          <div class="c-title">Smart PDF Parsing</div>
-          <div class="c-body">Multi-column layouts, embedded tables, complex structures. Headers and footers stripped automatically.</div>
-          <span class="c-tag" style="color:var(--mint-text);background:var(--mint-bg);border-color:#A7F3D0;">pdfplumber</span>
-        </div>
-        <div class="card">
-          <div class="c-num">02 — Chunking</div>
-          <div class="c-title">Semantic Chunking</div>
-          <div class="c-body">Header-aware chunks of 500–800 tokens. Every chunk carries source, page, and section breadcrumb.</div>
-          <span class="c-tag" style="color:var(--violet-600);background:var(--violet-50);border-color:var(--violet-200);">tiktoken</span>
-        </div>
-        <div class="card">
-          <div class="c-num">03 — Retrieval</div>
-          <div class="c-title">Hybrid Search</div>
-          <div class="c-body">BM25 keyword fused with dense vector search via Reciprocal Rank Fusion. Catches what either alone misses.</div>
-          <span class="c-tag" style="color:var(--sky-text);background:var(--sky-bg);border-color:#BAE6FD;">RRF Fusion</span>
-        </div>
-        <div class="card">
-          <div class="c-num">04 — Reranking</div>
-          <div class="c-title">Cross-Encoder Precision</div>
-          <div class="c-body">Top 20 candidates re-scored. Only the highest-confidence 5 reach the generation layer.</div>
-          <span class="c-tag" style="color:var(--amber-text);background:var(--amber-bg);border-color:#FDE68A;">ms-marco</span>
-        </div>
-        <div class="card">
-          <div class="c-num">05 — Generation</div>
-          <div class="c-title">Attributed Answers</div>
-          <div class="c-body">Every claim carries an inline citation [Source, p.X]. Full References section on every response.</div>
-          <span class="c-tag" style="color:#9333EA;background:#FAF5FF;border-color:#E9D5FF;">LangGraph</span>
-        </div>
-        <div class="card">
-          <div class="c-num">06 — Safety</div>
-          <div class="c-title">Hard Refusal Gate</div>
-          <div class="c-body">Context below confidence threshold triggers a fixed refusal. No speculation, no hallucination, by design.</div>
-          <span class="c-tag" style="color:var(--rose-text);background:var(--rose-bg);border-color:#FECDD3;">Threshold Gate</span>
-        </div>
+    <!-- STATS CARD -->
+    <div style="
+      display:flex; max-width:820px; margin:48px auto 0;
+      background:var(--surface); border-radius:var(--r-2xl);
+      border:1px solid var(--border); box-shadow:var(--sh);
+      overflow:hidden;
+    ">
+      <div style="flex:1;padding:28px 16px;text-align:center;border-right:1px solid var(--border2);">
+        <div style="font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--purple-pale);line-height:1;margin-bottom:8px;">0%</div>
+        <div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--text-3);letter-spacing:0.08em;text-transform:uppercase;">Hallucination Rate</div>
       </div>
-    </div>""")
-
-    # Pipeline
-    st.html("""<style>
-    .pipe { position:relative; z-index:10;
-      max-width:1100px; margin:80px auto 0; padding:0 40px; }
-    .pipe-row { display:flex; align-items:center; flex-wrap:wrap;
-      background:var(--surface); border:1px solid var(--border-soft);
-      border-radius:var(--r-xl); padding:28px 36px; box-shadow:var(--sh-sm); gap:2px; }
-    .p-step { display:flex; flex-direction:column; align-items:center; gap:5px;
-      padding:10px 14px; border-radius:var(--r-lg); min-width:72px;
-      transition:all 0.2s; cursor:default; }
-    .p-step:hover { background:var(--violet-50); transform:translateY(-2px); }
-    .p-label { font-size:12px; font-weight:600; color:var(--text-2); }
-    .p-sub   { font-size:10px; color:var(--text-3); }
-    .p-arr   { color:var(--violet-200); font-size:14px; padding:0 2px; flex-shrink:0;
-      animation:ap 2.5s ease-in-out infinite; }
-    .p-arr:nth-child(even) { animation-delay:0.5s; }
-    @keyframes ap{0%,100%{color:var(--violet-200);}50%{color:var(--violet-500);}}
-    </style>
-    <div class="pipe">
-      <div class="sec-tag">Architecture</div>
-      <div class="sec-title">The <em>pipeline</em></div>
-      <div class="pipe-row">
-        <div class="p-step"><div class="p-label">Parse</div><div class="p-sub">pdfplumber</div></div>
-        <div class="p-arr">&#8594;</div>
-        <div class="p-step"><div class="p-label">Chunk</div><div class="p-sub">tiktoken</div></div>
-        <div class="p-arr">&#8594;</div>
-        <div class="p-step"><div class="p-label">Embed</div><div class="p-sub">miniLM</div></div>
-        <div class="p-arr">&#8594;</div>
-        <div class="p-step"><div class="p-label">BM25</div><div class="p-sub">keyword</div></div>
-        <div class="p-arr">&#8594;</div>
-        <div class="p-step"><div class="p-label">Fuse</div><div class="p-sub">RRF</div></div>
-        <div class="p-arr">&#8594;</div>
-        <div class="p-step"><div class="p-label">Rerank</div><div class="p-sub">cross-enc</div></div>
-        <div class="p-arr">&#8594;</div>
-        <div class="p-step"><div class="p-label">Generate</div><div class="p-sub">llama3.1</div></div>
-        <div class="p-arr">&#8594;</div>
-        <div class="p-step"><div class="p-label">Cite</div><div class="p-sub">attributed</div></div>
+      <div style="flex:1;padding:28px 16px;text-align:center;border-right:1px solid var(--border2);">
+        <div style="font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--purple-pale);line-height:1;margin-bottom:8px;">3x</div>
+        <div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--text-3);letter-spacing:0.08em;text-transform:uppercase;">Retrieval Methods</div>
       </div>
-    </div>""")
-
-    # Stack + footer
-    st.html("""<style>
-    .stk { position:relative; z-index:10;
-      max-width:1100px; margin:80px auto 0; padding:0 40px; }
-    .tags { display:flex; flex-wrap:wrap; gap:9px; }
-    .tag { padding:6px 14px; font-size:11px; font-weight:500;
-      border-radius:var(--r-full); border:1px solid; transition:transform 0.2s; cursor:default; }
-    .tag:hover { transform:translateY(-2px); }
-    .t-v { color:var(--violet-600); border-color:var(--violet-200); background:var(--violet-50); }
-    .t-g { color:var(--mint-text); border-color:#A7F3D0; background:var(--mint-bg); }
-    .t-r { color:var(--rose-text); border-color:#FECDD3; background:var(--rose-bg); }
-    .t-a { color:var(--amber-text); border-color:#FDE68A; background:var(--amber-bg); }
-    .footer { position:relative; z-index:10; max-width:1100px;
-      margin:72px auto 0; padding:22px 40px 60px;
-      border-top:1px solid var(--border-soft);
-      display:flex; justify-content:space-between;
-      align-items:center; flex-wrap:wrap; gap:10px; }
-    .footer span { font-size:12px; color:var(--text-3); }
-    </style>
-    <div class="stk">
-      <div class="sec-tag">Stack</div>
-      <div class="sec-title">Built <em>with</em></div>
-      <div class="tags">
-        <span class="tag t-g">pdfplumber</span>
-        <span class="tag t-g">ChromaDB</span>
-        <span class="tag t-g">sentence-transformers</span>
-        <span class="tag t-v">LangGraph</span>
-        <span class="tag t-v">langchain-ollama</span>
-        <span class="tag t-v">llama3.1:8b</span>
-        <span class="tag t-r">BM25 + RRF</span>
-        <span class="tag t-r">cross-encoder reranker</span>
-        <span class="tag t-a">FastAPI</span>
-        <span class="tag t-a">Streamlit</span>
-        <span class="tag t-a">Python 3.14</span>
+      <div style="flex:1;padding:28px 16px;text-align:center;border-right:1px solid var(--border2);">
+        <div style="font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--purple-pale);line-height:1;margin-bottom:8px;">100%</div>
+        <div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--text-3);letter-spacing:0.08em;text-transform:uppercase;">Local &amp; Private</div>
+      </div>
+      <div style="flex:1;padding:28px 16px;text-align:center;">
+        <div style="font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--purple-pale);line-height:1;margin-bottom:8px;">inf</div>
+        <div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--text-3);letter-spacing:0.08em;text-transform:uppercase;">Documents</div>
       </div>
     </div>
-    <div class="footer">
-      <span>NeuralDoc — Production RAG System</span>
-      <span>Ollama · ChromaDB · LangGraph · FastAPI</span>
+
+    <!-- CAPABILITIES -->
+    <div style="max-width:1200px;margin:80px auto 0;padding:0 48px;">
+      <div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;
+        color:var(--purple);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:16px;">
+        Capabilities
+      </div>
+      <div style="font-family:'Playfair Display',serif;font-size:38px;font-weight:700;
+        color:var(--text-1);margin-bottom:40px;letter-spacing:-0.5px;">
+        Six pillars of <em style="font-style:italic;color:var(--purple-pale);">precision</em>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+
+        <div style="background:var(--surface);border:1px solid var(--border);
+          border-radius:var(--r-xl);padding:24px;box-shadow:var(--sh);
+          transition:transform 0.2s,box-shadow 0.2s;"
+          onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 32px rgba(139,92,246,0.14)'"
+          onmouseout="this.style.transform='';this.style.boxShadow='var(--sh)'">
+          <div style="font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;">01 — Ingestion</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:7px;">Smart PDF Parsing</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7;">Multi-column layouts, embedded tables, complex structures. Headers and footers stripped automatically.</div>
+          <span style="display:inline-block;margin-top:12px;font-size:10px;font-weight:600;padding:3px 10px;border-radius:var(--r-full);color:var(--mint-text);background:var(--mint-bg);border:1px solid #A7F3D0;">pdfplumber</span>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);
+          border-radius:var(--r-xl);padding:24px;box-shadow:var(--sh);"
+          onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 32px rgba(139,92,246,0.14)'"
+          onmouseout="this.style.transform='';this.style.boxShadow='var(--sh)'">
+          <div style="font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;">02 — Chunking</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:7px;">Semantic Chunking</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7;">Header-aware chunks of 500–800 tokens. Every chunk carries source, page, and section breadcrumb.</div>
+          <span style="display:inline-block;margin-top:12px;font-size:10px;font-weight:600;padding:3px 10px;border-radius:var(--r-full);color:var(--purple);background:var(--purple-bg);border:1px solid var(--border2);">tiktoken</span>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);
+          border-radius:var(--r-xl);padding:24px;box-shadow:var(--sh);"
+          onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 32px rgba(139,92,246,0.14)'"
+          onmouseout="this.style.transform='';this.style.boxShadow='var(--sh)'">
+          <div style="font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;">03 — Retrieval</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:7px;">Hybrid Search</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7;">BM25 keyword fused with dense vector search via Reciprocal Rank Fusion. Catches what either alone misses.</div>
+          <span style="display:inline-block;margin-top:12px;font-size:10px;font-weight:600;padding:3px 10px;border-radius:var(--r-full);color:#0284C7;background:#F0F9FF;border:1px solid #BAE6FD;">RRF Fusion</span>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);
+          border-radius:var(--r-xl);padding:24px;box-shadow:var(--sh);"
+          onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 32px rgba(139,92,246,0.14)'"
+          onmouseout="this.style.transform='';this.style.boxShadow='var(--sh)'">
+          <div style="font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;">04 — Reranking</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:7px;">Cross-Encoder Precision</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7;">Top 20 candidates re-scored. Only the highest-confidence 5 reach the generation layer.</div>
+          <span style="display:inline-block;margin-top:12px;font-size:10px;font-weight:600;padding:3px 10px;border-radius:var(--r-full);color:#D97706;background:#FFFBEB;border:1px solid #FDE68A;">ms-marco</span>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);
+          border-radius:var(--r-xl);padding:24px;box-shadow:var(--sh);"
+          onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 32px rgba(139,92,246,0.14)'"
+          onmouseout="this.style.transform='';this.style.boxShadow='var(--sh)'">
+          <div style="font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;">05 — Generation</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:7px;">Attributed Answers</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7;">Every claim carries an inline citation [Source, p.X]. Full References section on every response.</div>
+          <span style="display:inline-block;margin-top:12px;font-size:10px;font-weight:600;padding:3px 10px;border-radius:var(--r-full);color:#9333EA;background:#FAF5FF;border:1px solid #E9D5FF;">LangGraph</span>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);
+          border-radius:var(--r-xl);padding:24px;box-shadow:var(--sh);"
+          onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 32px rgba(139,92,246,0.14)'"
+          onmouseout="this.style.transform='';this.style.boxShadow='var(--sh)'">
+          <div style="font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;">06 — Safety</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:7px;">Hard Refusal Gate</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.7;">Context below confidence threshold triggers a fixed refusal. No speculation, no hallucination.</div>
+          <span style="display:inline-block;margin-top:12px;font-size:10px;font-weight:600;padding:3px 10px;border-radius:var(--r-full);color:#E11D48;background:#FFF1F2;border:1px solid #FECDD3;">Threshold Gate</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PIPELINE -->
+    <div style="max-width:1200px;margin:80px auto 0;padding:0 48px;">
+      <div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;
+        color:var(--purple);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:16px;">
+        Architecture
+      </div>
+      <div style="font-family:'Playfair Display',serif;font-size:38px;font-weight:700;
+        color:var(--text-1);margin-bottom:32px;letter-spacing:-0.5px;">
+        The <em style="font-style:italic;color:var(--purple-pale);">pipeline</em>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);
+        border-radius:var(--r-2xl);padding:32px 40px;box-shadow:var(--sh);
+        display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 14px;border-radius:12px;min-width:72px;transition:background 0.2s;"
+          onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+          <div style="font-size:12px;font-weight:600;color:var(--text-2);">Parse</div>
+          <div style="font-size:10px;color:var(--text-3);">pdfplumber</div>
+        </div>
+        <div style="color:var(--border2);font-size:14px;padding:0 2px;">&#8594;</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 14px;border-radius:12px;min-width:72px;transition:background 0.2s;"
+          onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+          <div style="font-size:12px;font-weight:600;color:var(--text-2);">Chunk</div>
+          <div style="font-size:10px;color:var(--text-3);">tiktoken</div>
+        </div>
+        <div style="color:var(--border2);font-size:14px;padding:0 2px;">&#8594;</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 14px;border-radius:12px;min-width:72px;transition:background 0.2s;"
+          onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+          <div style="font-size:12px;font-weight:600;color:var(--text-2);">Embed</div>
+          <div style="font-size:10px;color:var(--text-3);">miniLM</div>
+        </div>
+        <div style="color:var(--border2);font-size:14px;padding:0 2px;">&#8594;</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 14px;border-radius:12px;min-width:72px;transition:background 0.2s;"
+          onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+          <div style="font-size:12px;font-weight:600;color:var(--text-2);">BM25</div>
+          <div style="font-size:10px;color:var(--text-3);">keyword</div>
+        </div>
+        <div style="color:var(--border2);font-size:14px;padding:0 2px;">&#8594;</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 14px;border-radius:12px;min-width:72px;transition:background 0.2s;"
+          onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+          <div style="font-size:12px;font-weight:600;color:var(--text-2);">Fuse</div>
+          <div style="font-size:10px;color:var(--text-3);">RRF</div>
+        </div>
+        <div style="color:var(--border2);font-size:14px;padding:0 2px;">&#8594;</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 14px;border-radius:12px;min-width:72px;transition:background 0.2s;"
+          onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+          <div style="font-size:12px;font-weight:600;color:var(--text-2);">Rerank</div>
+          <div style="font-size:10px;color:var(--text-3);">cross-enc</div>
+        </div>
+        <div style="color:var(--border2);font-size:14px;padding:0 2px;">&#8594;</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 14px;border-radius:12px;min-width:72px;transition:background 0.2s;"
+          onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+          <div style="font-size:12px;font-weight:600;color:var(--text-2);">Generate</div>
+          <div style="font-size:10px;color:var(--text-3);">llama3.1</div>
+        </div>
+        <div style="color:var(--border2);font-size:14px;padding:0 2px;">&#8594;</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 14px;border-radius:12px;min-width:72px;transition:background 0.2s;"
+          onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+          <div style="font-size:12px;font-weight:600;color:var(--text-2);">Cite</div>
+          <div style="font-size:10px;color:var(--text-3);">attributed</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div style="max-width:1200px;margin:72px auto 0;padding:22px 48px 56px;
+      border-top:1px solid var(--border);
+      display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12px;color:var(--text-3);">NeuralDoc — Production RAG System</span>
+      <span style="font-size:12px;color:var(--text-3);">Ollama · ChromaDB · LangGraph · FastAPI</span>
+    </div>
+
     </div>""")
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# CHAT PAGE
+# CHAT PAGE — Dashboard matching specs
 # ═════════════════════════════════════════════════════════════════════════════
 else:
     st.html("""<style>
@@ -330,46 +371,65 @@ else:
     [data-testid="stMain"],[data-testid="stMainBlockContainer"],.block-container {
       padding: 0!important; background: transparent!important; max-width:100%!important; }
 
+    /* Inputs */
     .stTextInput input {
-      background: var(--surface)!important; border: 1.5px solid var(--border-soft)!important;
-      border-radius: var(--r-md)!important; color: var(--text-1)!important;
-      font-family: 'Plus Jakarta Sans', sans-serif!important; font-size: 14px!important;
-      padding: 11px 16px!important; box-shadow: var(--sh-sm)!important;
-      transition: border-color 0.15s, box-shadow 0.15s!important;
+      background: var(--surface)!important;
+      border: 1px solid #E5E7EB!important;
+      border-radius: var(--r-md)!important;
+      color: var(--text-1)!important;
+      font-family: 'Inter', sans-serif!important;
+      font-size: 15px!important;
+      padding: 14px 18px!important;
+      transition: border-color 0.18s, box-shadow 0.18s!important;
     }
     .stTextInput input:focus {
-      border-color: var(--violet-400)!important;
-      box-shadow: 0 0 0 3px var(--violet-100)!important; outline: none!important;
+      border-color: var(--purple)!important;
+      box-shadow: 0 0 0 2px var(--border2)!important;
+      outline: none!important;
     }
     .stTextInput input::placeholder { color: var(--text-3)!important; }
-    .stTextInput label, .stFileUploader label { display: none!important; }
+    .stTextInput label, .stFileUploader label { display:none!important; }
 
+    /* Buttons */
     .stButton>button {
-      background: var(--violet-500)!important; color: white!important;
-      border: none!important; border-radius: var(--r-md)!important;
-      font-family: 'Plus Jakarta Sans', sans-serif!important;
-      font-weight: 600!important; font-size: 13px!important; padding: 10px 0!important;
-      box-shadow: 0 2px 8px rgba(139,92,246,0.2)!important; transition: all 0.15s!important;
+      background: var(--purple)!important;
+      color: white!important;
+      border: none!important;
+      border-radius: var(--r-md)!important;
+      font-family: 'Inter', sans-serif!important;
+      font-weight: 600!important;
+      font-size: 14px!important;
+      padding: 12px 0!important;
+      box-shadow: none!important;
+      transition: background 0.15s, transform 0.12s, box-shadow 0.15s!important;
     }
     .stButton>button:hover {
-      background: var(--violet-600)!important; transform: translateY(-1px)!important;
-      box-shadow: var(--sh-v)!important;
+      background: var(--purple-dark)!important;
+      transform: translateY(-1px)!important;
+      box-shadow: 0 4px 16px rgba(139,92,246,0.18)!important;
     }
     .stButton>button:active { transform: scale(0.97)!important; }
 
+    /* File uploader */
     [data-testid="stFileUploaderDropzone"] {
-      background: var(--surface)!important; border: 1.5px dashed var(--violet-200)!important;
-      border-radius: var(--r-lg)!important; transition: all 0.2s!important;
+      background: var(--surface)!important;
+      border: 2px dashed var(--border2)!important;
+      border-radius: var(--r-lg)!important;
+      transition: all 0.18s!important;
     }
     [data-testid="stFileUploaderDropzone"]:hover {
-      border-color: var(--violet-400)!important; background: var(--violet-50)!important;
+      border-color: var(--purple)!important;
+      background: var(--purple-bg)!important;
     }
     [data-testid="stFileUploaderDropzone"] * { color: var(--text-2)!important; }
+
     .stSelectbox [data-baseweb="select"]>div {
-      background: var(--surface)!important; border: 1.5px solid var(--border-soft)!important;
-      border-radius: var(--r-md)!important; color: var(--text-1)!important;
+      background: var(--surface)!important;
+      border: 1px solid #E5E7EB!important;
+      border-radius: var(--r-md)!important;
+      color: var(--text-1)!important;
     }
-    hr { border-color: var(--border-soft)!important; }
+    hr { border-color: #E5E7EB!important; }
     </style>""")
 
     def get_health():
@@ -381,38 +441,38 @@ else:
             return {"pipeline_ready":False,"total_chunks":0,"indexed_files":[],"_reachable":False}
 
     h = get_health()
-    api_ok   = h.get("_reachable", False)
-    ready    = h.get("pipeline_ready", False)
-    chunks   = h.get("total_chunks", 0)
-    files    = h.get("indexed_files", [])
+    api_ok  = h.get("_reachable", False)
+    ready   = h.get("pipeline_ready", False)
+    chunks  = h.get("total_chunks", 0)
+    files   = h.get("indexed_files", [])
 
-    # Status pill values
     if ready:
-        s_cls  = "s-ready";  s_dot = "var(--mint-text)"
-        s_text = f"Ready · {chunks} chunks indexed"
+        s_cls  = "s-ready"; s_dot = "#059669"
+        s_text = f"Ready &middot; {chunks} chunks"
     elif api_ok:
-        s_cls  = "s-warn";   s_dot = "var(--amber-text)"
-        s_text = "API online · No documents indexed"
+        s_cls  = "s-warn"; s_dot = "#B45309"
+        s_text = "API online &middot; No documents indexed"
     else:
-        s_cls  = "s-off";    s_dot = "var(--rose-text)"
+        s_cls  = "s-off"; s_dot = "#B91C1C"
         s_text = "API offline"
 
-    # Top bar
+    # Topbar
     st.html(f"""<style>
     .topbar {{ display:flex; align-items:center; justify-content:space-between;
-      padding:14px 32px; background:rgba(255,255,255,0.88);
-      backdrop-filter:blur(12px); border-bottom:1px solid var(--border-soft);
+      padding:0 40px; height:64px;
+      background:var(--surface); border-bottom:1px solid var(--border);
       position:sticky; top:0; z-index:100; }}
-    .tb-logo {{ font-family:'Instrument Serif',serif; font-size:18px; color:var(--text-1);
-      display:flex; align-items:center; gap:7px; }}
-    .tb-dot {{ width:7px; height:7px; border-radius:50%; background:var(--violet-500); }}
+    .tb-logo {{ display:flex; align-items:center; gap:9px;
+      font-family:'Inter',sans-serif; font-size:17px; font-weight:500;
+      color:var(--text-1); }}
+    .tb-dot {{ width:10px; height:10px; border-radius:50%; background:var(--purple-pale); flex-shrink:0; }}
     .s-pill {{ display:inline-flex; align-items:center; gap:6px;
-      font-size:12px; font-weight:500; padding:5px 13px;
-      border-radius:var(--r-full); border:1px solid; }}
-    .s-ready {{ color:var(--mint-text); background:var(--mint-bg); border-color:#A7F3D0; }}
-    .s-warn  {{ color:var(--amber-text);background:var(--amber-bg);border-color:#FDE68A; }}
-    .s-off   {{ color:var(--rose-text); background:var(--rose-bg); border-color:#FECDD3; }}
-    .s-dot-el{{ width:5px; height:5px; border-radius:50%; }}
+      font-family:'Inter',sans-serif; font-size:13px; font-weight:500;
+      padding:5px 14px; border-radius:var(--r-full); border:1px solid; }}
+    .s-ready {{ color:#059669; background:#ECFDF5; border-color:#A7F3D0; }}
+    .s-warn  {{ color:#B45309; background:#FDE68A; border-color:#FCD34D; }}
+    .s-off   {{ color:#B91C1C; background:#FCA5A5; border-color:#F87171; }}
+    .s-dot-el{{ width:5px; height:5px; border-radius:50%; flex-shrink:0; }}
     </style>
     <div class="topbar">
       <div class="tb-logo"><div class="tb-dot"></div>NeuralDoc</div>
@@ -423,8 +483,8 @@ else:
     </div>""")
 
     # Nav buttons
-    st.html('<div style="padding:16px 32px 0;">')
-    nb1, nb2, _ = st.columns([1, 1, 8])
+    st.html('<div style="padding:20px 40px 0;">')
+    nb1, nb2, _ = st.columns([1, 1, 9])
     with nb1:
         if st.button("Home", key="back_home", use_container_width=True):
             st.session_state.page = "landing"
@@ -433,34 +493,33 @@ else:
         if st.button("Clear Chat", key="clr_chat", use_container_width=True):
             st.session_state.messages = []
             st.rerun()
-    st.html('</div>')
+    st.html('</div><div style="height:16px;"></div>')
 
-    st.html('<div style="height:20px;"></div>')
-
-    # Main two-column layout
+    # Two-panel layout
     col_chat, col_upload = st.columns([3, 2], gap="large")
 
-    # ── RIGHT: Upload ─────────────────────────────────────────────────────────
+    # ── RIGHT: Knowledge Base panel ───────────────────────────────────────────
     with col_upload:
-        st.html('<div style="padding:0 24px 0 0;">')
+        st.html('<div style="padding:0 32px 0 0;">')
 
+        # Header + Clear button
         uh1, uh2 = st.columns([3, 1])
         with uh1:
             st.html("""
-            <div style="margin-bottom:14px;">
-              <div style="font-size:10px;font-weight:600;color:var(--violet-500);
-                letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">
+            <div style="margin-bottom:16px;">
+              <div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;
+                color:var(--text-4);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">
                 Knowledge Base
               </div>
-              <div style="font-family:'Instrument Serif',serif;font-size:24px;
-                color:var(--text-1);line-height:1.1;">
-                Upload <em style="font-style:italic;color:var(--violet-500);">documents</em>
+              <div style="font-family:'Playfair Display',serif;font-size:26px;
+                font-weight:400;color:var(--purple);line-height:1.15;">
+                Upload <em>documents</em>
               </div>
             </div>""")
         with uh2:
-            st.html('<div style="height:30px;"></div>')
+            st.html('<div style="height:32px;"></div>')
             if st.button("Clear", key="clear_idx", use_container_width=True,
-                         help="Wipe all indexed documents before uploading a new PDF."):
+                         help="Wipe all indexed documents"):
                 try:
                     resp = requests.delete(f"{API_BASE}/index", timeout=15)
                     if resp.status_code == 200:
@@ -473,13 +532,13 @@ else:
 
         # Drop hint
         st.html("""
-        <div style="background:var(--violet-50);border:1.5px dashed var(--violet-200);
-          border-radius:var(--r-lg);padding:18px 20px;margin-bottom:12px;text-align:center;">
-          <div style="font-size:13px;font-weight:500;color:var(--text-2);margin-bottom:3px;">
+        <div style="background:var(--surface);border:2px dashed var(--border2);
+          border-radius:var(--r-lg);padding:20px;margin-bottom:12px;text-align:center;">
+          <div style="font-size:13px;font-weight:500;color:var(--text-1);margin-bottom:4px;">
             Drop your PDF below
           </div>
-          <div style="font-size:11px;color:var(--text-3);">
-            Parsed — Chunked — Embedded — Indexed
+          <div style="font-size:12px;color:var(--text-3);">
+            Parsed &#8594; Chunked &#8594; Embedded &#8594; Indexed
           </div>
         </div>""")
 
@@ -487,16 +546,17 @@ else:
 
         if uploaded:
             st.html(f"""
-            <div style="background:var(--mint-bg);border:1px solid #A7F3D0;
+            <div style="background:var(--surface);border:1px solid #A7F3D0;
               border-radius:var(--r-md);padding:10px 14px;margin-bottom:10px;">
-              <div style="font-size:13px;font-weight:500;color:var(--text-1);">{uploaded.name}</div>
-              <div style="font-size:11px;color:var(--mint-text);margin-top:2px;">{uploaded.size//1024} KB</div>
+              <div style="font-size:13px;font-weight:600;color:var(--text-1);">{uploaded.name}</div>
+              <div style="font-size:11px;color:#059669;margin-top:2px;">{uploaded.size//1024} KB</div>
             </div>""")
             if st.button("Index Document", use_container_width=True, key="idx_btn"):
                 with st.spinner("Processing PDF..."):
                     try:
                         resp = requests.post(f"{API_BASE}/ingest",
-                            files={"file":(uploaded.name, uploaded, "application/pdf")}, timeout=120)
+                            files={"file":(uploaded.name, uploaded, "application/pdf")},
+                            timeout=120)
                         if resp.status_code == 200:
                             d = resp.json()
                             st.success(f"Indexed {d['chunks_indexed']} chunks from {d['filename']}")
@@ -509,29 +569,30 @@ else:
                         st.error(str(e))
 
         if files:
-            st.html("""<div style="font-size:10px;font-weight:600;color:var(--text-3);
-              letter-spacing:1px;text-transform:uppercase;margin:14px 0 8px;">
+            st.html("""<div style="font-size:10px;font-weight:700;color:var(--text-4);
+              letter-spacing:0.1em;text-transform:uppercase;margin:14px 0 8px;">
               Indexed files</div>""")
             for f in files:
                 fname = f.replace("\\", "/").split("/")[-1]
                 st.html(f"""
-                <div style="background:var(--surface);border:1px solid var(--border-soft);
+                <div style="background:var(--surface);border:1px solid var(--border);
                   border-radius:var(--r-md);padding:9px 13px;margin-bottom:5px;
-                  display:flex;align-items:center;box-shadow:var(--sh-sm);">
+                  display:flex;align-items:center;box-shadow:var(--sh);">
                   <span style="font-size:13px;font-weight:500;color:var(--text-1);flex:1;">{fname}</span>
-                  <span style="font-size:10px;font-weight:600;padding:2px 8px;
-                    border-radius:var(--r-full);color:var(--mint-text);
-                    background:var(--mint-bg);border:1px solid #A7F3D0;">indexed</span>
+                  <span style="font-size:10px;font-weight:600;padding:2px 9px;
+                    border-radius:var(--r-full);color:#059669;background:#ECFDF5;border:1px solid #A7F3D0;">indexed</span>
                 </div>""")
 
-        # Tips card
+        # Tips
         st.html("""
-        <div style="margin-top:18px;background:var(--surface);
-          border:1px solid var(--border-soft);border-radius:var(--r-lg);
-          padding:16px 18px;box-shadow:var(--sh-sm);">
-          <div style="font-size:10px;font-weight:600;color:var(--text-3);
-            letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">Tips</div>
-          <div style="font-size:13px;color:var(--text-2);line-height:1.9;">
+        <div style="margin-top:16px;background:var(--surface);border:1px solid var(--border);
+          border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--sh);">
+          <div style="font-family:'Inter',sans-serif;font-size:10px;font-weight:700;
+            color:var(--text-4);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">
+            Tips
+          </div>
+          <div style="font-family:'Inter',sans-serif;font-size:13px;
+            color:var(--text-2);line-height:1.9;">
             Click <b style="color:var(--text-1);font-weight:600;">Clear</b> before switching documents.<br>
             Ask precise questions for best citation accuracy.<br>
             Every answer includes inline source references.<br>
@@ -541,34 +602,35 @@ else:
 
         st.html('</div>')
 
-    # ── LEFT: Chat ────────────────────────────────────────────────────────────
+    # ── LEFT: Document QA panel ───────────────────────────────────────────────
     with col_chat:
-        st.html('<div style="padding:0 0 0 24px;">')
+        st.html('<div style="padding:0 0 0 32px;">')
 
+        # Header
         st.html(f"""
-        <div style="display:flex;align-items:flex-end;
+        <div style="display:flex;align-items:flex-start;
           justify-content:space-between;margin-bottom:18px;">
           <div>
-            <div style="font-size:10px;font-weight:600;color:var(--violet-500);
-              letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">
+            <div style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;
+              color:var(--text-4);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">
               Document QA
             </div>
-            <div style="font-family:'Instrument Serif',serif;font-size:24px;
-              color:var(--text-1);line-height:1.1;">
-              Ask your <em style="font-style:italic;color:var(--violet-500);">documents</em>
+            <div style="font-family:'Playfair Display',serif;font-size:28px;
+              font-weight:400;color:var(--purple);line-height:1.15;">
+              Ask your <em>documents</em>
             </div>
           </div>
-          <div style="display:flex;gap:7px;align-items:center;padding-bottom:3px;">
-            <div style="font-size:11px;font-weight:500;color:var(--text-3);
-              background:var(--surface2);padding:4px 10px;
-              border-radius:var(--r-full);border:1px solid var(--border-soft);">
+          <div style="display:flex;gap:8px;align-items:center;padding-top:20px;">
+            <span style="font-family:'Inter',sans-serif;font-size:12px;font-weight:500;
+              color:var(--purple);background:var(--purple-bg);
+              border:1px solid var(--border2);padding:4px 11px;border-radius:var(--r-full);">
               {chunks} chunks
-            </div>
-            <div style="font-size:11px;font-weight:500;padding:4px 10px;
-              border-radius:var(--r-full);border:1px solid;
-              {'color:var(--mint-text);background:var(--mint-bg);border-color:#A7F3D0;' if ready else 'color:var(--rose-text);background:var(--rose-bg);border-color:#FECDD3;'}">
+            </span>
+            <span style="font-family:'Inter',sans-serif;font-size:12px;font-weight:600;
+              padding:4px 11px;border-radius:var(--r-full);border:1px solid;
+              {'color:#059669;background:#ECFDF5;border-color:#A7F3D0;' if ready else 'color:#B91C1C;background:#FCA5A5;border-color:#F87171;'}">
               {'Ready' if ready else 'Not ready'}
-            </div>
+            </span>
           </div>
         </div>""")
 
@@ -579,11 +641,10 @@ else:
                 if m["role"] == "user":
                     html += f"""
                     <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
-                      <div style="max-width:75%;padding:11px 15px;
-                        background:var(--violet-500);color:white;
-                        border-radius:14px 3px 14px 14px;
-                        font-size:14px;line-height:1.65;
-                        font-family:'Plus Jakarta Sans',sans-serif;
+                      <div style="max-width:75%;padding:12px 16px;
+                        background:var(--purple);color:white;
+                        border-radius:16px 4px 16px 16px;
+                        font-family:'Inter',sans-serif;font-size:14px;line-height:1.65;
                         box-shadow:0 2px 8px rgba(139,92,246,0.18);">
                         {m['content']}
                       </div>
@@ -593,66 +654,65 @@ else:
                     if m.get("references"):
                         refs = '<div style="margin-top:9px;display:flex;flex-wrap:wrap;gap:5px;">'
                         for ref in m["references"]:
-                            refs += f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;padding:2px 9px;border-radius:var(--r-full);color:var(--sky-text);background:var(--sky-bg);border:1px solid #BAE6FD;">{ref}</span>'
+                            refs += f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;padding:2px 9px;border-radius:var(--r-full);color:#0284C7;background:#F0F9FF;border:1px solid #BAE6FD;">{ref}</span>'
                         refs += "</div>"
                     rfsd = ""
                     if m.get("refused"):
-                        rfsd = '<div style="margin-top:8px;font-size:12px;font-weight:500;color:var(--rose-text);background:var(--rose-bg);border:1px solid #FECDD3;padding:5px 12px;border-radius:var(--r-md);display:inline-block;">Insufficient evidence — refusal triggered</div>'
+                        rfsd = '<div style="margin-top:8px;font-family:\'Inter\',sans-serif;font-size:12px;font-weight:500;color:#B91C1C;background:#FCA5A5;border:1px solid #F87171;padding:5px 12px;border-radius:var(--r-md);display:inline-block;">Insufficient evidence — refusal triggered</div>'
                     lat = ""
                     if m.get("latency_ms"):
                         lat = f'<div style="margin-top:5px;font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--text-3);">{m["latency_ms"]} ms</div>'
                     html += f"""
                     <div style="display:flex;margin-bottom:14px;gap:9px;align-items:flex-start;">
                       <div style="width:26px;height:26px;border-radius:var(--r-sm);flex-shrink:0;
-                        margin-top:2px;background:var(--violet-100);
+                        margin-top:2px;background:var(--purple-bg);
                         display:flex;align-items:center;justify-content:center;
-                        font-size:11px;font-weight:600;color:var(--violet-600);
-                        border:1px solid var(--violet-200);">N</div>
-                      <div style="max-width:86%;padding:11px 15px;
-                        background:var(--surface);border:1px solid var(--border-soft);
-                        border-radius:3px 14px 14px 14px;
-                        font-size:14px;color:var(--text-1);line-height:1.75;
-                        font-family:'Plus Jakarta Sans',sans-serif;
-                        box-shadow:var(--sh-sm);">
+                        font-family:'Inter',sans-serif;font-size:11px;font-weight:700;
+                        color:var(--purple);border:1px solid var(--border2);">N</div>
+                      <div style="max-width:86%;padding:12px 15px;
+                        background:var(--surface);border:1px solid var(--border);
+                        border-radius:4px 14px 14px 14px;
+                        font-family:'Inter',sans-serif;font-size:14px;
+                        color:var(--text-1);line-height:1.75;
+                        box-shadow:var(--sh);">
                         {m['content']}{refs}{rfsd}{lat}
                       </div>
                     </div>"""
             st.html(f"""
-            <div style="max-height:50vh;overflow-y:auto;padding:2px 2px 10px;
-              scrollbar-width:thin;scrollbar-color:var(--violet-200) transparent;">
+            <div style="max-height:50vh;overflow-y:auto;padding:2px 2px 8px;
+              scrollbar-width:thin;scrollbar-color:var(--border2) transparent;">
               {html}
             </div>""")
         else:
             st.html("""
             <div style="text-align:center;padding:52px 24px;
-              background:var(--surface);border:1px solid var(--border-soft);
-              border-radius:var(--r-xl);margin-bottom:14px;box-shadow:var(--sh-sm);">
-              <div style="width:36px;height:36px;border-radius:var(--r-md);
-                background:var(--violet-100);border:1px solid var(--violet-200);
-                display:flex;align-items:center;justify-content:center;
-                margin:0 auto 14px;font-size:15px;font-weight:700;color:var(--violet-600);">N</div>
-              <div style="font-family:'Instrument Serif',serif;font-size:20px;
-                color:var(--text-1);margin-bottom:7px;">Ask anything</div>
-              <div style="font-size:13px;color:var(--text-3);max-width:280px;
-                margin:0 auto;line-height:1.7;">
+              background:var(--surface);border:1px solid var(--border);
+              border-radius:var(--r-xl);margin-bottom:14px;box-shadow:var(--sh);">
+              <div style="font-family:'Playfair Display',serif;font-size:22px;
+                color:var(--text-1);margin-bottom:8px;">Ask anything</div>
+              <div style="font-family:'Inter',sans-serif;font-size:13px;
+                color:var(--text-3);max-width:300px;margin:0 auto 20px;line-height:1.7;">
                 Upload a PDF on the right, then ask questions here. Every answer is cited.
               </div>
-              <div style="display:flex;flex-wrap:wrap;gap:7px;
-                justify-content:center;margin-top:18px;">
-                <span style="font-size:12px;color:var(--violet-600);background:var(--violet-50);
-                  border:1px solid var(--violet-200);padding:5px 12px;
-                  border-radius:var(--r-full);">What is the main finding?</span>
-                <span style="font-size:12px;color:var(--violet-600);background:var(--violet-50);
-                  border:1px solid var(--violet-200);padding:5px 12px;
-                  border-radius:var(--r-full);">Summarise section 3</span>
-                <span style="font-size:12px;color:var(--violet-600);background:var(--violet-50);
-                  border:1px solid var(--violet-200);padding:5px 12px;
-                  border-radius:var(--r-full);">What are the key risks?</span>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+                <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:500;
+                  color:var(--purple);background:var(--purple-bg);
+                  border:1px solid var(--border2);padding:7px 14px;border-radius:var(--r-full);cursor:default;">
+                  What is the main finding?</span>
+                <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:500;
+                  color:var(--purple);background:var(--purple-bg);
+                  border:1px solid var(--border2);padding:7px 14px;border-radius:var(--r-full);cursor:default;">
+                  Summarise section 3</span>
+                <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:500;
+                  color:var(--purple);background:var(--purple-bg);
+                  border:1px solid var(--border2);padding:7px 14px;border-radius:var(--r-full);cursor:default;">
+                  What are the key risks?</span>
               </div>
             </div>""")
 
-        st.html('<div style="height:8px;"></div>')
+        st.html('<div style="height:6px;"></div>')
 
+        # Input
         qc, bc = st.columns([6, 1])
         with qc:
             query = st.text_input(
