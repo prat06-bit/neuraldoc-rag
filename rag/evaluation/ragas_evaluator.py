@@ -38,16 +38,6 @@ class RAGASEvaluator:
         contexts: list[str],
         ground_truth: str = "",
     ) -> EvaluationResult:
-        """
-        Run all three metrics and return an EvaluationResult.
-
-        Parameters
-        ----------
-        query        : The original question.
-        answer       : The generated answer to evaluate.
-        contexts     : List of retrieved chunk texts used for generation.
-        ground_truth : Reference answer (used for citation check if provided).
-        """
         faithfulness = self._score_faithfulness(answer, contexts)
         context_precision = self._score_context_precision(query, contexts)
         answer_relevancy = self._score_answer_relevancy(query, answer)
