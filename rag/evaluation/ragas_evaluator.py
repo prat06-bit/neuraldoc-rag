@@ -61,10 +61,8 @@ class RAGASEvaluator:
             details=details,
         )
 
-    # ------------------------------------------------------------------
     # Metric 1: Faithfulness
-    # ------------------------------------------------------------------
-
+  
     def _score_faithfulness(self, answer: str, contexts: list[str]) -> float:
         """
         Decompose answer into claims, verify each against context.
