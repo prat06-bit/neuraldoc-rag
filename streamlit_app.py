@@ -272,58 +272,6 @@ else:
     h_check = get_health()
     api_reachable = h_check.get("_reachable", False)
 
-    # ── Sidebar ───────────────────────────────────────────────────────────────
-    with st.sidebar:
-        st.html("""<div style="padding:20px 0 8px;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:4px;
-            background:linear-gradient(135deg,#00DFA0,#6B00F0);-webkit-background-clip:text;
-            -webkit-text-fill-color:transparent;">NeuralDoc</div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;
-            color:rgba(255,255,255,.3);letter-spacing:2px;margin-bottom:16px;">RAG SYSTEM</div>
-        </div>""")
-        if st.button("← Home", key="back_home", use_container_width=True):
-            st.session_state.page = "landing"
-            st.rerun()
-        st.divider()
-        ready = h_check.get("pipeline_ready", False)
-        chunks = h_check.get("total_chunks", 0)
-        files = h_check.get("indexed_files", [])
-        sc = "#00DFA0" if ready else "#E0005A"
-        sl = f"READY · {chunks} chunks" if ready else ("NOT READY" if api_reachable else "API OFFLINE")
-        st.html(f"""<div style="display:inline-flex;align-items:center;gap:7px;margin:8px 0 12px;
-          font-family:'JetBrains Mono',monospace;font-size:11px;color:{sc};
-          border:1px solid {sc}33;background:{sc}0E;padding:5px 12px;border-radius:6px;letter-spacing:1px;">
-          <span style="width:6px;height:6px;border-radius:50%;background:{sc};display:inline-block;"></span>
-          {sl}</div>""")
-        if files:
-            st.caption("Indexed:")
-            for f in files:
-                st.caption(f"— {f.replace(chr(92),'/').split('/')[-1]}")
-        st.divider()
-        st.html('<p style="font-family:JetBrains Mono,monospace;font-size:10px;color:rgba(255,255,255,.3);letter-spacing:2px;margin-bottom:4px;">MODEL SETTINGS</p>')
-        cfg = get_cfg()
-        provider = st.selectbox("Provider", ["ollama","openai"],
-                                index=0 if cfg.get("provider","ollama")=="ollama" else 1)
-        if provider=="ollama":
-            model = st.selectbox("Ollama Model", ["llama3.1:8b","llama3.3:70b","mistral:7b","qwen2.5:7b"])
-            upd: dict = {"provider":"ollama","ollama_model":model}
-        else:
-            model = st.selectbox("OpenAI Model", ["gpt-4o","gpt-4o-mini"])
-            upd = {"provider":"openai","openai_model":model}
-        thr = st.slider("Evidence Threshold", -10.0, 1.0, -10.0, 0.05,
-                        help="Cross-encoder score below this triggers refusal. -10 = accept all.")
-        upd["similarity_threshold"] = thr
-        if st.button("Apply Settings", use_container_width=True):
-            try:
-                r = requests.post(f"{API_BASE}/config/update", json=upd, timeout=10)
-                if r.status_code==200:
-                    st.success(f"Active: {r.json()['current']['model']}")
-            except: st.error("Cannot reach API")
-        st.divider()
-        if st.button("Clear Conversation", use_container_width=True):
-            st.session_state.messages = []
-            st.rerun()
-
     # Show API offline banner ONLY when genuinely unreachable
     if not api_reachable:
         st.html("""<div style="background:rgba(224,0,90,.1);border:1px solid rgba(224,0,90,.3);
