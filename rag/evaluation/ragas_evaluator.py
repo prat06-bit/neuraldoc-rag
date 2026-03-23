@@ -31,10 +31,6 @@ class RAGASEvaluator:
         self.config = config
         self._llm = None
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
-
     def evaluate(
         self,
         query: str,
