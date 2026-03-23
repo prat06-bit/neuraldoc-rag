@@ -1,32 +1,3 @@
-"""
-RAGAS-style evaluation module.
-
-Computes three metrics without requiring the full RAGAS library,
-using Ollama as the judge LLM — no OpenAI key needed.
-
-Metrics
--------
-faithfulness        : Are all claims in the answer supported by the context?
-                      Score = supported_claims / total_claims  (0-1)
-
-context_precision   : Are the retrieved chunks actually relevant to the query?
-                      Score = relevant_chunks / total_chunks  (0-1)
-
-answer_relevancy    : Does the answer actually address the question?
-                      Judged by LLM on a 0-1 scale.
-
-Usage
------
-    evaluator = RAGASEvaluator(cfg.generation)
-    result = evaluator.evaluate(
-        query="What is the PFS result?",
-        answer="The PFS was 9.2 months [sample, p.1]",
-        contexts=["At the interim analysis, median PFS was 9.2 months..."],
-        ground_truth="The PFS for combination therapy was 9.2 months."
-    )
-    print(result)
-"""
-
 from __future__ import annotations
 
 import json
