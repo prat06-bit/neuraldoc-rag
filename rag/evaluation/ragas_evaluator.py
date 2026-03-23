@@ -27,14 +27,6 @@ class EvaluationResult:
 
 
 class RAGASEvaluator:
-    """
-    LLM-as-judge evaluator using Ollama.
-
-    Parameters
-    ----------
-    config : GenerationConfig — uses ollama_model and ollama_base_url.
-    """
-
     def __init__(self, config: Any) -> None:
         self.config = config
         self._llm = None
