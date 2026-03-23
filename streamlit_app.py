@@ -1,4 +1,4 @@
-"""NeuralDoc RAG — Single file app."""
+"""NeuralDoc RAG — Single file app, no sidebar."""
 import requests
 import streamlit as st
 
@@ -16,10 +16,12 @@ if "messages" not in st.session_state:
 
 API_BASE = "http://localhost:8000"
 
+# Global reset — hides ALL Streamlit chrome including sidebar toggle
 st.html("""<style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
 [data-testid="stHeader"],[data-testid="stToolbar"],[data-testid="stDecoration"],
-[data-testid="stStatusWidget"],[data-testid="collapsedControl"],#MainMenu,footer {
+[data-testid="stStatusWidget"],[data-testid="collapsedControl"],
+section[data-testid="stSidebar"],#MainMenu,footer {
   display:none!important; height:0!important; }
 html,body { margin:0!important; padding:0!important; background:#030010!important; }
 [data-testid="stAppViewContainer"],[data-testid="stMain"],
@@ -36,9 +38,8 @@ html,body { margin:0!important; padding:0!important; background:#030010!importan
 # ═════════════════════════════════════════════════════════════════════════════
 if st.session_state.page == "landing":
 
-    st.html("<style>section[data-testid='stSidebar']{display:none!important;} [data-testid='stAppViewContainer']{background:#030010!important;}</style>")
-
     st.html("""<style>
+    [data-testid="stAppViewContainer"]{background:#030010!important;}
     .bg{position:fixed;inset:0;z-index:0;pointer-events:none;
       background:radial-gradient(ellipse 70% 55% at 12% 12%,rgba(110,0,240,.35),transparent 55%),
                 radial-gradient(ellipse 55% 65% at 88% 88%,rgba(0,210,150,.22),transparent 55%),
@@ -56,11 +57,6 @@ if st.session_state.page == "landing":
     .o3{width:320px;height:320px;background:rgba(210,0,80,.16);top:38%;left:54%;animation-duration:20s;animation-delay:-6s;}
     @keyframes oD{0%{transform:translate(0,0) scale(1);}33%{transform:translate(42px,-56px) scale(1.08);}
       66%{transform:translate(-32px,42px) scale(.93);}100%{transform:translate(0,0) scale(1);}}
-    </style>
-    <div class="bg"></div><div class="gl"></div>
-    <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>""")
-
-    st.html("""<style>
     .nav{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;
       max-width:1200px;margin:0 auto;padding:36px 48px 0;animation:fD .7s ease both;}
     @keyframes fD{from{opacity:0;transform:translateY(-18px);}to{opacity:1;transform:translateY(0);}}
@@ -68,10 +64,6 @@ if st.session_state.page == "landing":
       background:linear-gradient(135deg,#00DFA0,#6B00F0,#E0005A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
     .npill{font-family:'JetBrains Mono',monospace;font-size:12px;color:#00DFA0;letter-spacing:2px;
       border:1px solid rgba(0,223,160,.35);padding:6px 16px;border-radius:20px;background:rgba(0,223,160,.06);}
-    </style>
-    <nav class="nav"><div class="logo">NeuralDoc</div><div class="npill">PRODUCTION RAG v1.0</div></nav>""")
-
-    st.html("""<style>
     .hero{position:relative;z-index:10;max-width:1000px;margin:0 auto;padding:68px 48px 0;
       text-align:center;animation:fU .9s ease .2s both;}
     @keyframes fU{from{opacity:0;transform:translateY(36px);}to{opacity:1;transform:translateY(0);}}
@@ -82,15 +74,16 @@ if st.session_state.page == "landing":
     @keyframes eG{0%,100%{box-shadow:none;}50%{box-shadow:0 0 22px rgba(224,0,90,.35);}}
     .edot{width:7px;height:7px;border-radius:50%;background:#E0005A;animation:dB 1.6s ease-in-out infinite;flex-shrink:0;}
     @keyframes dB{0%,100%{opacity:1;}50%{opacity:.1;}}
-    .htitle{font-family:'Bebas Neue',sans-serif;font-size:clamp(80px,11vw,132px);
-      line-height:.88;letter-spacing:4px;color:#fff;margin:0;}
-    .t1{background:linear-gradient(90deg,#6B00F0,#E0005A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      display:inline-block;animation:t1S 5s ease-in-out infinite alternate;}
+    .htitle{font-family:'Bebas Neue',sans-serif;font-size:clamp(80px,11vw,132px);line-height:.88;letter-spacing:4px;color:#fff;margin:0;}
+    .t1{background:linear-gradient(90deg,#6B00F0,#E0005A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block;animation:t1S 5s ease-in-out infinite alternate;}
     @keyframes t1S{from{filter:hue-rotate(0deg);}to{filter:hue-rotate(28deg);}}
     .t2{background:linear-gradient(90deg,#00DFA0,#6B00F0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block;}
     .hdesc{font-family:'Syne',sans-serif;font-size:19px;color:rgba(255,255,255,.55);max-width:600px;margin:28px auto 0;line-height:1.85;}
     .hdesc strong{color:#00DFA0;font-weight:700;}
     </style>
+    <div class="bg"></div><div class="gl"></div>
+    <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+    <nav class="nav"><div class="logo">NeuralDoc</div><div class="npill">PRODUCTION RAG v1.0</div></nav>
     <div class="hero">
       <div class="eyebrow"><span class="edot"></span>ZERO HALLUCINATION TOLERANCE</div>
       <h1 class="htitle"><span class="t1">NEURAL</span><br><span class="t2">DOC</span> RAG</h1>
@@ -99,12 +92,13 @@ if st.session_state.page == "landing":
         and a hard refusal trigger &mdash; no guessing, ever.</p>
     </div>""")
 
+    # Launch button
     st.html("""<style>
     [data-testid="stButton"]>button{display:block!important;width:100%!important;padding:18px 0!important;
       font-family:'Syne',sans-serif!important;font-size:18px!important;font-weight:700!important;
       border-radius:50px!important;letter-spacing:.5px!important;
       background:linear-gradient(135deg,#6B00F0,#E0005A)!important;
-      color:#fff!important;border:none!important;box-shadow:0 0 44px rgba(107,0,240,.55)!important;
+      color:#fff!important;border:none!important;
       animation:bGL 3s ease-in-out infinite!important;transition:transform .3s!important;}
     @keyframes bGL{0%,100%{box-shadow:0 0 44px rgba(107,0,240,.55);}50%{box-shadow:0 0 70px rgba(107,0,240,.82);}}
     [data-testid="stButton"]>button:hover{transform:translateY(-4px) scale(1.03)!important;}
@@ -117,6 +111,7 @@ if st.session_state.page == "landing":
             st.rerun()
     st.html('<div style="height:20px;"></div>')
 
+    # Stats
     st.html("""<style>
     .stats{position:relative;z-index:10;display:flex;max-width:900px;margin:52px auto 0;
       border:1px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;background:rgba(255,255,255,.025);}
@@ -133,6 +128,7 @@ if st.session_state.page == "landing":
       <div class="stat"><div class="sv">inf</div><div class="sl">Documents Supported</div></div>
     </div>""")
 
+    # Feature cards
     st.html("""<style>
     .section{position:relative;z-index:10;max-width:1200px;margin:88px auto 0;padding:0 48px;}
     .stag{font-family:'JetBrains Mono',monospace;font-size:12px;color:#6B00F0;letter-spacing:4px;text-transform:uppercase;margin-bottom:12px;}
@@ -159,6 +155,7 @@ if st.session_state.page == "landing":
       </div>
     </div>""")
 
+    # Pipeline
     st.html("""<style>
     .pipe-wrap{position:relative;z-index:10;max-width:1200px;margin:88px auto 0;padding:0 48px;}
     .pipe{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;padding:44px;
@@ -188,6 +185,7 @@ if st.session_state.page == "landing":
       </div>
     </div>""")
 
+    # Stack + footer
     st.html("""<style>
     .stack{position:relative;z-index:10;max-width:1200px;margin:88px auto 0;padding:0 48px;}
     .tags{display:flex;flex-wrap:wrap;gap:12px;}
@@ -197,6 +195,9 @@ if st.session_state.page == "landing":
     .tp{color:#6B00F0;border-color:rgba(107,0,240,.3);background:rgba(107,0,240,.06);}
     .tr{color:#E0005A;border-color:rgba(224,0,90,.3);background:rgba(224,0,90,.06);}
     .ty{color:#F0A800;border-color:rgba(240,168,0,.3);background:rgba(240,168,0,.06);}
+    .foot{position:relative;z-index:10;max-width:1200px;margin:80px auto 0;padding:24px 48px 72px;
+      border-top:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+    .foot span{font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.25);}
     </style>
     <div class="stack">
       <div class="stag">// Stack</div>
@@ -207,13 +208,7 @@ if st.session_state.page == "landing":
         <span class="tag tr">BM25 + RRF</span><span class="tag tr">cross-encoder reranker</span>
         <span class="tag ty">FastAPI</span><span class="tag ty">Streamlit</span><span class="tag ty">Python 3.14</span>
       </div>
-    </div>""")
-
-    st.html("""<style>
-    .foot{position:relative;z-index:10;max-width:1200px;margin:80px auto 0;padding:24px 48px 72px;
-      border-top:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
-    .foot span{font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.25);}
-    </style>
+    </div>
     <div class="foot">
       <span>NeuralDoc &mdash; Production RAG System</span>
       <span>Ollama &middot; ChromaDB &middot; LangGraph &middot; FastAPI</span>
@@ -221,7 +216,7 @@ if st.session_state.page == "landing":
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# CHAT PAGE — Horizontal: Chat left, Upload right
+# CHAT PAGE — No sidebar, horizontal layout
 # ═════════════════════════════════════════════════════════════════════════════
 else:
     st.html("""<style>
@@ -230,12 +225,7 @@ else:
       background:radial-gradient(ellipse 65% 50% at 10% 10%,rgba(110,0,240,.18),transparent 60%),
                 radial-gradient(ellipse 50% 65% at 90% 90%,rgba(0,200,140,.12),transparent 60%);}
     [data-testid="stMain"],[data-testid="stMainBlockContainer"],.block-container {
-      padding:2rem 2.5rem 3rem!important; max-width:1400px!important; background:transparent!important;}
-    section[data-testid="stSidebar"]{display:flex!important;}
-    [data-testid="collapsedControl"]{display:flex!important;}
-    [data-testid="stSidebar"]{background:rgba(5,0,18,.97)!important;border-right:1px solid rgba(107,0,240,.2)!important;}
-    [data-testid="stSidebar"] *{font-family:'Syne',sans-serif!important;}
-    [data-testid="stSidebar"] label{color:rgba(255,255,255,.6)!important;font-size:12px!important;}
+      padding:1.5rem 2rem 3rem!important; max-width:1400px!important; background:transparent!important;}
     .stTextInput input{background:rgba(107,0,240,.07)!important;border:1px solid rgba(107,0,240,.3)!important;
       color:#fff!important;border-radius:8px!important;padding:12px 16px!important;
       font-size:14px!important;font-family:'Syne',sans-serif!important;}
@@ -245,14 +235,11 @@ else:
     .stButton>button{background:linear-gradient(135deg,#6B00F0,#E0005A)!important;color:#fff!important;
       border:none!important;border-radius:8px!important;font-family:'Syne',sans-serif!important;
       font-weight:700!important;font-size:13px!important;letter-spacing:.5px!important;
-      padding:12px 0!important;transition:transform .2s,box-shadow .2s!important;}
+      padding:10px 0!important;transition:transform .2s,box-shadow .2s!important;}
     .stButton>button:hover{transform:translateY(-2px)!important;box-shadow:0 8px 28px rgba(107,0,240,.4)!important;}
     [data-testid="stFileUploaderDropzone"]{background:rgba(107,0,240,.04)!important;
       border:1px dashed rgba(107,0,240,.35)!important;border-radius:12px!important;}
     [data-testid="stFileUploaderDropzone"] *{color:rgba(255,255,255,.6)!important;}
-    .stSelectbox [data-baseweb="select"]>div{background:rgba(255,255,255,.05)!important;
-      border-color:rgba(255,255,255,.15)!important;color:#fff!important;border-radius:8px!important;}
-    .stSlider label{color:rgba(255,255,255,.6)!important;font-size:12px!important;}
     hr{border-color:rgba(255,255,255,.07)!important;}
     </style>""")
 
@@ -262,44 +249,57 @@ else:
             r["_reachable"] = True
             return r
         except Exception:
-            return {"pipeline_ready": False, "total_chunks": 0,
-                    "indexed_files": [], "_reachable": False}
+            return {"pipeline_ready":False,"total_chunks":0,"indexed_files":[],"_reachable":False}
 
-    def get_cfg():
-        try: return requests.get(f"{API_BASE}/config", timeout=3).json()
-        except: return {"provider":"ollama","ollama_model":"llama3.1:8b"}
+    h = get_health()
+    api_ok = h.get("_reachable", False)
+    ready = h.get("pipeline_ready", False)
+    chunks = h.get("total_chunks", 0)
+    files = h.get("indexed_files", [])
 
-    h_check = get_health()
-    api_reachable = h_check.get("_reachable", False)
+    # Top nav bar
+    n1, n2, n3, n4 = st.columns([1, 1, 5, 1])
+    with n1:
+        if st.button("← Home", key="back_home", use_container_width=True):
+            st.session_state.page = "landing"
+            st.rerun()
+    with n2:
+        if st.button("Clear Chat", key="clr_chat", use_container_width=True):
+            st.session_state.messages = []
+            st.rerun()
+    with n3:
+        sc = "#00DFA0" if ready else ("#FFB800" if api_ok else "#E0005A")
+        sl = f"READY · {chunks} chunks indexed" if ready else ("API online · No documents indexed" if api_ok else "API OFFLINE · Run: uv run uvicorn api:app --reload --port 8000")
+        st.html(f"""<div style="display:inline-flex;align-items:center;gap:8px;margin-top:4px;
+          font-family:'JetBrains Mono',monospace;font-size:11px;color:{sc};
+          border:1px solid {sc}33;background:{sc}0D;padding:6px 14px;border-radius:6px;letter-spacing:1px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:{sc};display:inline-block;"></span>
+          {sl}</div>""")
+    with n4:
+        st.html("""<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;
+          background:linear-gradient(135deg,#00DFA0,#6B00F0);-webkit-background-clip:text;
+          -webkit-text-fill-color:transparent;text-align:right;padding-top:4px;">NeuralDoc</div>""")
 
-    # Show API offline banner ONLY when genuinely unreachable
-    if not api_reachable:
-        st.html("""<div style="background:rgba(224,0,90,.1);border:1px solid rgba(224,0,90,.3);
-          border-radius:10px;padding:12px 18px;margin-bottom:16px;
-          font-family:'JetBrains Mono',monospace;font-size:12px;color:#E0005A;letter-spacing:1px;">
-          API OFFLINE &mdash; Run in a separate terminal:
-          <span style="color:#fff;background:rgba(255,255,255,.08);padding:2px 8px;border-radius:4px;margin-left:8px;">
-          uv run uvicorn api:app --reload --port 8000</span></div>""")
+    st.html('<div style="height:20px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:20px;"></div>')
 
-    # ── HORIZONTAL LAYOUT: Chat left, Upload right ────────────────────────────
+    # ── HORIZONTAL LAYOUT ─────────────────────────────────────────────────────
     col_chat, col_upload = st.columns([3, 2], gap="large")
 
     # ── RIGHT: Upload ─────────────────────────────────────────────────────────
     with col_upload:
-        # Header + Clear Index button
         uh1, uh2 = st.columns([3, 1])
         with uh1:
             st.html("""<div style="margin-bottom:12px;">
               <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#E0005A;
                    letter-spacing:4px;margin-bottom:6px;">// INDEX DOCUMENTS</div>
-              <div style="font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:2px;
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:2px;
                    color:#fff;line-height:1;">UPLOAD
                 <span style="background:linear-gradient(90deg,#E0005A,#F0A800);
                   -webkit-background-clip:text;-webkit-text-fill-color:transparent;"> PDF</span>
               </div>
             </div>""")
         with uh2:
-            st.html('<div style="height:40px"></div>')
+            st.html('<div style="height:38px"></div>')
             if st.button("Clear Index", key="clear_idx", use_container_width=True,
                          help="Wipe all indexed documents before uploading a new PDF."):
                 try:
@@ -316,7 +316,7 @@ else:
           50%{border-color:rgba(107,0,240,.7);box-shadow:0 0 24px rgba(107,0,240,.12);}}</style>
         <div style="padding:18px 20px;background:rgba(107,0,240,.04);border:1px dashed rgba(107,0,240,.38);
           border-radius:12px;margin-bottom:12px;text-align:center;animation:dP 4s ease-in-out infinite;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;
                color:rgba(255,255,255,.4);margin-bottom:4px;">DROP PDF BELOW</div>
           <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,.25);">
             Parsed &rarr; Chunked &rarr; Embedded &rarr; Indexed</div>
@@ -334,20 +334,21 @@ else:
                     try:
                         resp = requests.post(f"{API_BASE}/ingest",
                             files={"file":(uploaded.name, uploaded, "application/pdf")}, timeout=120)
-                        if resp.status_code==200:
+                        if resp.status_code == 200:
                             d = resp.json()
                             st.success(f"Indexed {d['chunks_indexed']} chunks from {d['filename']}")
                             st.rerun()
                         else:
                             st.error(f"Error: {resp.text}")
                     except requests.exceptions.ConnectionError:
-                        st.error("API offline. Start: uv run uvicorn api:app --reload --port 8000")
+                        st.error("API offline.")
                     except Exception as e:
                         st.error(str(e))
 
-        if h_check.get("indexed_files"):
-            for f in h_check["indexed_files"]:
-                fname = f.replace("\\","/").split("/")[-1]
+        if files:
+            st.html('<div style="height:8px"></div>')
+            for f in files:
+                fname = f.replace("\\", "/").split("/")[-1]
                 st.html(f"""<div style="padding:7px 12px;background:rgba(0,223,160,.07);
                   border:1px solid rgba(0,223,160,.2);border-radius:8px;margin-top:6px;
                   font-family:'JetBrains Mono',monospace;font-size:11px;color:#00DFA0;">
@@ -366,7 +367,7 @@ else:
 
     # ── LEFT: Chat ────────────────────────────────────────────────────────────
     with col_chat:
-        st.html("""<div style="margin-bottom:20px;">
+        st.html("""<div style="margin-bottom:16px;">
           <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6B00F0;
                letter-spacing:4px;margin-bottom:6px;">// DOCUMENT QA</div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:2px;
@@ -376,22 +377,7 @@ else:
           </div>
         </div>""")
 
-        tc = h_check.get("total_chunks", 0)
-        r2 = h_check.get("pipeline_ready", False)
-        c1, c2, c3 = st.columns(3)
-        def chip(col, text, color, bg, border):
-            col.html(f"""<div style="padding:10px 14px;background:{bg};border:1px solid {border};
-              border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;
-              color:{color};letter-spacing:1px;text-align:center;">{text}</div>""")
-        chip(c1, "READY" if r2 else "OFFLINE",
-             "#00DFA0" if r2 else "#E0005A",
-             "rgba(0,223,160,.06)" if r2 else "rgba(224,0,90,.06)",
-             "rgba(0,223,160,.2)" if r2 else "rgba(224,0,90,.2)")
-        chip(c2, f"{tc} CHUNKS", "#6B00F0", "rgba(107,0,240,.06)", "rgba(107,0,240,.2)")
-        chip(c3, model[:16], "#00DFA0", "rgba(0,223,160,.06)", "rgba(0,223,160,.2)")
-
-        st.html("<div style='height:16px'></div>")
-
+        # Chat messages
         if st.session_state.messages:
             html = ""
             for m in st.session_state.messages:
@@ -418,7 +404,7 @@ else:
                         border:1px solid rgba(255,255,255,.09);border-radius:4px 18px 18px 18px;
                         font-size:15px;color:rgba(255,255,255,.88);line-height:1.75;font-family:'Syne',sans-serif;">
                         {m['content']}{refs}{rfsd}{lat}</div></div>"""
-            st.html(f"""<div style="max-height:52vh;overflow-y:auto;padding:4px 2px 12px;
+            st.html(f"""<div style="max-height:55vh;overflow-y:auto;padding:4px 2px 12px;
               scrollbar-width:thin;scrollbar-color:rgba(107,0,240,.4) transparent;">{html}</div>""")
         else:
             st.html("""<div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,.22);">
@@ -441,7 +427,7 @@ else:
             ask = st.button("Send", use_container_width=True)
 
         if ask and query:
-            if not r2:
+            if not ready:
                 st.warning("Upload and index a PDF first.")
             else:
                 with st.spinner("Retrieving and generating answer..."):
