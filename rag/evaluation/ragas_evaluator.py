@@ -1,32 +1,3 @@
-"""
-RAGAS-style evaluation module.
-
-Computes three metrics without requiring the full RAGAS library,
-using Ollama as the judge LLM — no OpenAI key needed.
-
-Metrics
--------
-faithfulness        : Are all claims in the answer supported by the context?
-                      Score = supported_claims / total_claims  (0-1)
-
-context_precision   : Are the retrieved chunks actually relevant to the query?
-                      Score = relevant_chunks / total_chunks  (0-1)
-
-answer_relevancy    : Does the answer actually address the question?
-                      Judged by LLM on a 0-1 scale.
-
-Usage
------
-    evaluator = RAGASEvaluator(cfg.generation)
-    result = evaluator.evaluate(
-        query="What is the PFS result?",
-        answer="The PFS was 9.2 months [sample, p.1]",
-        contexts=["At the interim analysis, median PFS was 9.2 months..."],
-        ground_truth="The PFS for combination therapy was 9.2 months."
-    )
-    print(result)
-"""
-
 from __future__ import annotations
 
 import json
@@ -56,21 +27,9 @@ class EvaluationResult:
 
 
 class RAGASEvaluator:
-    """
-    LLM-as-judge evaluator using Ollama.
-
-    Parameters
-    ----------
-    config : GenerationConfig — uses ollama_model and ollama_base_url.
-    """
-
     def __init__(self, config: Any) -> None:
         self.config = config
         self._llm = None
-
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
 
     def evaluate(
         self,
@@ -79,16 +38,6 @@ class RAGASEvaluator:
         contexts: list[str],
         ground_truth: str = "",
     ) -> EvaluationResult:
-        """
-        Run all three metrics and return an EvaluationResult.
-
-        Parameters
-        ----------
-        query        : The original question.
-        answer       : The generated answer to evaluate.
-        contexts     : List of retrieved chunk texts used for generation.
-        ground_truth : Reference answer (used for citation check if provided).
-        """
         faithfulness = self._score_faithfulness(answer, contexts)
         context_precision = self._score_context_precision(query, contexts)
         answer_relevancy = self._score_answer_relevancy(query, answer)
@@ -100,7 +49,6 @@ class RAGASEvaluator:
             "ground_truth": ground_truth,
         }
 
-        # Citation check — verify ground truth key facts appear in answer
         if ground_truth:
             details["citations_present"] = self._check_citations(
                 answer, ground_truth
@@ -113,10 +61,8 @@ class RAGASEvaluator:
             details=details,
         )
 
-    # ------------------------------------------------------------------
     # Metric 1: Faithfulness
-    # ------------------------------------------------------------------
-
+  
     def _score_faithfulness(self, answer: str, contexts: list[str]) -> float:
         """
         Decompose answer into claims, verify each against context.
@@ -149,18 +95,11 @@ Respond with ONLY valid JSON, no other text:
             supported = sum(1 for c in claims if c.get("supported", False))
             return supported / len(claims)
         except Exception:
-            # Fallback: heuristic — check if key phrases from answer exist in context
             return self._heuristic_faithfulness(answer, combined_context)
 
-    # ------------------------------------------------------------------
     # Metric 2: Context Precision
-    # ------------------------------------------------------------------
 
     def _score_context_precision(self, query: str, contexts: list[str]) -> float:
-        """
-        Ask LLM whether each retrieved chunk is relevant to the query.
-        Score = relevant_chunks / total_chunks.
-        """
         if not contexts:
             return 0.0
 
