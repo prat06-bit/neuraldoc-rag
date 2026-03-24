@@ -37,14 +37,10 @@ def save_conversation(messages: list, title: str | None = None) -> str:
     _save_raw(all_convs)
     return conv_id
 
-
 def load_all_conversations() -> list:
-    """Return list of conversations, newest first."""
     return list(reversed(_load_raw()))
 
-
 def load_conversation(conv_id: str) -> list:
-    """Return messages for a given conversation ID."""
     for conv in _load_raw():
         if conv["id"] == conv_id:
             return conv["messages"]
@@ -54,7 +50,6 @@ def load_conversation(conv_id: str) -> list:
 def delete_conversation(conv_id: str) -> None:
     data = [c for c in _load_raw() if c["id"] != conv_id]
     _save_raw(data)
-
 
 def export_as_markdown(messages: list, title: str = "Chat Export") -> str:
     lines = [f"# {title}", f"_Exported {datetime.now().strftime('%Y-%m-%d %H:%M')}_\n"]
