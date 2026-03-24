@@ -65,7 +65,7 @@ class PipelineState:
         doc = parser.parse(pdf_path)
         chunks = Chunker(self.cfg.chunking).chunk(doc)
 
-        self.store.add_chunks(chunks)  # type: ignore[union-attr]
+        self.store.add_chunks(chunks)  # type: ignore
         self.all_chunks.extend(chunks)
         self.retriever.build_bm25(self.all_chunks)  # type: ignore
 
@@ -86,7 +86,7 @@ class PipelineState:
         self.all_chunks = []
         self.indexed_files = []
 
-        # Also delete uploaded PDFs so re-index starts clean
+        # Also delete uploaded PDFs so reindex starts clean
         if UPLOAD_DIR.exists():
             shutil.rmtree(UPLOAD_DIR)
             UPLOAD_DIR.mkdir(exist_ok=True)
@@ -170,7 +170,6 @@ def update_config(req: ConfigUpdateRequest) -> dict[str, Any]:
         },
     }
 
-
 @app.post("/ingest", response_model=IngestResponse)
 async def ingest_pdf(file: UploadFile = File(...)) -> IngestResponse:
     if not file.filename or not file.filename.endswith(".pdf"):
@@ -190,7 +189,6 @@ async def ingest_pdf(file: UploadFile = File(...)) -> IngestResponse:
         chunks_indexed=count,
         total_chunks=len(state.all_chunks),
     )
-
 
 @app.delete("/index")
 def clear_index() -> dict[str, str]:
