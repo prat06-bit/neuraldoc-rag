@@ -5,7 +5,6 @@ from pathlib import Path
 
 HISTORY_FILE = Path("chat_history.json")
 
-
 def _load_raw() -> list:
     if not HISTORY_FILE.exists():
         return []
