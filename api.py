@@ -221,7 +221,7 @@ def query(req: QueryRequest) -> QueryResponse:
 
     start = time.perf_counter()
     try:
-        result = state.graph.run(req.query)  # type: ignore[union-attr]
+        result = state.graph.run(req.query)  # type: ignore
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
