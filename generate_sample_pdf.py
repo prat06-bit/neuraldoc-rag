@@ -1,10 +1,4 @@
-"""
-Run once to create sample.pdf in the project root.
-Usage: uv run python generate_sample_pdf.py
-"""
-
 from fpdf import FPDF
-
 
 class SamplePDF(FPDF):
     def header(self):
@@ -16,7 +10,6 @@ class SamplePDF(FPDF):
         self.set_y(-12)
         self.set_font("Helvetica", "I", 8)
         self.cell(0, 8, f"Page {self.page_no()}", align="C")
-
 
 def build():
     pdf = SamplePDF()
