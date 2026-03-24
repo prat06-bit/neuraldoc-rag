@@ -76,7 +76,6 @@ class PipelineState:
         return len(chunks)
 
     def clear_index(self) -> None:
-        """Wipe ChromaDB, reset BM25, clear all state."""
         if self.store is not None:
             self.store.clear()
 
