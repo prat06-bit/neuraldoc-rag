@@ -118,11 +118,6 @@ class IngestResponse(BaseModel):
     chunks_indexed: int
     total_chunks: int
 
-
-# ---------------------------------------------------------------------------
-# Endpoints
-# ---------------------------------------------------------------------------
-
 @app.get("/health")
 def health() -> dict[str, Any]:
     return {
