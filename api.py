@@ -1,16 +1,3 @@
-
-POST   /query          — run a RAG query
-POST   /ingest         — upload and index a PDF
-DELETE /index          — clear all indexed chunks (wipe ChromaDB)
-GET    /health         — health check
-GET    /config         — show current config
-POST   /config/update  — update model/provider at runtime
-
-Start
------
-    uv run uvicorn api:app --reload --port 8000
-"""
-
 from __future__ import annotations
 
 import shutil
