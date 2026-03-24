@@ -13,10 +13,8 @@ def _load_raw() -> list:
     except Exception:
         return []
 
-
 def _save_raw(data: list) -> None:
     HISTORY_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-
 
 def save_conversation(messages: list, title: str | None = None) -> str:
     if not messages:
