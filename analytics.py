@@ -1,4 +1,3 @@
-"""Query analytics tracker — saves to analytics.json."""
 import json
 from datetime import datetime
 from pathlib import Path
