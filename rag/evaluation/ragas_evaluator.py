@@ -5,7 +5,6 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-
 @dataclass
 class EvaluationResult:
     faithfulness: float = 0.0
@@ -24,7 +23,6 @@ class EvaluationResult:
             "passed": self.passed(),
             "details": self.details,
         }
-
 
 class RAGASEvaluator:
     def __init__(self, config: Any) -> None:
@@ -60,14 +58,8 @@ class RAGASEvaluator:
             answer_relevancy=answer_relevancy,
             details=details,
         )
-
-    # Metric 1: Faithfulness
-  
+ 
     def _score_faithfulness(self, answer: str, contexts: list[str]) -> float:
-        """
-        Decompose answer into claims, verify each against context.
-        Score = supported / total.
-        """
         if not answer or not contexts:
             return 0.0
 
