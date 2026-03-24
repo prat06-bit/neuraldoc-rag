@@ -20,12 +20,11 @@ def _save_raw(data: list) -> None:
 
 
 def save_conversation(messages: list, title: str | None = None) -> str:
-    """Save a conversation. Returns the conversation ID."""
     if not messages:
         return ""
     all_convs = _load_raw()
     conv_id = str(uuid.uuid4())[:8]
-    # Auto-title from first user message
+    # Autotitle from first user message
     if title is None:
         first_user = next((m["content"] for m in messages if m["role"] == "user"), "Untitled")
         title = first_user[:48] + ("…" if len(first_user) > 48 else "")
@@ -58,7 +57,6 @@ def delete_conversation(conv_id: str) -> None:
 
 
 def export_as_markdown(messages: list, title: str = "Chat Export") -> str:
-    """Convert messages list to markdown string."""
     lines = [f"# {title}", f"_Exported {datetime.now().strftime('%Y-%m-%d %H:%M')}_\n"]
     for m in messages:
         role = "**You**" if m["role"] == "user" else "**NeuralDoc**"
