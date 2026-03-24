@@ -79,7 +79,7 @@ class PipelineState:
         if self.store is not None:
             self.store.clear()
 
-        # Re-initialise fresh store and retriever
+        # Reinitialise fresh store and retriever
         self.store = VectorStore(self.cfg.retrieval)
         self.retriever = HybridRetriever(self.store, self.cfg.retrieval)
         self.graph = None
@@ -91,13 +91,11 @@ class PipelineState:
             shutil.rmtree(UPLOAD_DIR)
             UPLOAD_DIR.mkdir(exist_ok=True)
 
-
 state = PipelineState()
 
 class QueryRequest(BaseModel):
     query: str
     k_final: int = 5
-
 
 class QueryResponse(BaseModel):
     query: str
@@ -105,7 +103,6 @@ class QueryResponse(BaseModel):
     references: list[str]
     refused: bool
     latency_ms: float
-
 
 class ConfigUpdateRequest(BaseModel):
     provider: str | None = None
