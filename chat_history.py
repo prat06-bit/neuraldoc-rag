@@ -1,4 +1,3 @@
-"""Persistent chat history manager — saves to chat_history.json."""
 import json
 import uuid
 from datetime import datetime
