@@ -1,8 +1,4 @@
-"""
-FastAPI backend for the Production RAG System.
 
-Endpoints
----------
 POST   /query          — run a RAG query
 POST   /ingest         — upload and index a PDF
 DELETE /index          — clear all indexed chunks (wipe ChromaDB)
