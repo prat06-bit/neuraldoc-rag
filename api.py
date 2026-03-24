@@ -94,11 +94,6 @@ class PipelineState:
 
 state = PipelineState()
 
-
-# ---------------------------------------------------------------------------
-# Schemas
-# ---------------------------------------------------------------------------
-
 class QueryRequest(BaseModel):
     query: str
     k_final: int = 5
