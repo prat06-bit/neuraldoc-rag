@@ -110,7 +110,7 @@ Answer:"""
                 if response.startswith("yes"):
                     relevant += 1
             except Exception:
-                # Heuristic fallback: keyword overlap
+                # Heuristic fallback
                 query_words = set(query.lower().split())
                 ctx_words = set(ctx.lower().split())
                 if len(query_words & ctx_words) >= 2:
@@ -118,7 +118,6 @@ Answer:"""
 
         return relevant / len(contexts)
 
-    # ------------------------------------------------------------------
     # Metric 3: Answer Relevancy
     # ------------------------------------------------------------------
 
