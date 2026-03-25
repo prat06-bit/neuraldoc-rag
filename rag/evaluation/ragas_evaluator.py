@@ -51,7 +51,6 @@ class RAGASEvaluator:
             details["citations_present"] = self._check_citations(
                 answer, ground_truth
             )
-
         return EvaluationResult(
             faithfulness=faithfulness,
             context_precision=context_precision,
@@ -119,8 +118,7 @@ Answer:"""
         return relevant / len(contexts)
 
     # Metric 3: Answer Relevancy
-    # ------------------------------------------------------------------
-
+    
     def _score_answer_relevancy(self, query: str, answer: str) -> float:
         """
         Ask LLM to score how well the answer addresses the question (0.0-1.0).
