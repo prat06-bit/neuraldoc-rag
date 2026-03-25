@@ -120,9 +120,6 @@ Answer:"""
     # Metric 3: Answer Relevancy
     
     def _score_answer_relevancy(self, query: str, answer: str) -> float:
-        """
-        Ask LLM to score how well the answer addresses the question (0.0-1.0).
-        """
         if not answer:
             return 0.0
 
