@@ -7,15 +7,9 @@ import tiktoken
 from rag.config import ChunkingConfig
 from rag.models import ChunkMetadata, DocumentChunk, ParsedDocument, ParsedPage
 
-
-# ---------------------------------------------------------------------------
-# Heading detection
-# ---------------------------------------------------------------------------
-
-
 _HEADING_RE = re.compile(
     r"^(?:"
-    r"#{1,6}\s+.+"           # Markdown headings
+    r"#{1,6}\s+.+"           
     r"|(?:\d+\.)+\d*\s+\S.+" # Numbered headings  e.g. 1.2 Introduction
     r"|\d+\.\s+[A-Z].+"      # 1. Title
     r"|[A-Z][A-Z\s]{3,79}$"  # ALL CAPS headings
