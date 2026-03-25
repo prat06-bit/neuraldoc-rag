@@ -58,11 +58,8 @@ section[data-testid="stSidebar"],#MainMenu,footer{display:none!important;height:
 [data-testid="stVerticalBlock"]{gap:0!important;}
 [data-testid="stVerticalBlock"]>div{margin:0!important;padding:0!important;}
 </style>""")
+#LANDING PAGE
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-# LANDING PAGE
-# ═══════════════════════════════════════════════════════════════════════════
 if st.session_state.page == "landing":
     st.html("""
 <style>
