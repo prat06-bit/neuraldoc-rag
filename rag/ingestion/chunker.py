@@ -150,10 +150,7 @@ class Chunker:
         if buffer:
             yield self._make_chunk(" ".join(buffer), source, page, breadcrumb)
 
-    # ------------------------------------------------------------------
     # Helpers
-    # ------------------------------------------------------------------
-
     def _make_chunk(
         self,
         text: str,
