@@ -27,7 +27,6 @@ for k,v in [("page","landing"),("messages",[]),("active_conv_id",None),
 
 API_BASE = "http://localhost:8000"
 
-# ── query param navigation (form submit fix) ──────────────────────────────────
 if st.query_params.get("launch") == "1":
     st.query_params.clear()
     st.session_state.page = "chat"
