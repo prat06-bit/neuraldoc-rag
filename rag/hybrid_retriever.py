@@ -67,12 +67,6 @@ def reciprocal_rank_fusion(
 # Cross-Encoder Re-ranker
 
 class CrossEncoderReranker:
-    """
-    Re-scores (query, chunk) pairs using a cross-encoder model.
-    Much slower than bi-encoder retrieval but far more accurate.
-
-    Apply only to a small candidate set (k_initial=20) and return k_final=5.
-    """
 
     def __init__(self, model_name: str) -> None:
         self.model_name = model_name
