@@ -136,10 +136,10 @@ class HybridRetriever:
         if self._bm25 is not None:
             bm25_results = self._bm25.search(query, k=k_init)
 
-        # --- Step 2: Vector ---
+        # Step 2: Vector
         vector_results = self.vector_store.similarity_search(query, k=k_init)
 
-        # --- Step 3: RRF Fusion ---
+        # Step 3: RRF Fusion 
         fused = reciprocal_rank_fusion(
             [bm25_results, vector_results],
             k=self.config.rrf_k,
