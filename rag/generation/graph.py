@@ -13,7 +13,6 @@ from rag.retrieval.vector_store import ScoredChunk
 
 # ---------------------------------------------------------------------------
 # Graph state schema
-# ---------------------------------------------------------------------------
 
 class RAGState(TypedDict):
     query: str
