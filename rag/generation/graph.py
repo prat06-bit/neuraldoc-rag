@@ -123,7 +123,6 @@ class RAGGraph:
 
     # ------------------------------------------------------------------
     # LLM factory — selects Ollama or OpenAI based on config.provider
-    # ------------------------------------------------------------------
 
     def _get_llm(self):  # type: ignore[return]
         provider = self.config.provider.lower()
