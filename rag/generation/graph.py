@@ -91,7 +91,6 @@ class RAGGraph:
         return state
 
     def _node_generate(self, state: RAGState) -> RAGState:
-        """Call the LLM to produce a cited answer."""
         llm = self._get_llm()
         user_prompt = build_user_prompt(state["query"], state["context_passages"])
 
