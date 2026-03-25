@@ -35,17 +35,7 @@ class RAGGraph:
     # Public API
 
     def run(self, query: str) -> dict[str, Any]:
-        """
-        Execute the full RAG pipeline for *query*.
-
-        Returns
-        -------
-        dict with keys:
-            response   : str        — generated answer or refusal message
-            references : list[str]  — cited sources
-            refused    : bool       — True if refusal was triggered
-            retrieved  : list[ScoredChunk]
-        """
+        
         initial_state: RAGState = {
             "query": query,
             "retrieved": [],
