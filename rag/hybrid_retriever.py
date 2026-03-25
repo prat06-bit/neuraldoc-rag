@@ -112,17 +112,6 @@ class CrossEncoderReranker:
 # ---------------------------------------------------------------------------
 
 class HybridRetriever:
-    """
-    Combines BM25 + Vector retrieval via RRF, then re-ranks with a
-    Cross-Encoder.
-
-    Usage
-    -----
-        retriever = HybridRetriever(vector_store, config)
-        retriever.build_bm25(all_chunks)   # call once after indexing
-        results = retriever.retrieve("What is the PFS result?")
-    """
-
     def __init__(
         self,
         vector_store: VectorStore,
