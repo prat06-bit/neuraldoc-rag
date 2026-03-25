@@ -145,7 +145,7 @@ class HybridRetriever:
             k=self.config.rrf_k,
         )
 
-        # --- Step 4: Re-rank ---
+        # Step 4: Re-rank 
         reranked = self._reranker.rerank(query, fused[:k_init], k=k_out)
 
         # --- Step 5: Threshold check ---
