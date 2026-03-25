@@ -1,11 +1,7 @@
 class RAGError(Exception):
-    """Base exception for all RAG system errors."""
-
 
 class ConfigurationError(RAGError):
-    """Raised when configuration loading or validation fails."""
     pass
-
 
 class InsufficientEvidenceError(RAGError):
     """Raised when re-ranked context scores fall below the similarity threshold.
