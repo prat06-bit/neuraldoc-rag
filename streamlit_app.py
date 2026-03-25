@@ -58,6 +58,7 @@ section[data-testid="stSidebar"],#MainMenu,footer{display:none!important;height:
 [data-testid="stVerticalBlock"]{gap:0!important;}
 [data-testid="stVerticalBlock"]>div{margin:0!important;padding:0!important;}
 </style>""")
+    
 #LANDING PAGE
 
 if st.session_state.page == "landing":
@@ -65,7 +66,6 @@ if st.session_state.page == "landing":
 <style>
 [data-testid="stAppViewContainer"]{background:var(--bg)!important;}
 
-/* ── Subtle mesh bg ── */
 .land{
   min-height:100vh;
   background:var(--bg);
@@ -79,7 +79,6 @@ if st.session_state.page == "landing":
     radial-gradient(ellipse 35% 35% at 50% 50%,rgba(236,72,153,0.06),transparent 55%);
 }
 
-/* NAV */
 .nav{
   position:relative;z-index:10;
   display:flex;align-items:center;justify-content:space-between;
