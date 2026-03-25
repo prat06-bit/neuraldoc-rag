@@ -1,8 +1,4 @@
 
--------
-    uv add langgraph langchain-ollama langchain-core
-    # Make sure Ollama is running: ollama serve
-"""
 
 from __future__ import annotations
 
