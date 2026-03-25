@@ -16,7 +16,7 @@ class BM25Retriever:
 
     def _build(self, chunks: list[DocumentChunk]) -> None:
         try:
-            from rank_bm25 import BM25Okapi  # type: ignore[import-untyped]
+            from rank_bm25 import BM25Okapi  
         except ImportError as exc:
             raise ImportError(
                 "rank-bm25 is required. Install with: uv add rank-bm25"
