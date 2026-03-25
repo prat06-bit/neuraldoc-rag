@@ -120,7 +120,6 @@ class HybridRetriever:
         self._reranker = CrossEncoderReranker(config.cross_encoder_model)
 
     def build_bm25(self, chunks: list[DocumentChunk]) -> None:
-        """Index chunks into the in-memory BM25 retriever."""
         self._bm25 = BM25Retriever(chunks)
         print(f"BM25 index built over {len(chunks)} chunks.")
 
