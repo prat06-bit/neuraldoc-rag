@@ -4,12 +4,6 @@ class ConfigurationError(RAGError):
     pass
 
 class InsufficientEvidenceError(RAGError):
-    """Raised when re-ranked context scores fall below the similarity threshold.
-
-    This signals the generation layer to issue a refusal response rather than
-    attempting to generate an answer from weak evidence.
-    """
-
     def __init__(
         self,
         max_score: float,
