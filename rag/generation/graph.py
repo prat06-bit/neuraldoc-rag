@@ -51,7 +51,6 @@ class RAGGraph:
             "retrieved": final_state["retrieved"],
         }
 
-    # ------------------------------------------------------------------
     # Graph construction
 
     def _build_graph(self):  # type: ignore[return]
