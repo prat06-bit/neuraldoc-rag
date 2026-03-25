@@ -8,11 +8,7 @@ from rag.config import RetrievalConfig
 from rag.models import DocumentChunk
 from rag.retrieval.vector_store import ScoredChunk, VectorStore
 
-
-
 class BM25Retriever:
- 
-
     def __init__(self, chunks: list[DocumentChunk]) -> None:
         self.chunks = chunks
         self._bm25 = None
