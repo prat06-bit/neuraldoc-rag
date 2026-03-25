@@ -40,7 +40,6 @@ class RAGGraph:
         self.retriever = retriever
         self._graph = self._build_graph()
 
-    # ------------------------------------------------------------------
     # Public API
 
     def run(self, query: str) -> dict[str, Any]:
