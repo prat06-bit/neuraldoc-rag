@@ -78,7 +78,7 @@ class CrossEncoderReranker:
         self.model_name = model_name
         self._model = None
 
-    def _get_model(self):  # type: ignore[return]
+    def _get_model(self): 
         if self._model is None:
             try:
                 from sentence_transformers import CrossEncoder  # type: ignore[import-untyped]
