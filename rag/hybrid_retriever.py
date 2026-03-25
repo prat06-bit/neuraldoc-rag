@@ -50,17 +50,6 @@ def reciprocal_rank_fusion(
     ranked_lists: list[list[ScoredChunk]],
     k: int = 60,
 ) -> list[ScoredChunk]:
-    """
-    Combine multiple ranked lists via Reciprocal Rank Fusion.
-
-    RRF score = sum(1 / (k + rank)) across all lists.
-    Chunks appearing in multiple lists get a higher combined score.
-
-    Parameters
-    ----------
-    ranked_lists : Each inner list is a ranked result set (best first).
-    k            : RRF constant (default 60, from original paper).
-    """
     rrf_scores: dict[str, float] = {}
     chunk_index: dict[str, DocumentChunk] = {}
 
