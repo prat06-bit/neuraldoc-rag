@@ -151,9 +151,9 @@ class RAGGraph:
             num_predict=self.config.max_tokens,
         )
 
-    def _get_openai_llm(self):  # type: ignore[return]
+    def _get_openai_llm(self): 
         try:
-            from langchain_openai import ChatOpenAI  # type: ignore[import-untyped]
+            from langchain_openai import ChatOpenAI  
         except ImportError as exc:
             raise ImportError(
                 "langchain-openai is required. Install with: uv add langchain-openai"
