@@ -23,14 +23,6 @@ class RAGState(TypedDict):
 # RAG Graph
 
 class RAGGraph:
-    """
-    Orchestrates retrieval + generation via LangGraph.
-
-    Supports two providers via config.generation.provider:
-        "ollama"  — local Ollama server (default, no API key needed)
-        "openai"  — OpenAI API (requires OPENAI_API_KEY env var)
-    """
-
     def __init__(
         self,
         config: GenerationConfig,
