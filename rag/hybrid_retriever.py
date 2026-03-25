@@ -26,7 +26,6 @@ class BM25Retriever:
         self._bm25 = BM25Okapi(tokenised)
 
     def search(self, query: str, k: int) -> list[ScoredChunk]:
-        """Return top-k chunks by BM25 score."""
         if self._bm25 is None or not self.chunks:
             return []
 
