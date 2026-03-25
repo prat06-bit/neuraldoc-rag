@@ -67,7 +67,6 @@ def reciprocal_rank_fusion(
 # Cross-Encoder Re-ranker
 
 class CrossEncoderReranker:
-
     def __init__(self, model_name: str) -> None:
         self.model_name = model_name
         self._model = None
@@ -75,7 +74,7 @@ class CrossEncoderReranker:
     def _get_model(self): 
         if self._model is None:
             try:
-                from sentence_transformers import CrossEncoder  # type: ignore[import-untyped]
+                from sentence_transformers import CrossEncoder  
             except ImportError as exc:
                 raise ImportError(
                     "sentence-transformers is required. "
