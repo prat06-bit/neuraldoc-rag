@@ -139,7 +139,7 @@ Respond with ONLY a decimal number between 0.0 and 1.0 (e.g. 0.85). No other tex
 
         try:
             response = self._ask_llm(prompt).strip()
-            score = float(re.search(r"[01]?\.\d+|[01]", response).group())  # type: ignore[union-attr]
+            score = float(re.search(r"[01]?\.\d+|[01]", response).group())  
             return max(0.0, min(1.0, score))
         except Exception:
             # Heuristic: if answer is non-empty and not a refusal
