@@ -146,10 +146,9 @@ Respond with ONLY a decimal number between 0.0 and 1.0 (e.g. 0.85). No other tex
     # LLM helper
 
     def _ask_llm(self, prompt: str) -> str:
-        """Send a prompt to Ollama and return the response text."""
         if self._llm is None:
             try:
-                from langchain_ollama import ChatOllama  # type: ignore[import-untyped]
+                from langchain_ollama import ChatOllama  # type:ignore[import-untyped]
             except ImportError as exc:
                 raise ImportError(
                     "langchain-ollama required. Install: uv add langchain-ollama"
@@ -160,7 +159,7 @@ Respond with ONLY a decimal number between 0.0 and 1.0 (e.g. 0.85). No other tex
                 temperature=0.0,
             )
 
-        from langchain_core.messages import HumanMessage  # type: ignore[import-untyped]
+        from langchain_core.messages import HumanMessage  # type:ignore[import-untyped]
         response = self._llm.invoke([HumanMessage(content=prompt)])
         return str(response.content)
 
@@ -168,7 +167,6 @@ Respond with ONLY a decimal number between 0.0 and 1.0 (e.g. 0.85). No other tex
 
     @staticmethod
     def _parse_json(text: str) -> dict[str, Any]:
-        """Extract and parse first JSON object from text."""
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if not match:
             raise ValueError("No JSON found in response.")
@@ -176,7 +174,6 @@ Respond with ONLY a decimal number between 0.0 and 1.0 (e.g. 0.85). No other tex
 
     @staticmethod
     def _heuristic_faithfulness(answer: str, context: str) -> float:
-        """Simple word-overlap fallback when LLM call fails."""
         sentences = [s.strip() for s in re.split(r"[.!?]", answer) if len(s.strip()) > 20]
         if not sentences:
             return 1.0
