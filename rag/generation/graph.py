@@ -10,8 +10,6 @@ from rag.generation.prompts import REFUSAL_MESSAGE, SYSTEM_PROMPT, build_user_pr
 from rag.retrieval.hybrid_retriever import HybridRetriever
 from rag.retrieval.vector_store import ScoredChunk
 
-
-# ---------------------------------------------------------------------------
 # Graph state schema
 
 class RAGState(TypedDict):
