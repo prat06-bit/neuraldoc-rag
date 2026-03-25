@@ -53,7 +53,7 @@ class RAGGraph:
 
     # Graph construction
 
-    def _build_graph(self):  # type: ignore[return]
+    def _build_graph(self):  
         try:
             from langgraph.graph import END, StateGraph 
         except ImportError as exc:
