@@ -1,17 +1,6 @@
 """
 Semantic + header-aware chunker.
 
-Consumes a ParsedDocument and emits a list[DocumentChunk].
-
-Chunking strategy
------------------
-1. Each page's text is split on heading patterns (lines that match a heading
-   heuristic based on font size metadata OR common Markdown/ALL-CAPS patterns).
-2. Sections between headings are accumulated until the token budget
-   (min_tokens – max_tokens) is satisfied.
-3. If a single section exceeds max_tokens it is split by sentence boundary.
-4. Every chunk carries full metadata: source, page, breadcrumb_path.
-"""
 
 from __future__ import annotations
 
