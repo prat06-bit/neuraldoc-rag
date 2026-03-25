@@ -121,7 +121,7 @@ class RAGGraph:
     def _route_after_retrieve(state: RAGState) -> str:
         return "refuse" if state["refused"] else "generate"
 
-    # LLM factory — selects Ollama or OpenAI based on config.provider
+    # LLM factory
 
     def _get_llm(self):  
         provider = self.config.provider.lower()
@@ -136,7 +136,7 @@ class RAGGraph:
                 "Set config.generation.provider to 'ollama' or 'openai'."
             )
 
-    def _get_ollama_llm(self):  # type: ignore[return]
+    def _get_ollama_llm(self):  
         try:
             from langchain_ollama import ChatOllama  # type: ignore[import-untyped]
         except ImportError as exc:
