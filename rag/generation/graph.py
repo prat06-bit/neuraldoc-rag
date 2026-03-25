@@ -1,14 +1,4 @@
-"""
-Generation layer — LangGraph RAG pipeline with Ollama support.
 
-Graph structure
----------------
-  [retrieve] --> [check_threshold] --> [generate] --> END
-                       |
-                       v (below threshold)
-                  [refuse] --> END
-
-Install
 -------
     uv add langgraph langchain-ollama langchain-core
     # Make sure Ollama is running: ollama serve
