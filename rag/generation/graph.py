@@ -77,7 +77,6 @@ class RAGGraph:
 
     # ------------------------------------------------------------------
     # Nodes
-    # ------------------------------------------------------------------
 
     def _node_retrieve(self, state: RAGState) -> RAGState:
         """Run hybrid retrieval."""
