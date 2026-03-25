@@ -33,7 +33,7 @@ class BM25Retriever:
         tokens = query.lower().split()
         scores: list[float] = self._bm25.get_scores(tokens).tolist()
 
-        # Pair each chunk with its BM25 score, sort descending
+        # Pair each chunk with its BM25 score sortin descending order
         paired = sorted(
             zip(self.chunks, scores),
             key=lambda x: x[1],
