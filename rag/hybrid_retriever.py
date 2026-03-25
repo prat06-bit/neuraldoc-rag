@@ -65,7 +65,6 @@ def reciprocal_rank_fusion(
     return fused
 
 # Cross-Encoder Re-ranker
-# ---------------------------------------------------------------------------
 
 class CrossEncoderReranker:
     """
