@@ -1,20 +1,3 @@
-"""
-Semantic + header-aware chunker.
-
-Consumes a ParsedDocument and emits a list[DocumentChunk].
-
-Chunking strategy
------------------
-1. Each page's text is split on heading patterns (lines that match a heading
-   heuristic based on font size metadata OR common Markdown/ALL-CAPS patterns).
-2. Sections between headings are accumulated until the token budget
-   (min_tokens – max_tokens) is satisfied.
-3. If a single section exceeds max_tokens it is split by sentence boundary.
-4. Every chunk carries full metadata: source, page, breadcrumb_path.
-"""
-
-from __future__ import annotations
-
 import hashlib
 import re
 from typing import Iterator
@@ -24,24 +7,14 @@ import tiktoken
 from rag.config import ChunkingConfig
 from rag.models import ChunkMetadata, DocumentChunk, ParsedDocument, ParsedPage
 
-
-# ---------------------------------------------------------------------------
-# Heading detection
-# ---------------------------------------------------------------------------
-
-# Matches lines that look like headings:
-#   - Markdown: ## Title
-#   - Numbered: 1. Title / 1.1 Title
-#   - ALL CAPS line (≤ 80 chars)
 _HEADING_RE = re.compile(
     r"^(?:"
-    r"#{1,6}\s+.+"           # Markdown headings
+    r"#{1,6}\s+.+"           
     r"|(?:\d+\.)+\d*\s+\S.+" # Numbered headings  e.g. 1.2 Introduction
     r"|\d+\.\s+[A-Z].+"      # 1. Title
     r"|[A-Z][A-Z\s]{3,79}$"  # ALL CAPS headings
     r")$"
 )
-
 
 def _is_heading(line: str, font_sizes: list[float], threshold: float) -> bool:
     """Return True if *line* looks like a section heading."""
@@ -176,10 +149,7 @@ class Chunker:
         if buffer:
             yield self._make_chunk(" ".join(buffer), source, page, breadcrumb)
 
-    # ------------------------------------------------------------------
     # Helpers
-    # ------------------------------------------------------------------
-
     def _make_chunk(
         self,
         text: str,

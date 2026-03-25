@@ -1,21 +1,12 @@
-"""Custom exceptions for the RAG system."""
-
-
 class RAGError(Exception):
-    """Base exception for all RAG system errors."""
-
+        """Base exception for all RAG system errors."""
 
 class ConfigurationError(RAGError):
-    """Raised when configuration loading or validation fails."""
+        """Raised when configuration loading or validation fails."""
     pass
 
-
 class InsufficientEvidenceError(RAGError):
-    """Raised when re-ranked context scores fall below the similarity threshold.
-
-    This signals the generation layer to issue a refusal response rather than
-    attempting to generate an answer from weak evidence.
-    """
+         """Raised when re-ranked context scores fall below the similarity threshold."""
 
     def __init__(
         self,

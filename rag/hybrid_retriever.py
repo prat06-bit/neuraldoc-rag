@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import math
@@ -9,11 +8,7 @@ from rag.config import RetrievalConfig
 from rag.models import DocumentChunk
 from rag.retrieval.vector_store import ScoredChunk, VectorStore
 
-
-
 class BM25Retriever:
- 
-
     def __init__(self, chunks: list[DocumentChunk]) -> None:
         self.chunks = chunks
         self._bm25 = None
@@ -21,7 +16,7 @@ class BM25Retriever:
 
     def _build(self, chunks: list[DocumentChunk]) -> None:
         try:
-            from rank_bm25 import BM25Okapi  # type: ignore[import-untyped]
+            from rank_bm25 import BM25Okapi  
         except ImportError as exc:
             raise ImportError(
                 "rank-bm25 is required. Install with: uv add rank-bm25"
@@ -31,14 +26,13 @@ class BM25Retriever:
         self._bm25 = BM25Okapi(tokenised)
 
     def search(self, query: str, k: int) -> list[ScoredChunk]:
-        """Return top-k chunks by BM25 score."""
         if self._bm25 is None or not self.chunks:
             return []
 
         tokens = query.lower().split()
         scores: list[float] = self._bm25.get_scores(tokens).tolist()
 
-        # Pair each chunk with its BM25 score, sort descending
+        # Pair each chunk with its BM25 score sortin descending order
         paired = sorted(
             zip(self.chunks, scores),
             key=lambda x: x[1],
@@ -49,26 +43,12 @@ class BM25Retriever:
             for chunk, score in paired[:k]
         ]
 
-
-# ---------------------------------------------------------------------------
 # RRF Fusion
-# ---------------------------------------------------------------------------
 
 def reciprocal_rank_fusion(
     ranked_lists: list[list[ScoredChunk]],
     k: int = 60,
 ) -> list[ScoredChunk]:
-    """
-    Combine multiple ranked lists via Reciprocal Rank Fusion.
-
-    RRF score = sum(1 / (k + rank)) across all lists.
-    Chunks appearing in multiple lists get a higher combined score.
-
-    Parameters
-    ----------
-    ranked_lists : Each inner list is a ranked result set (best first).
-    k            : RRF constant (default 60, from original paper).
-    """
     rrf_scores: dict[str, float] = {}
     chunk_index: dict[str, DocumentChunk] = {}
 
@@ -84,27 +64,17 @@ def reciprocal_rank_fusion(
     ]
     return fused
 
-
-# ---------------------------------------------------------------------------
 # Cross-Encoder Re-ranker
-# ---------------------------------------------------------------------------
 
 class CrossEncoderReranker:
-    """
-    Re-scores (query, chunk) pairs using a cross-encoder model.
-    Much slower than bi-encoder retrieval but far more accurate.
-
-    Apply only to a small candidate set (k_initial=20) and return k_final=5.
-    """
-
     def __init__(self, model_name: str) -> None:
         self.model_name = model_name
         self._model = None
 
-    def _get_model(self):  # type: ignore[return]
+    def _get_model(self): 
         if self._model is None:
             try:
-                from sentence_transformers import CrossEncoder  # type: ignore[import-untyped]
+                from sentence_transformers import CrossEncoder  
             except ImportError as exc:
                 raise ImportError(
                     "sentence-transformers is required. "
@@ -119,11 +89,6 @@ class CrossEncoderReranker:
         candidates: list[ScoredChunk],
         k: int,
     ) -> list[ScoredChunk]:
-        """
-        Re-score *candidates* and return the top *k* by cross-encoder score.
-
-        The raw cross-encoder logit is stored as the new `.score`.
-        """
         if not candidates:
             return []
 
@@ -141,23 +106,9 @@ class CrossEncoderReranker:
         )
         return reranked[:k]
 
-
-# ---------------------------------------------------------------------------
-# Hybrid Retriever (orchestrator)
-# ---------------------------------------------------------------------------
+# Hybrid Retriever
 
 class HybridRetriever:
-    """
-    Combines BM25 + Vector retrieval via RRF, then re-ranks with a
-    Cross-Encoder.
-
-    Usage
-    -----
-        retriever = HybridRetriever(vector_store, config)
-        retriever.build_bm25(all_chunks)   # call once after indexing
-        results = retriever.retrieve("What is the PFS result?")
-    """
-
     def __init__(
         self,
         vector_store: VectorStore,
@@ -169,7 +120,6 @@ class HybridRetriever:
         self._reranker = CrossEncoderReranker(config.cross_encoder_model)
 
     def build_bm25(self, chunks: list[DocumentChunk]) -> None:
-        """Index chunks into the in-memory BM25 retriever."""
         self._bm25 = BM25Retriever(chunks)
         print(f"BM25 index built over {len(chunks)} chunks.")
 
@@ -181,24 +131,24 @@ class HybridRetriever:
         k_init = self.config.k_initial
         k_out = k_final or self.config.k_final
 
-        # --- Step 1: BM25 ---
+        # Step 1: BM25 
         bm25_results: list[ScoredChunk] = []
         if self._bm25 is not None:
             bm25_results = self._bm25.search(query, k=k_init)
 
-        # --- Step 2: Vector ---
+        # Step 2: Vector
         vector_results = self.vector_store.similarity_search(query, k=k_init)
 
-        # --- Step 3: RRF Fusion ---
+        # Step 3: RRF Fusion 
         fused = reciprocal_rank_fusion(
             [bm25_results, vector_results],
             k=self.config.rrf_k,
         )
 
-        # --- Step 4: Re-rank ---
+        # Step 4: Re-rank 
         reranked = self._reranker.rerank(query, fused[:k_init], k=k_out)
 
-        # --- Step 5: Threshold check ---
+        # Step 5: Threshold check 
         if reranked:
             best_score = reranked[0].score
             if best_score < self.config.similarity_threshold:

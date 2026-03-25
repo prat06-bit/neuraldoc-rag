@@ -1,19 +1,3 @@
-"""
-Generation layer — LangGraph RAG pipeline with Ollama support.
-
-Graph structure
----------------
-  [retrieve] --> [check_threshold] --> [generate] --> END
-                       |
-                       v (below threshold)
-                  [refuse] --> END
-
-Install
--------
-    uv add langgraph langchain-ollama langchain-core
-    # Make sure Ollama is running: ollama serve
-"""
-
 from __future__ import annotations
 
 import os
@@ -26,10 +10,7 @@ from rag.generation.prompts import REFUSAL_MESSAGE, SYSTEM_PROMPT, build_user_pr
 from rag.retrieval.hybrid_retriever import HybridRetriever
 from rag.retrieval.vector_store import ScoredChunk
 
-
-# ---------------------------------------------------------------------------
 # Graph state schema
-# ---------------------------------------------------------------------------
 
 class RAGState(TypedDict):
     query: str
@@ -39,20 +20,9 @@ class RAGState(TypedDict):
     refused: bool
     references: list[str]
 
-
-# ---------------------------------------------------------------------------
 # RAG Graph
-# ---------------------------------------------------------------------------
 
 class RAGGraph:
-    """
-    Orchestrates retrieval + generation via LangGraph.
-
-    Supports two providers via config.generation.provider:
-        "ollama"  — local Ollama server (default, no API key needed)
-        "openai"  — OpenAI API (requires OPENAI_API_KEY env var)
-    """
-
     def __init__(
         self,
         config: GenerationConfig,
@@ -62,23 +32,10 @@ class RAGGraph:
         self.retriever = retriever
         self._graph = self._build_graph()
 
-    # ------------------------------------------------------------------
     # Public API
-    # ------------------------------------------------------------------
 
-    def run(self, query: str) -> dict[str, Any]:
-        """
-        Execute the full RAG pipeline for *query*.
-
-        Returns
-        -------
-        dict with keys:
-            response   : str        — generated answer or refusal message
-            references : list[str]  — cited sources
-            refused    : bool       — True if refusal was triggered
-            retrieved  : list[ScoredChunk]
-        """
-        initial_state: RAGState = {
+    def run(self, query: str) -> dict[str, Any]:      
+       initial_state: RAGState = {
             "query": query,
             "retrieved": [],
             "context_passages": [],
@@ -94,13 +51,11 @@ class RAGGraph:
             "retrieved": final_state["retrieved"],
         }
 
-    # ------------------------------------------------------------------
     # Graph construction
-    # ------------------------------------------------------------------
 
-    def _build_graph(self):  # type: ignore[return]
+    def _build_graph(self):  
         try:
-            from langgraph.graph import END, StateGraph  # type: ignore[import-untyped]
+            from langgraph.graph import END, StateGraph 
         except ImportError as exc:
             raise ImportError(
                 "LangGraph is required. Install with: uv add langgraph"
@@ -120,12 +75,9 @@ class RAGGraph:
         graph.add_edge("refuse", END)
         return graph.compile()
 
-    # ------------------------------------------------------------------
     # Nodes
-    # ------------------------------------------------------------------
 
     def _node_retrieve(self, state: RAGState) -> RAGState:
-        """Run hybrid retrieval."""
         try:
             results = self.retriever.retrieve(state["query"])
             state["retrieved"] = results
@@ -138,12 +90,11 @@ class RAGGraph:
         return state
 
     def _node_generate(self, state: RAGState) -> RAGState:
-        """Call the LLM to produce a cited answer."""
         llm = self._get_llm()
         user_prompt = build_user_prompt(state["query"], state["context_passages"])
 
         try:
-            from langchain_core.messages import HumanMessage, SystemMessage  # type: ignore[import-untyped]
+            from langchain_core.messages import HumanMessage, SystemMessage  
             messages = [
                 SystemMessage(content=SYSTEM_PROMPT),
                 HumanMessage(content=user_prompt),
@@ -164,19 +115,15 @@ class RAGGraph:
         state["references"] = []
         return state
 
-    # ------------------------------------------------------------------
     # Routing
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _route_after_retrieve(state: RAGState) -> str:
         return "refuse" if state["refused"] else "generate"
 
-    # ------------------------------------------------------------------
-    # LLM factory — selects Ollama or OpenAI based on config.provider
-    # ------------------------------------------------------------------
+    # LLM factory
 
-    def _get_llm(self):  # type: ignore[return]
+    def _get_llm(self):  
         provider = self.config.provider.lower()
 
         if provider == "ollama":
@@ -189,9 +136,9 @@ class RAGGraph:
                 "Set config.generation.provider to 'ollama' or 'openai'."
             )
 
-    def _get_ollama_llm(self):  # type: ignore[return]
+    def _get_ollama_llm(self):  
         try:
-            from langchain_ollama import ChatOllama  # type: ignore[import-untyped]
+            from langchain_ollama import ChatOllama 
         except ImportError as exc:
             raise ImportError(
                 "langchain-ollama is required. Install with: uv add langchain-ollama"
@@ -204,9 +151,9 @@ class RAGGraph:
             num_predict=self.config.max_tokens,
         )
 
-    def _get_openai_llm(self):  # type: ignore[return]
+    def _get_openai_llm(self): 
         try:
-            from langchain_openai import ChatOpenAI  # type: ignore[import-untyped]
+            from langchain_openai import ChatOpenAI  
         except ImportError as exc:
             raise ImportError(
                 "langchain-openai is required. Install with: uv add langchain-openai"
@@ -224,9 +171,7 @@ class RAGGraph:
             api_key=api_key,
         )
 
-    # ------------------------------------------------------------------
     # Helpers
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _to_context_passages(results: list[ScoredChunk]) -> list[dict[str, str]]:

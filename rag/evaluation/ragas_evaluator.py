@@ -51,7 +51,6 @@ class RAGASEvaluator:
             details["citations_present"] = self._check_citations(
                 answer, ground_truth
             )
-
         return EvaluationResult(
             faithfulness=faithfulness,
             context_precision=context_precision,
@@ -110,7 +109,7 @@ Answer:"""
                 if response.startswith("yes"):
                     relevant += 1
             except Exception:
-                # Heuristic fallback: keyword overlap
+                # Heuristic fallback
                 query_words = set(query.lower().split())
                 ctx_words = set(ctx.lower().split())
                 if len(query_words & ctx_words) >= 2:
@@ -118,14 +117,9 @@ Answer:"""
 
         return relevant / len(contexts)
 
-    # ------------------------------------------------------------------
     # Metric 3: Answer Relevancy
-    # ------------------------------------------------------------------
-
+    
     def _score_answer_relevancy(self, query: str, answer: str) -> float:
-        """
-        Ask LLM to score how well the answer addresses the question (0.0-1.0).
-        """
         if not answer:
             return 0.0
 
@@ -142,22 +136,19 @@ Respond with ONLY a decimal number between 0.0 and 1.0 (e.g. 0.85). No other tex
 
         try:
             response = self._ask_llm(prompt).strip()
-            score = float(re.search(r"[01]?\.\d+|[01]", response).group())  # type: ignore[union-attr]
+            score = float(re.search(r"[01]?\.\d+|[01]", response).group())  
             return max(0.0, min(1.0, score))
         except Exception:
             # Heuristic: if answer is non-empty and not a refusal
             refusal = "does not contain sufficient evidence"
             return 0.1 if refusal in answer.lower() else 0.7
 
-    # ------------------------------------------------------------------
     # LLM helper
-    # ------------------------------------------------------------------
 
     def _ask_llm(self, prompt: str) -> str:
-        """Send a prompt to Ollama and return the response text."""
         if self._llm is None:
             try:
-                from langchain_ollama import ChatOllama  # type: ignore[import-untyped]
+                from langchain_ollama import ChatOllama  # type:ignore[import-untyped]
             except ImportError as exc:
                 raise ImportError(
                     "langchain-ollama required. Install: uv add langchain-ollama"
@@ -168,17 +159,14 @@ Respond with ONLY a decimal number between 0.0 and 1.0 (e.g. 0.85). No other tex
                 temperature=0.0,
             )
 
-        from langchain_core.messages import HumanMessage  # type: ignore[import-untyped]
+        from langchain_core.messages import HumanMessage  # type:ignore[import-untyped]
         response = self._llm.invoke([HumanMessage(content=prompt)])
         return str(response.content)
 
-    # ------------------------------------------------------------------
     # Helpers
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _parse_json(text: str) -> dict[str, Any]:
-        """Extract and parse first JSON object from text."""
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if not match:
             raise ValueError("No JSON found in response.")
@@ -186,7 +174,6 @@ Respond with ONLY a decimal number between 0.0 and 1.0 (e.g. 0.85). No other tex
 
     @staticmethod
     def _heuristic_faithfulness(answer: str, context: str) -> float:
-        """Simple word-overlap fallback when LLM call fails."""
         sentences = [s.strip() for s in re.split(r"[.!?]", answer) if len(s.strip()) > 20]
         if not sentences:
             return 1.0
@@ -198,6 +185,5 @@ Respond with ONLY a decimal number between 0.0 and 1.0 (e.g. 0.85). No other tex
 
     @staticmethod
     def _check_citations(answer: str, ground_truth: str) -> bool:
-        """Check if key numbers/facts from ground_truth appear in answer."""
         numbers = re.findall(r"\d+\.?\d*", ground_truth)
         return all(num in answer for num in numbers[:3])
