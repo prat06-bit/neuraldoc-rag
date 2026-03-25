@@ -33,7 +33,6 @@ if st.query_params.get("launch") == "1":
     st.session_state.page = "chat"
     st.rerun()
 
-# ── Global chrome kill ────────────────────────────────────────────────────────
 st.html("""<style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Instrument+Serif:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
 :root{
