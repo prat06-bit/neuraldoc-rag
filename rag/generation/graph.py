@@ -116,7 +116,6 @@ class RAGGraph:
         state["references"] = []
         return state
 
-    # ------------------------------------------------------------------
     # Routing
 
     @staticmethod
