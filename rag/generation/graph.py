@@ -138,7 +138,7 @@ class RAGGraph:
 
     def _get_ollama_llm(self):  
         try:
-            from langchain_ollama import ChatOllama  # type: ignore[import-untyped]
+            from langchain_ollama import ChatOllama 
         except ImportError as exc:
             raise ImportError(
                 "langchain-ollama is required. Install with: uv add langchain-ollama"
