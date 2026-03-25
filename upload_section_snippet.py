@@ -1,5 +1,3 @@
-    # ── STEP 1: Upload PDF ────────────────────────────────────────────────────
-    # Header row with Clear Index button
     h_col, btn_col = st.columns([4, 1])
     with h_col:
         st.html("""<div style="margin-bottom:8px;">
@@ -62,7 +60,7 @@
                     except Exception as e:
                         st.error(str(e))
 
-    # Indexed files display
+    # Indexed files 
     if h_check.get("indexed_files"):
         cols_files = st.columns(min(len(h_check["indexed_files"]), 4))
         for i, f in enumerate(h_check["indexed_files"]):
