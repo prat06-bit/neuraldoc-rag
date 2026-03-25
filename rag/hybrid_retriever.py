@@ -132,7 +132,7 @@ class HybridRetriever:
         k_init = self.config.k_initial
         k_out = k_final or self.config.k_final
 
-        # --- Step 1: BM25 ---
+        # Step 1: BM25 
         bm25_results: list[ScoredChunk] = []
         if self._bm25 is not None:
             bm25_results = self._bm25.search(query, k=k_init)
