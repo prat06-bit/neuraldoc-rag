@@ -6,7 +6,7 @@ class ConfigurationError(RAGError):
     pass
 
 class InsufficientEvidenceError(RAGError):
-            """Raised when re-ranked context scores fall below the similarity threshold."""
+         """Raised when re-ranked context scores fall below the similarity threshold."""
 
     def __init__(
         self,
