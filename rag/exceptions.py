@@ -1,4 +1,3 @@
-"""Custom exceptions for the RAG system."""
 
 
 class RAGError(Exception):
