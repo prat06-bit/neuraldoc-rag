@@ -22,7 +22,7 @@ st.set_page_config(page_title="NeuralDoc", page_icon="N", layout="wide",
                    initial_sidebar_state="collapsed")
 
 for k, v in [("page","landing"),("messages",[]),("active_tab","chat"),
-             ("show_analytics",False)]:
+             ("show_analytics",False),("dark_mode",False)]:
     if k not in st.session_state:
         st.session_state[k] = v
 
@@ -32,6 +32,16 @@ if st.query_params.get("launch") == "1":
     st.query_params.clear()
     st.session_state.page = "chat"
     st.session_state.active_tab = "chat"
+    st.rerun()
+
+if st.query_params.get("darkmode") == "on":
+    st.query_params.clear()
+    st.session_state.dark_mode = True
+    st.rerun()
+
+if st.query_params.get("darkmode") == "off":
+    st.query_params.clear()
+    st.session_state.dark_mode = False
     st.rerun()
 
 st.html("""<style>
@@ -47,6 +57,15 @@ st.html("""<style>
   --sh:0 1px 3px rgba(124,58,237,0.08),0 4px 16px rgba(124,58,237,0.06);
   --sh2:0 8px 40px rgba(124,58,237,0.14),0 2px 8px rgba(0,0,0,0.04);
   --r:10px; --r2:18px; --r3:24px; --rf:9999px;
+}
+/* ── Dark mode overrides ── */
+.dark{
+  --bg:#0F0D1A; --s:#1A1730; --s2:#221E3A; --s3:#2A2550;
+  --vp:#2D2060; --vpb:#4C3A9E;
+  --t1:#F0EEFF; --t2:#A89EC9; --t3:#6B6490;
+  --bd:rgba(167,139,250,0.18); --bd2:rgba(255,255,255,0.07);
+  --sh:0 1px 3px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.2);
+  --sh2:0 8px 40px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{font-family:'Plus Jakarta Sans',sans-serif!important;
@@ -67,6 +86,19 @@ section[data-testid="stSidebar"],#MainMenu,footer{display:none!important;height:
 # LANDING
 # ══════════════════════════════════════════════════════════════
 if st.session_state.page == "landing":
+    # Apply dark mode to landing if enabled
+    if st.session_state.dark_mode:
+        st.html("""<style>
+        [data-testid="stAppViewContainer"]{background:#0F0D1A!important;}
+        body,html{
+          --bg:#0F0D1A!important;--s:#1A1730!important;--s2:#221E3A!important;
+          --s3:#2A2550!important;--vp:#2D2060!important;--vpb:#4C3A9E!important;
+          --t1:#F0EEFF!important;--t2:#A89EC9!important;--t3:#6B6490!important;
+          --bd:rgba(167,139,250,0.18)!important;--bd2:rgba(255,255,255,0.07)!important;
+          --sh:0 1px 3px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.2)!important;
+          --sh2:0 8px 40px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2)!important;
+        }
+        </style>""")
     st.html("""<style>
     [data-testid="stAppViewContainer"]{background:var(--bg)!important;}
     [data-testid="stButton"]>button{
@@ -193,7 +225,21 @@ if st.session_state.page == "landing":
 
       <nav>
         <div class="logo"><div class="logo-dot"></div>NeuralDoc</div>
-        <div class="nav-pill">Production RAG v1.0</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <form method="get" action="" style="margin:0;">
+            <input type="hidden" name="darkmode" value="on">
+            <button type="submit" style="
+              display:flex;align-items:center;gap:6px;
+              height:34px;padding:0 14px;
+              background:var(--vp);border:1px solid var(--vpb);
+              border-radius:var(--rf);cursor:pointer;
+              font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;
+              color:var(--v);transition:all 0.2s;">
+              ☽&nbsp;Dark Mode
+            </button>
+          </form>
+          <div class="nav-pill">Production RAG v1.0</div>
+        </div>
       </nav>
 
       <section class="hero">
@@ -417,6 +463,40 @@ else:
     chunks = h.get("total_chunks", 0)
     files  = h.get("indexed_files", [])
 
+    # Apply dark mode class to body
+    if st.session_state.dark_mode:
+        st.html("""<script>
+        document.body.classList.add('dark');
+        document.documentElement.classList.add('dark');
+        </script>
+        <style>
+        body,html,[data-testid="stAppViewContainer"]{
+          --bg:#0F0D1A!important;--s:#1A1730!important;--s2:#221E3A!important;
+          --s3:#2A2550!important;--vp:#2D2060!important;--vpb:#4C3A9E!important;
+          --t1:#F0EEFF!important;--t2:#A89EC9!important;--t3:#6B6490!important;
+          --bd:rgba(167,139,250,0.18)!important;--bd2:rgba(255,255,255,0.07)!important;
+          --sh:0 1px 3px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.2)!important;
+          --sh2:0 8px 40px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2)!important;
+          background:var(--bg)!important;
+        }
+        [data-testid="stAppViewContainer"]::before{
+          background:
+            radial-gradient(ellipse 55% 45% at 10% 5%,  rgba(107,26,255,0.22),transparent 55%),
+            radial-gradient(ellipse 40% 40% at 90% 90%,  rgba(0,255,208,0.07),transparent 50%),
+            radial-gradient(ellipse 30% 30% at 50% 50%,  rgba(236,72,153,0.05),transparent 50%)!important;
+        }
+        .stTextInput input{background:#1A1730!important;color:#F0EEFF!important;
+          border-color:rgba(167,139,250,0.25)!important;}
+        .stTextInput input::placeholder{color:#6B6490!important;}
+        [data-testid="stFileUploaderDropzone"]{background:#1A1730!important;
+          border-color:#4C3A9E!important;}
+        [data-testid="stFileUploaderDropzone"] *{color:#A89EC9!important;}
+        [data-testid="stDownloadButton"]>button{background:#1A1730!important;
+          border-color:#4C3A9E!important;}
+        </style>""")
+    else:
+        st.html('<script>document.body.classList.remove("dark");</script>')
+
     if ready:
         bs = "color:#059669;background:rgba(5,150,105,0.08);border:1.5px solid rgba(5,150,105,0.3);"
         bd = "#059669"; bt = f"Ready &middot; {chunks} chunks"
@@ -457,11 +537,30 @@ else:
           transition:all 0.18s;">Analytics</div>
       </div>
 
-      <div style="display:inline-flex;align-items:center;gap:6px;
-        font-size:12px;font-weight:600;padding:6px 14px;border-radius:var(--rf);{bs}">
-        <div style="width:6px;height:6px;border-radius:50%;background:{bd};
-          {'animation:pulse 1.5s ease-in-out infinite;' if ready else ''}"></div>
-        {bt}
+      <!-- Dark mode toggle -->
+      <div style="display:flex;align-items:center;gap:12px;">
+        <form method="get" action="" style="margin:0;">
+          <input type="hidden" name="darkmode" value="{'off' if st.session_state.dark_mode else 'on'}">
+          <button type="submit" style="
+            display:flex;align-items:center;gap:7px;
+            height:36px;padding:0 14px;
+            background:{'#2D2060' if st.session_state.dark_mode else 'var(--vp)'};
+            border:1.5px solid {'#4C3A9E' if st.session_state.dark_mode else 'var(--vpb)'};
+            border-radius:var(--rf);cursor:pointer;
+            font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;
+            color:{'#C4B5FD' if st.session_state.dark_mode else 'var(--v)'};
+            transition:all 0.2s;
+          ">
+            {'☀' if st.session_state.dark_mode else '☽'}&nbsp;
+            {'Light Mode' if st.session_state.dark_mode else 'Dark Mode'}
+          </button>
+        </form>
+        <div style="display:inline-flex;align-items:center;gap:6px;
+          font-size:12px;font-weight:600;padding:6px 14px;border-radius:var(--rf);{bs}">
+          <div style="width:6px;height:6px;border-radius:50%;background:{bd};
+            {'animation:pulse 1.5s ease-in-out infinite;' if ready else ''}"></div>
+          {bt}
+        </div>
       </div>
     </div>""")
 
@@ -478,7 +577,7 @@ else:
             st.rerun()
     st.html("""</div>
     <style>
-    /* Make tab trigger buttons invisible — topbar shows the real UI */
+    /* Make tab trigger buttons invisible - topbar shows the real UI */
     [data-testid="stHorizontalBlock"]:has(button[kind]):first-of-type{
       position:absolute!important;opacity:0!important;pointer-events:none!important;
       height:0!important;overflow:hidden!important;
