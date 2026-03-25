@@ -121,7 +121,6 @@ class RAGGraph:
     def _route_after_retrieve(state: RAGState) -> str:
         return "refuse" if state["refused"] else "generate"
 
-    # ------------------------------------------------------------------
     # LLM factory — selects Ollama or OpenAI based on config.provider
 
     def _get_llm(self):  # type: ignore[return]
