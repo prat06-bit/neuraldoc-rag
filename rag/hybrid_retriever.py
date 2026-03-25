@@ -89,11 +89,6 @@ class CrossEncoderReranker:
         candidates: list[ScoredChunk],
         k: int,
     ) -> list[ScoredChunk]:
-        """
-        Re-score *candidates* and return the top *k* by cross-encoder score.
-
-        The raw cross-encoder logit is stored as the new `.score`.
-        """
         if not candidates:
             return []
 
