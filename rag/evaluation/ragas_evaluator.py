@@ -169,9 +169,7 @@ Respond with ONLY a decimal number between 0.0 and 1.0 (e.g. 0.85). No other tex
         response = self._llm.invoke([HumanMessage(content=prompt)])
         return str(response.content)
 
-    # ------------------------------------------------------------------
     # Helpers
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _parse_json(text: str) -> dict[str, Any]:
