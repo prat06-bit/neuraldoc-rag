@@ -75,7 +75,6 @@ class RAGGraph:
         graph.add_edge("refuse", END)
         return graph.compile()
 
-    # ------------------------------------------------------------------
     # Nodes
 
     def _node_retrieve(self, state: RAGState) -> RAGState:
