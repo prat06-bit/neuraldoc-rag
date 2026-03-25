@@ -148,7 +148,7 @@ class HybridRetriever:
         # Step 4: Re-rank 
         reranked = self._reranker.rerank(query, fused[:k_init], k=k_out)
 
-        # --- Step 5: Threshold check ---
+        # Step 5: Threshold check 
         if reranked:
             best_score = reranked[0].score
             if best_score < self.config.similarity_threshold:
