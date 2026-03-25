@@ -94,7 +94,7 @@ class RAGGraph:
         user_prompt = build_user_prompt(state["query"], state["context_passages"])
 
         try:
-            from langchain_core.messages import HumanMessage, SystemMessage  # type: ignore[import-untyped]
+            from langchain_core.messages import HumanMessage, SystemMessage  
             messages = [
                 SystemMessage(content=SYSTEM_PROMPT),
                 HumanMessage(content=user_prompt),
