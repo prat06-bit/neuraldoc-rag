@@ -1,4 +1,4 @@
-    # ── STEP 1: Upload PDF ────────────────────────────────────────────────────
+
     # Header row with Clear Index button
     h_col, btn_col = st.columns([4, 1])
     with h_col:
