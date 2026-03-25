@@ -45,7 +45,6 @@ class BM25Retriever:
         ]
 
 # RRF Fusion
-# ---------------------------------------------------------------------------
 
 def reciprocal_rank_fusion(
     ranked_lists: list[list[ScoredChunk]],
