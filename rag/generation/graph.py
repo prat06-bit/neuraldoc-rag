@@ -55,7 +55,7 @@ class RAGGraph:
 
     def _build_graph(self):  # type: ignore[return]
         try:
-            from langgraph.graph import END, StateGraph  # type: ignore[import-untyped]
+            from langgraph.graph import END, StateGraph 
         except ImportError as exc:
             raise ImportError(
                 "LangGraph is required. Install with: uv add langgraph"
