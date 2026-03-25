@@ -106,10 +106,7 @@ class CrossEncoderReranker:
         )
         return reranked[:k]
 
-
-# ---------------------------------------------------------------------------
 # Hybrid Retriever (orchestrator)
-# ---------------------------------------------------------------------------
 
 class HybridRetriever:
     def __init__(
