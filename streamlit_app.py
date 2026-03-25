@@ -219,7 +219,6 @@ if st.session_state.page == "landing":
   animation:aP 2.5s ease-in-out infinite;}
 @keyframes aP{0%,100%{color:var(--v-pill-b);}50%{color:var(--v);}}
 
-/* STACK TAGS */
 .tags{display:flex;flex-wrap:wrap;gap:9px;}
 .tag{
   padding:6px 14px;font-size:11px;font-weight:600;
@@ -228,7 +227,6 @@ if st.session_state.page == "landing":
 }
 .tag:hover{transform:translateY(-2px);}
 
-/* FOOTER */
 .foot{
   position:relative;z-index:10;max-width:1200px;
   margin:72px auto 0;padding:22px 56px 64px;
