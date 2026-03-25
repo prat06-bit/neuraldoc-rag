@@ -146,9 +146,7 @@ Respond with ONLY a decimal number between 0.0 and 1.0 (e.g. 0.85). No other tex
             refusal = "does not contain sufficient evidence"
             return 0.1 if refusal in answer.lower() else 0.7
 
-    # ------------------------------------------------------------------
     # LLM helper
-    # ------------------------------------------------------------------
 
     def _ask_llm(self, prompt: str) -> str:
         """Send a prompt to Ollama and return the response text."""
