@@ -195,6 +195,5 @@ Respond with ONLY a decimal number between 0.0 and 1.0 (e.g. 0.85). No other tex
 
     @staticmethod
     def _check_citations(answer: str, ground_truth: str) -> bool:
-        """Check if key numbers/facts from ground_truth appear in answer."""
         numbers = re.findall(r"\d+\.?\d*", ground_truth)
         return all(num in answer for num in numbers[:3])
