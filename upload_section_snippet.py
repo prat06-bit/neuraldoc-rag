@@ -1,5 +1,3 @@
-
-    # Header row with Clear Index button
     h_col, btn_col = st.columns([4, 1])
     with h_col:
         st.html("""<div style="margin-bottom:8px;">
