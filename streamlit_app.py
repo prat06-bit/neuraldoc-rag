@@ -500,17 +500,9 @@ else:
 
     st.html('<div style="height:20px;"></div>')
 
-    # ── ANALYTICS PANEL ───────────────────────────────────────────────────────
-# ── REPLACE the entire analytics st.html block with this ──────────────────
-# Find: if st.session_state.show_analytics:
-#            stats = get_stats()
-#            st.html(f"""  ...  """)
-# Replace with the code below:
-
     if st.session_state.show_analytics:
         stats = get_stats()
 
-        # Build recent queries HTML separately (no backslashes in f-string)
         recent_html = ""
         if stats["recent"]:
             rows = ""
