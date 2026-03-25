@@ -173,7 +173,6 @@ class RAGGraph:
 
     # ------------------------------------------------------------------
     # Helpers
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _to_context_passages(results: list[ScoredChunk]) -> list[dict[str, str]]:
