@@ -468,7 +468,6 @@ else:
     # ── INNER TABS (Chat / Analytics) ─────────────────────────────────────────
     st.html('<div style="max-width:1400px;margin:0 auto;padding:28px 48px 48px;">')
 
-    # Tab switcher row
     tc1, tc2, tc3, tc4, tc5 = st.columns([1, 1, 1, 1, 5])
     with tc1:
         if st.button("← Home", key="home_btn", use_container_width=True):
@@ -830,4 +829,4 @@ else:
                         st.error("Cannot reach API. Run: uv run uvicorn api:app --reload --port 8000")
 
         st.html('</div>')
-    st.html('</div>')  # close padding wrapper
+    st.html('</div>')  
