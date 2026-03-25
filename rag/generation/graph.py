@@ -171,7 +171,6 @@ class RAGGraph:
             api_key=api_key,
         )
 
-    # ------------------------------------------------------------------
     # Helpers
 
     @staticmethod
