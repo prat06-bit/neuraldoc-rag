@@ -1,5 +1,3 @@
-
-
 class RAGError(Exception):
     """Base exception for all RAG system errors."""
 
