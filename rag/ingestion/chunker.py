@@ -12,10 +12,7 @@ from rag.models import ChunkMetadata, DocumentChunk, ParsedDocument, ParsedPage
 # Heading detection
 # ---------------------------------------------------------------------------
 
-# Matches lines that look like headings:
-#   - Markdown: ## Title
-#   - Numbered: 1. Title / 1.1 Title
-#   - ALL CAPS line (≤ 80 chars)
+
 _HEADING_RE = re.compile(
     r"^(?:"
     r"#{1,6}\s+.+"           # Markdown headings
