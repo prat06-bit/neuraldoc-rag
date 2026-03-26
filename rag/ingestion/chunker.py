@@ -52,8 +52,6 @@ class Chunker:
     ) -> list[DocumentChunk]:
         lines = page.text.splitlines()
 
-        # Build a flat list of (line_text, is_heading, font_sizes) tuples.
-        # Font size data comes from raw_blocks if available.
         font_size_map = self._build_font_size_map(page)
 
         sections: list[tuple[list[str], str]] = []  # (lines, heading_label)
