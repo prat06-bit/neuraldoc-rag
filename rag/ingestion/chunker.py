@@ -26,9 +26,7 @@ def _is_heading(line: str, font_sizes: list[float], threshold: float) -> bool:
 
  # Sentence Splitter
 
-
 _SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+")
-
 
 def _split_sentences(text: str) -> list[str]:
     return [s.strip() for s in _SENTENCE_END_RE.split(text) if s.strip()]
