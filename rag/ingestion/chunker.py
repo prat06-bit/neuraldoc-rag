@@ -54,7 +54,7 @@ class Chunker:
 
         font_size_map = self._build_font_size_map(page)
 
-        sections: list[tuple[list[str], str]] = []  # (lines, heading_label)
+        sections: list[tuple[list[str], str]] = []  
         current_heading = ""
         current_lines: list[str] = []
 
