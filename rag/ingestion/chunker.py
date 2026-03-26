@@ -20,7 +20,6 @@ def _is_heading(line: str, font_sizes: list[float], threshold: float) -> bool:
         return False
     if _HEADING_RE.match(line):
         return True
-    # Font-size heuristic: if the line's average font size exceeds threshold
     if font_sizes and sum(font_sizes) / len(font_sizes) >= threshold:
         return True
     return False
