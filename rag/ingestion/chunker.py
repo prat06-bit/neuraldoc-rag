@@ -40,7 +40,6 @@ class Chunker:
 # Public API
 
     def chunk(self, doc: ParsedDocument) -> list[DocumentChunk]:
-        """Process all pages and return the complete chunk list."""
         chunks: list[DocumentChunk] = []
         for page in doc.pages:
             chunks.extend(self._chunk_page(page, doc.source))
