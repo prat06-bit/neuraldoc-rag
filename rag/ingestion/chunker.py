@@ -153,6 +153,5 @@ class Chunker:
         for block in page.raw_blocks:
             sizes: list[float] = block.get("font_sizes", [])
             if sizes:
-                # Use bbox as a proxy key — not perfect but avoids full span walk
                 mapping[str(block.get("bbox", ""))] = sizes
         return mapping
