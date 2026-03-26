@@ -1,4 +1,3 @@
-"""Landing page — NeuralDoc RAG"""
 import streamlit as st
 
 st.set_page_config(
@@ -8,7 +7,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ── Hide all Streamlit chrome ─────────────────────────────────────────────────
 st.html("""
 <style>
 [data-testid="stHeader"],
