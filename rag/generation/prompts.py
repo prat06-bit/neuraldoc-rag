@@ -8,7 +8,6 @@ REFUSAL_MESSAGE = (
 SYSTEM_PROMPT = """You are a precise, domain-specific question-answering assistant.
 You answer questions exclusively from the provided context passages."""
 
-
 def build_user_prompt(query: str, context_passages: list[dict[str, str]]) -> str:
     """
     Build the user-turn prompt from a query and a list of context passages.
