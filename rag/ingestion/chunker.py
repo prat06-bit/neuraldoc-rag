@@ -148,7 +148,6 @@ class Chunker:
 
     @staticmethod
     def _build_font_size_map(page: ParsedPage) -> dict[str, list[float]]:
-        """Map stripped line text → list of font sizes from raw_blocks."""
         mapping: dict[str, list[float]] = {}
         for block in page.raw_blocks:
             sizes: list[float] = block.get("font_sizes", [])
