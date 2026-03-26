@@ -71,8 +71,6 @@ class Chunker:
 
         if current_lines:
             sections.append((current_lines, current_heading))
-
-        # Also append any extracted tables as standalone chunks
         table_sections: list[tuple[list[str], str]] = [
             ([tbl], f"{current_heading} [TABLE]") for tbl in page.tables
         ]
