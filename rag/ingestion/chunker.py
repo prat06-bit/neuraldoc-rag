@@ -9,7 +9,7 @@ _HEADING_RE = re.compile(
     r"^(?:"
     r"#{1,6}\s+.+"           
     r"|(?:\d+\.)+\d*\s+\S.+" # Numbered headings 
-    r"|\d+\.\s+[A-Z].+"      # 1. Title
+    r"|\d+\.\s+[A-Z].+"      # Title
     r"|[A-Z][A-Z\s]{3,79}$"  # ALL CAPS headings
     r")$"
 )
