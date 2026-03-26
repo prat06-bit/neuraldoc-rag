@@ -5,7 +5,6 @@ REFUSAL_MESSAGE = (
     "to answer this query."
 )
 
-
 SYSTEM_PROMPT = """You are a precise, domain-specific question-answering assistant.
 You answer questions exclusively from the provided context passages.
 
