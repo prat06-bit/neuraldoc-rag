@@ -37,7 +37,7 @@ class Chunker:
         self.config = config
         self._enc = tiktoken.get_encoding(config.tiktoken_encoding)
 
-    # Public API
+# Public API
 
     def chunk(self, doc: ParsedDocument) -> list[DocumentChunk]:
         """Process all pages and return the complete chunk list."""
