@@ -94,7 +94,6 @@ class Chunker:
         page: int,
         breadcrumb: list[str],
     ) -> Iterator[DocumentChunk]:
-        """Yield chunks within [min_tokens, max_tokens] from *text*."""
         tokens = self._count_tokens(text)
 
         if tokens <= self.config.max_tokens:
