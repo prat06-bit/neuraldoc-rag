@@ -28,7 +28,6 @@ def build_user_prompt(query: str, context_passages: list[dict[str, str]]) -> str
         "Answer:"
     )
 
-
 def _format_context(passages: list[dict[str, str]]) -> str:
     lines: list[str] = []
     for i, p in enumerate(passages, start=1):
@@ -45,3 +44,4 @@ def _format_context(passages: list[dict[str, str]]) -> str:
         lines.append("")
 
     return "\n".join(lines)
+
