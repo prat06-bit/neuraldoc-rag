@@ -74,8 +74,6 @@ class Chunker:
             ([tbl], f"{current_heading} [TABLE]") for tbl in page.tables
         ]
         sections.extend(table_sections)
-
-        # Build breadcrumb stack (simple single-level for now)
         chunks: list[DocumentChunk] = []
         for section_lines, heading in sections:
             text = "\n".join(section_lines).strip()
