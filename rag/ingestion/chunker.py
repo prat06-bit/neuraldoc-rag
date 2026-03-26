@@ -31,7 +31,6 @@ _SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+")
 def _split_sentences(text: str) -> list[str]:
     return [s.strip() for s in _SENTENCE_END_RE.split(text) if s.strip()]
 
-
 # Core chunker
 
 class Chunker:
