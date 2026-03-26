@@ -61,7 +61,6 @@ class Chunker:
         for line in lines:
             fs = font_size_map.get(line.strip(), [])
             if _is_heading(line, fs, self.config.min_tokens):
-                # Flush current section
                 if current_lines:
                     sections.append((current_lines, current_heading))
                 current_heading = line.strip()
