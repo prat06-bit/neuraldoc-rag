@@ -33,8 +33,6 @@ def _split_sentences(text: str) -> list[str]:
 # Core chunker
 
 class Chunker:
-    """Converts a ParsedDocument into token-bounded DocumentChunks."""
-
     def __init__(self, config: ChunkingConfig) -> None:
         self.config = config
         self._enc = tiktoken.get_encoding(config.tiktoken_encoding)
