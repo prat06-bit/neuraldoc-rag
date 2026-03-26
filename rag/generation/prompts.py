@@ -44,4 +44,3 @@ def _format_context(passages: list[dict[str, str]]) -> str:
         lines.append("")
 
     return "\n".join(lines)
-
