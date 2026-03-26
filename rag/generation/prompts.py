@@ -9,18 +9,7 @@ SYSTEM_PROMPT = """You are a precise, domain-specific question-answering assista
 You answer questions exclusively from the provided context passages."""
 
 def build_user_prompt(query: str, context_passages: list[dict[str, str]]) -> str:
-  
-    query            : The user's question.
-    context_passages : List of dicts with keys:
-                         - text       : The chunk text.
-                         - source     : File name / document title.
-                         - page       : Page number (as string).
-                         - breadcrumb : Section path (optional).
 
-    Returns
-    -------
-    Formatted string ready to send as the user message.
-    """
     if not context_passages:
         return (
             f"Question: {query}\n\n"
