@@ -15,7 +15,6 @@ _HEADING_RE = re.compile(
 )
 
 def _is_heading(line: str, font_sizes: list[float], threshold: float) -> bool:
-    """Return True if *line* looks like a section heading."""
     line = line.strip()
     if not line:
         return False
