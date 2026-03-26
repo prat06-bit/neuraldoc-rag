@@ -46,8 +46,7 @@ class Chunker:
             chunks.extend(self._chunk_page(page, doc.source))
         return chunks
 
-    # ------------------------------------------------------------------
-    # Per-page processing
+# Per-page processing
 
     def _chunk_page(
         self, page: ParsedPage, source: str
