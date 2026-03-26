@@ -50,7 +50,6 @@ class Chunker:
     def _chunk_page(
         self, page: ParsedPage, source: str
     ) -> list[DocumentChunk]:
-        """Split one page into chunks respecting heading boundaries."""
         lines = page.text.splitlines()
 
         # Build a flat list of (line_text, is_heading, font_sizes) tuples.
