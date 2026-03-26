@@ -9,7 +9,6 @@ SYSTEM_PROMPT = """You are a precise, domain-specific question-answering assista
 You answer questions exclusively from the provided context passages."""
 
 def build_user_prompt(query: str, context_passages: list[dict[str, str]]) -> str:
-
     if not context_passages:
         return (
             f"Question: {query}\n\n"
