@@ -1,4 +1,3 @@
-"""Landing page — NeuralDoc RAG"""
 import streamlit as st
 
 st.set_page_config(
@@ -8,7 +7,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ── Hide all Streamlit chrome ─────────────────────────────────────────────────
 st.html("""
 <style>
 [data-testid="stHeader"],
@@ -37,7 +35,7 @@ html, body,
 </style>
 """)
 
-# ── Background layers ─────────────────────────────────────────────────────────
+# Background layers
 st.html("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');

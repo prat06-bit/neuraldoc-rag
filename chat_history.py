@@ -21,7 +21,6 @@ def save_conversation(messages: list, title: str | None = None) -> str:
         return ""
     all_convs = _load_raw()
     conv_id = str(uuid.uuid4())[:8]
-    # Autotitle from first user message
     if title is None:
         first_user = next((m["content"] for m in messages if m["role"] == "user"), "Untitled")
         title = first_user[:48] + ("…" if len(first_user) > 48 else "")
