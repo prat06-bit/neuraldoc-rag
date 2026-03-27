@@ -32,7 +32,6 @@ app.add_middleware(
 UPLOAD_DIR = Path("uploaded_pdfs")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-
 class PipelineState:
     def __init__(self) -> None:
         self.cfg = load_config()
