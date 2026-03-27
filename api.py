@@ -63,7 +63,7 @@ class PipelineState:
         doc = parser.parse(pdf_path)
         chunks = Chunker(self.cfg.chunking).chunk(doc)
 
-        self.store.add_chunks(chunks)  # type: ignore
+        self.store.add_chunks(chunks)  
         self.all_chunks.extend(chunks)
         self.retriever.build_bm25(self.all_chunks)  # type: ignore
 
