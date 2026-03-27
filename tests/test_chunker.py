@@ -82,7 +82,6 @@ class TestSemanticChunker:
         assert [c.chunk_id for c in chunks_a] == [c.chunk_id for c in chunks_b]
 
     def test_tables_are_included_as_segments(self) -> None:
-        """Tables from PageContent should appear in chunk text."""
         page = PageContent(
             page_number=1,
             text_blocks=[
