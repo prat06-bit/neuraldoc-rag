@@ -96,7 +96,6 @@ class TestSemanticChunker:
         assert "Col A" in all_text
 
     def test_empty_pages_produce_no_chunks(self) -> None:
-        """Chunking empty pages should return an empty list."""
         page = PageContent(
             page_number=1, text_blocks=[], tables=[], raw_text=""
         )
