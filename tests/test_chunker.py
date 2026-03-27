@@ -42,7 +42,6 @@ class TestSemanticChunker:
         assert len(chunks) > 0
 
     def test_chunks_contain_required_metadata(self) -> None:
-        """Each chunk must have source_file, page_number, and breadcrumb_path."""
         page = _make_page([
             ("Chapter One", 16.0, True),
             ("Body text here with enough words to form a chunk.", 11.0, False),
