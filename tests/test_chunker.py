@@ -5,7 +5,6 @@ from rag.config import ChunkingConfig, IngestionConfig
 from rag.ingestion.chunker import SemanticChunker
 from rag.models import PageContent, TextBlock
 
-
 def _make_page(
     blocks: list[tuple[str, float, bool]], page_number: int = 1
 ) -> PageContent:
