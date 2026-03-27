@@ -21,7 +21,6 @@ def _make_page(
     )
 
 class TestSemanticChunker:
-
     def setup_method(self) -> None:
         self.chunking_cfg = ChunkingConfig(
             min_tokens=10, max_tokens=50, tiktoken_encoding="cl100k_base"
@@ -34,7 +33,6 @@ class TestSemanticChunker:
         self.encoder = tiktoken.get_encoding("cl100k_base")
 
     def test_basic_chunking_produces_output(self) -> None:
-        """Chunking a simple page produces at least one chunk."""
         page = _make_page([
             ("Introduction", 16.0, True),
             ("This is some body text that describes the topic in detail. "
