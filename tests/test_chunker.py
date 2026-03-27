@@ -9,7 +9,6 @@ from rag.models import PageContent, TextBlock
 def _make_page(
     blocks: list[tuple[str, float, bool]], page_number: int = 1
 ) -> PageContent:
-    """Helper: create a PageContent from (text, font_size, is_bold) tuples."""
     text_blocks = [
         TextBlock(text=text, font_size=size, is_bold=bold)
         for text, size, bold in blocks
