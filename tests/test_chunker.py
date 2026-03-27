@@ -104,7 +104,6 @@ class TestSemanticChunker:
         assert chunks == []
 
     def test_multi_page_chunking(self) -> None:
-        """Chunks from multiple pages should preserve page numbers."""
         pages = [
             _make_page(
                 [("Page one content here.", 11.0, False)], page_number=1
