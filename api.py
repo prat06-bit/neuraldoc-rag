@@ -190,10 +190,7 @@ async def ingest_pdf(file: UploadFile = File(...)) -> IngestResponse:
 
 @app.delete("/index")
 def clear_index() -> dict[str, str]:
-    """
-    Wipe the entire vector store, BM25 index, and all uploaded files.
-    Call this before indexing a new document set to avoid stale results.
-    """
+
     try:
         state.clear_index()
     except Exception as exc:
