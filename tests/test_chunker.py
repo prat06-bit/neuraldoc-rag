@@ -55,7 +55,6 @@ class TestSemanticChunker:
             assert chunk.chunk_id != ""
 
     def test_breadcrumb_path_reflects_headers(self) -> None:
-        """Breadcrumb path should include detected headers."""
         page = _make_page([
             ("Main Title", 20.0, True),
             ("Some introductory text in the main section.", 11.0, False),
