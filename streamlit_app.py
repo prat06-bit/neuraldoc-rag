@@ -37,12 +37,10 @@ if st.query_params.get("launch") == "1":
 if st.query_params.get("darkmode") == "on":
     st.query_params.clear()
     st.session_state.dark_mode = True
-    st.rerun()
 
 if st.query_params.get("darkmode") == "off":
     st.query_params.clear()
     st.session_state.dark_mode = False
-    st.rerun()
 
 st.html("""<style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Instrument+Serif:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -124,8 +122,8 @@ if st.session_state.page == "landing":
         radial-gradient(ellipse 45% 45% at 85% 85%,rgba(6,182,212,0.10),transparent 55%),
         radial-gradient(ellipse 35% 35% at 50% 50%,rgba(236,72,153,0.06),transparent 55%);}
     nav{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;
-      max-width:1200px;margin:0 auto;padding:28px 56px 0;animation:fD .5s ease both;}
-    @keyframes fD{from{opacity:0;transform:translateY(-12px);}to{opacity:1;transform:translateY(0);}}
+      max-width:1200px;margin:0 auto;padding:28px 56px 0;animation:fD .6s cubic-bezier(0.16,1,0.3,1) both;}
+    @keyframes fD{from{opacity:0;transform:translateY(-12px);filter:blur(4px);}to{opacity:1;transform:translateY(0);filter:blur(0);}}
     .logo{font-family:'Instrument Serif',serif;font-size:22px;color:var(--t1);
       display:flex;align-items:center;gap:8px;}
     .logo-dot{width:9px;height:9px;border-radius:50%;background:var(--v);}
@@ -133,8 +131,13 @@ if st.session_state.page == "landing":
       letter-spacing:0.08em;border:1px solid var(--vpb);background:var(--vp);
       padding:6px 16px;border-radius:var(--rf);}
     .hero{position:relative;z-index:10;max-width:820px;margin:0 auto;
-      padding:80px 56px 0;text-align:center;animation:fU .7s ease .15s both;}
-    @keyframes fU{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
+      padding:80px 56px 0;text-align:center;animation:fU .8s cubic-bezier(0.16,1,0.3,1) .15s both;}
+    @keyframes fU{from{opacity:0;transform:translateY(22px);filter:blur(4px);}to{opacity:1;transform:translateY(0);filter:blur(0);}}
+    .h-eyebrow{animation:fU .6s cubic-bezier(0.16,1,0.3,1) .25s both;}
+    .h1{animation:fU .8s cubic-bezier(0.16,1,0.3,1) .4s both;}
+    .h-sub{animation:fU .7s cubic-bezier(0.16,1,0.3,1) .55s both;}
+    .cta-form{animation:fU .6s cubic-bezier(0.16,1,0.3,1) .7s both;}
+    .stats{animation:fU .7s cubic-bezier(0.16,1,0.3,1) .85s both;}
     .h-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
       color:var(--v);border:1px solid var(--vpb);background:var(--vp);
       padding:5px 16px;border-radius:var(--rf);margin-bottom:28px;letter-spacing:0.04em;}
@@ -218,16 +221,19 @@ if st.session_state.page == "landing":
       padding:22px 56px 64px;border-top:1px solid var(--bd2);
       display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
     .foot span{font-size:12px;color:var(--t3);}
-    </style>
+    </style>""")
 
+    dm_val = "off" if st.session_state.dark_mode else "on"
+    dm_icon = "☀" if st.session_state.dark_mode else "☽"
+    dm_label = "Light Mode" if st.session_state.dark_mode else "Dark Mode"
+    st.html(f"""
     <div class="land">
     <div style="position:relative;z-index:1;">
-
       <nav>
         <div class="logo"><div class="logo-dot"></div>NeuralDoc</div>
         <div style="display:flex;align-items:center;gap:10px;">
           <form method="get" action="" style="margin:0;">
-            <input type="hidden" name="darkmode" value="on">
+            <input type="hidden" name="darkmode" value="{dm_val}">
             <button type="submit" style="
               display:flex;align-items:center;gap:6px;
               height:34px;padding:0 14px;
@@ -235,7 +241,7 @@ if st.session_state.page == "landing":
               border-radius:var(--rf);cursor:pointer;
               font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;
               color:var(--v);transition:all 0.2s;">
-              ☽&nbsp;Dark Mode
+              {dm_icon}&nbsp;{dm_label}
             </button>
           </form>
           <div class="nav-pill">Production RAG v1.0</div>
@@ -564,24 +570,21 @@ else:
       </div>
     </div>""")
 
-    # ── TAB SWITCHER buttons (hidden, triggered by topbar clicks via columns) ─
-    st.html('<div style="padding:0 52px;">')
-    _t1, _t2, _gap = st.columns([1, 1, 10])
-    with _t1:
-        if st.button("__chat__", key="tab_chat"):
-            st.session_state.active_tab = "chat"
-            st.rerun()
-    with _t2:
-        if st.button("__analytics__", key="tab_analytics"):
-            st.session_state.active_tab = "analytics"
-            st.rerun()
-    st.html("""</div>
-    <style>
-    /* Make tab trigger buttons invisible - topbar shows the real UI */
-    [data-testid="stHorizontalBlock"]:has(button[kind]):first-of-type{
-      position:absolute!important;opacity:0!important;pointer-events:none!important;
-      height:0!important;overflow:hidden!important;
-    }
+    # ── TAB SWITCHER buttons (hidden) ────────────────────────────────────────
+    with st.container():
+        st.html('<style>[data-testid="stVerticalBlock"] > div:has(> [data-testid="stHorizontalBlock"]) + div:empty { display:none; }</style>')
+        _t1, _t2, _gap = st.columns([1, 1, 10])
+        with _t1:
+            if st.button("__chat__", key="tab_chat"):
+                st.session_state.active_tab = "chat"
+                st.rerun()
+        with _t2:
+            if st.button("__analytics__", key="tab_analytics"):
+                st.session_state.active_tab = "analytics"
+                st.rerun()
+    st.html("""<style>
+    /* Hide the tab trigger buttons container - zero height, invisible */
+    [data-testid="stExpander"], .tab-triggers-hidden { display:none!important; }
     </style>""")
 
     # ── ACTION ROW ────────────────────────────────────────────────────────────
