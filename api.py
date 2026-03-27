@@ -159,7 +159,6 @@ def update_config(req: ConfigUpdateRequest) -> dict[str, Any]:
         state.cfg.retrieval.similarity_threshold = req.similarity_threshold
 
     state.rebuild_graph()
-
     return {
         "message": "Config updated.",
         "current": {
@@ -176,7 +175,6 @@ async def ingest_pdf(file: UploadFile = File(...)) -> IngestResponse:
     save_path = UPLOAD_DIR / (file.filename or "upload.pdf")
     with open(save_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
-
     try:
         count = state.ingest_pdf(str(save_path))
     except Exception as exc:
