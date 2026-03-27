@@ -65,7 +65,7 @@ class PipelineState:
 
         self.store.add_chunks(chunks)  
         self.all_chunks.extend(chunks)
-        self.retriever.build_bm25(self.all_chunks)  # type: ignore
+        self.retriever.build_bm25(self.all_chunks)  
 
         if self.graph is None:
             self.graph = RAGGraph(self.cfg.generation, self.retriever)
