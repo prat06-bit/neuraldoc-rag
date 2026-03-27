@@ -20,9 +20,7 @@ def _make_page(
         raw_text=raw_text,
     )
 
-
 class TestSemanticChunker:
-    """Tests for the SemanticChunker class."""
 
     def setup_method(self) -> None:
         self.chunking_cfg = ChunkingConfig(
