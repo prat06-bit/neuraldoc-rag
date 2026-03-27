@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import tiktoken
-
 from rag.config import ChunkingConfig, IngestionConfig
 from rag.ingestion.chunker import SemanticChunker
 from rag.models import PageContent, TextBlock
