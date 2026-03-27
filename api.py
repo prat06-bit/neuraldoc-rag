@@ -204,10 +204,9 @@ def query(req: QueryRequest) -> QueryResponse:
             status_code=400,
             detail="No documents indexed yet. POST a PDF to /ingest first.",
         )
-
     start = time.perf_counter()
     try:
-        result = state.graph.run(req.query)  # type: ignore
+        result = state.graph.run(req.query) 
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
