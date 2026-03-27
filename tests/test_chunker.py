@@ -65,7 +65,6 @@ class TestSemanticChunker:
         assert any("Main Title" in b for b in breadcrumbs)
 
     def test_token_count_is_populated(self) -> None:
-        """Each chunk should have a positive token count."""
         page = _make_page([
             ("Section A", 14.0, True),
             ("Detailed explanation with multiple words forming a text block.", 11.0, False),
@@ -75,7 +74,6 @@ class TestSemanticChunker:
             assert chunk.token_count > 0
 
     def test_chunk_id_is_deterministic(self) -> None:
-        """Same input should produce the same chunk IDs."""
         page = _make_page([
             ("Header", 14.0, True),
             ("Body text content.", 11.0, False),
