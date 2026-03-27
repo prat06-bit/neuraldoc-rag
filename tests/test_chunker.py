@@ -59,7 +59,6 @@ class TestSemanticChunker:
             ("Some introductory text in the main section.", 11.0, False),
         ])
         chunks = self.chunker.chunk_pages([page], source_file="test.pdf")
-        # At least one chunk should reference the header
         breadcrumbs = [c.breadcrumb_path for c in chunks]
         assert any("Main Title" in b for b in breadcrumbs)
 
