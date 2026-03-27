@@ -1,4 +1,3 @@
-"""Unit tests for SemanticChunker."""
 
 from __future__ import annotations
 
