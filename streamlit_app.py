@@ -35,12 +35,12 @@ if st.query_params.get("launch") == "1":
     st.rerun()
 
 if st.query_params.get("darkmode") == "on":
-    st.query_params.clear()
     st.session_state.dark_mode = True
+    st.query_params.pop("darkmode", None)
 
 if st.query_params.get("darkmode") == "off":
-    st.query_params.clear()
     st.session_state.dark_mode = False
+    st.query_params.pop("darkmode", None)
 
 st.html("""<style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Instrument+Serif:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -67,7 +67,8 @@ st.html("""<style>
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{font-family:'Plus Jakarta Sans',sans-serif!important;
-  background:var(--bg)!important;color:var(--t1)!important;}
+  background:var(--bg)!important;color:var(--t1)!important;
+  transition:background-color 0.3s ease, color 0.3s ease;}
 [data-testid="stHeader"],[data-testid="stToolbar"],[data-testid="stDecoration"],
 [data-testid="stStatusWidget"],[data-testid="collapsedControl"],
 section[data-testid="stSidebar"],#MainMenu,footer{display:none!important;height:0!important;}
@@ -232,21 +233,27 @@ if st.session_state.page == "landing":
       <nav>
         <div class="logo"><div class="logo-dot"></div>NeuralDoc</div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <form method="get" action="" style="margin:0;">
-            <input type="hidden" name="darkmode" value="{dm_val}">
-            <button type="submit" style="
+          <button id="darkModeBtn" style="
               display:flex;align-items:center;gap:6px;
               height:34px;padding:0 14px;
               background:var(--vp);border:1px solid var(--vpb);
               border-radius:var(--rf);cursor:pointer;
               font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;
-              color:var(--v);transition:all 0.2s;">
+              color:var(--v);transition:all 0.2s ease;">
               {dm_icon}&nbsp;{dm_label}
-            </button>
-          </form>
+          </button>
           <div class="nav-pill">Production RAG v1.0</div>
         </div>
       </nav>
+      <script>
+      document.getElementById('darkModeBtn').addEventListener('click', function() {{
+        const isDark = document.documentElement.classList.contains('dark');
+        const newDarkValue = isDark ? 'off' : 'on';
+        const url = new URL(window.location);
+        url.searchParams.set('darkmode', newDarkValue);
+        window.location.href = url.toString();
+      }});
+      </script>
 
       <section class="hero">
         <div class="h-eyebrow"><span class="h-dot"></span>Zero hallucination tolerance</div>
@@ -545,9 +552,7 @@ else:
 
       <!-- Dark mode toggle -->
       <div style="display:flex;align-items:center;gap:12px;">
-        <form method="get" action="" style="margin:0;">
-          <input type="hidden" name="darkmode" value="{'off' if st.session_state.dark_mode else 'on'}">
-          <button type="submit" style="
+        <button id="darkModeBtnChat" style="
             display:flex;align-items:center;gap:7px;
             height:36px;padding:0 14px;
             background:{'#2D2060' if st.session_state.dark_mode else 'var(--vp)'};
@@ -555,12 +560,20 @@ else:
             border-radius:var(--rf);cursor:pointer;
             font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;
             color:{'#C4B5FD' if st.session_state.dark_mode else 'var(--v)'};
-            transition:all 0.2s;
-          ">
-            {'☀' if st.session_state.dark_mode else '☽'}&nbsp;
-            {'Light Mode' if st.session_state.dark_mode else 'Dark Mode'}
-          </button>
-        </form>
+            transition:all 0.2s ease;
+        ">
+          {'☀' if st.session_state.dark_mode else '☽'}&nbsp;
+          {'Light Mode' if st.session_state.dark_mode else 'Dark Mode'}
+        </button>
+        <script>
+        document.getElementById('darkModeBtnChat').addEventListener('click', function() {{
+          const isDark = document.documentElement.classList.contains('dark');
+          const newDarkValue = isDark ? 'off' : 'on';
+          const url = new URL(window.location);
+          url.searchParams.set('darkmode', newDarkValue);
+          window.location.href = url.toString();
+        }});
+        </script>
         <div style="display:inline-flex;align-items:center;gap:6px;
           font-size:12px;font-weight:600;padding:6px 14px;border-radius:var(--rf);{bs}">
           <div style="width:6px;height:6px;border-radius:50%;background:{bd};
@@ -1110,24 +1123,6 @@ else:
                     with st.spinner("Thinking..."):
                         try:
                             resp = requests.post(f"{API_BASE}/query",
-                                json={"query":query}, timeout=120)
-                            if resp.status_code == 200:
-                                d = resp.json()
-                                st.session_state.messages.extend([
-                                    {"role":"user","content":query},
-                                    {"role":"assistant","content":d["answer"],
-                                     "references":d["references"],"refused":d["refused"],
-                                     "latency_ms":d["latency_ms"]}])
-                                record_query(query=query, latency_ms=d["latency_ms"],
-                                             refused=d["refused"])
-                                st.rerun()
-                            else:
-                                st.error(f"API error: {resp.json().get('detail',resp.text)}")
-                        except requests.exceptions.ConnectionError:
-                            st.error("Cannot reach API. Run: uv run uvicorn api:app --reload --port 8000")
-
-            st.html('</div>')
-        st.html('</div>')E}/query",
                                 json={"query":query}, timeout=120)
                             if resp.status_code == 200:
                                 d = resp.json()
