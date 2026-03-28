@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import shutil
 import time
 from pathlib import Path
@@ -33,7 +32,6 @@ app.add_middleware(
 UPLOAD_DIR = Path("uploaded_pdfs")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-
 class PipelineState:
     def __init__(self) -> None:
         self.cfg = load_config()
@@ -65,9 +63,9 @@ class PipelineState:
         doc = parser.parse(pdf_path)
         chunks = Chunker(self.cfg.chunking).chunk(doc)
 
-        self.store.add_chunks(chunks)  # type: ignore
+        self.store.add_chunks(chunks)  
         self.all_chunks.extend(chunks)
-        self.retriever.build_bm25(self.all_chunks)  # type: ignore
+        self.retriever.build_bm25(self.all_chunks)  
 
         if self.graph is None:
             self.graph = RAGGraph(self.cfg.generation, self.retriever)
@@ -161,7 +159,6 @@ def update_config(req: ConfigUpdateRequest) -> dict[str, Any]:
         state.cfg.retrieval.similarity_threshold = req.similarity_threshold
 
     state.rebuild_graph()
-
     return {
         "message": "Config updated.",
         "current": {
@@ -178,7 +175,6 @@ async def ingest_pdf(file: UploadFile = File(...)) -> IngestResponse:
     save_path = UPLOAD_DIR / (file.filename or "upload.pdf")
     with open(save_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
-
     try:
         count = state.ingest_pdf(str(save_path))
     except Exception as exc:
@@ -192,10 +188,7 @@ async def ingest_pdf(file: UploadFile = File(...)) -> IngestResponse:
 
 @app.delete("/index")
 def clear_index() -> dict[str, str]:
-    """
-    Wipe the entire vector store, BM25 index, and all uploaded files.
-    Call this before indexing a new document set to avoid stale results.
-    """
+
     try:
         state.clear_index()
     except Exception as exc:
@@ -211,10 +204,9 @@ def query(req: QueryRequest) -> QueryResponse:
             status_code=400,
             detail="No documents indexed yet. POST a PDF to /ingest first.",
         )
-
     start = time.perf_counter()
     try:
-        result = state.graph.run(req.query)  # type: ignore
+        result = state.graph.run(req.query) 
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
