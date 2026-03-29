@@ -86,7 +86,6 @@ class TestRRFFusion:
         assert score_map["vec_chunk"] == 0.0
 
     def test_alpha_0_favors_vector(self) -> None:
-        """With alpha=0.0, vector-only chunks should score and BM25 should not."""
         config = RetrievalConfig(alpha=0.0, rrf_k=60, k_initial=10)
         bm25_results = [_make_result("bm25_chunk", 10.0, "bm25")]
         vector_results = [_make_result("vec_chunk", 0.9, "vector")]
