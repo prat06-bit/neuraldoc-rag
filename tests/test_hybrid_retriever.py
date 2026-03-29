@@ -33,7 +33,6 @@ class TestRRFFusion:
         )
 
     def test_rrf_combines_both_sources(self) -> None:
-        """RRF fusion should include chunks from both retrievers."""
         bm25_results = [
             _make_result("a", 10.0, "bm25"),
             _make_result("b", 8.0, "bm25"),
