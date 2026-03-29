@@ -33,8 +33,6 @@ def _sample_dataset() -> list[dict[str, Any]]:
 
 
 class TestCIGatekeeper:
-    """Tests for the CIGatekeeper class."""
-
     def test_passes_when_faithfulness_above_threshold_and_citations_present(
         self,
     ) -> None:
