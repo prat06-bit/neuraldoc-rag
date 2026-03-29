@@ -21,7 +21,6 @@ def _write_golden_dataset(samples: list[dict[str, Any]]) -> Path:
 
 
 def _sample_dataset() -> list[dict[str, Any]]:
-    """Return a minimal golden dataset."""
     return [
         {
             "question": "What is the dosage?",
