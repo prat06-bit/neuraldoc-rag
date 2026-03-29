@@ -127,7 +127,6 @@ class TestCIGatekeeper:
         assert result.missing_citations[0]["expected_source"] == "guide.pdf"
 
     def test_reports_faithfulness_score(self) -> None:
-        """Result should always contain the faithfulness score."""
         config = RAGConfig()
         pipeline = MagicMock(
             return_value={"answer": "", "citations": [], "contexts": []}
