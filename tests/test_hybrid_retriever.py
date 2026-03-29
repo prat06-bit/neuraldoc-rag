@@ -53,7 +53,6 @@ class TestRRFFusion:
         assert "c" in fused_ids
 
     def test_rrf_boosts_overlapping_chunks(self) -> None:
-        """Chunks appearing in both result sets should have higher scores."""
         bm25_results = [
             _make_result("shared", 10.0, "bm25"),
             _make_result("bm25_only", 8.0, "bm25"),
