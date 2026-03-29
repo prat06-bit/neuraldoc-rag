@@ -97,8 +97,6 @@ class TestCIGatekeeper:
         config = RAGConfig(
             evaluation=EvaluationConfig(faithfulness_threshold=0.85)
         )
-
-        # Pipeline answer does NOT contain the expected citation
         pipeline = MagicMock(
             return_value={
                 "answer": "The dosage is 500mg daily.",
