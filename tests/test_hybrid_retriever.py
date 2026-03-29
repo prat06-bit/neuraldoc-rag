@@ -69,7 +69,6 @@ class TestRRFFusion:
         fused = retriever._rrf_fusion(bm25_results, vector_results)
         score_map = {r.chunk.chunk_id: r.score for r in fused}
 
-        # "shared" should score higher than single-source chunks
         assert score_map["shared"] > score_map["bm25_only"]
         assert score_map["shared"] > score_map["vec_only"]
 
