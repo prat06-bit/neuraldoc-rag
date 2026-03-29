@@ -112,7 +112,6 @@ class TestRRFFusion:
             assert result.retriever_source == "ensemble"
 
     def test_empty_inputs_produce_empty_fusion(self) -> None:
-        """RRF with empty inputs should return empty results."""
         retriever = HybridRetriever.__new__(HybridRetriever)
         retriever._config = self.config
 
