@@ -12,7 +12,6 @@ from rag.models import EvaluationResult
 
 
 def _write_golden_dataset(samples: list[dict[str, Any]]) -> Path:
-    """Write a golden dataset to a temporary file and return its path."""
     tmp = tempfile.NamedTemporaryFile(
         mode="w", suffix=".json", delete=False, encoding="utf-8"
     )
