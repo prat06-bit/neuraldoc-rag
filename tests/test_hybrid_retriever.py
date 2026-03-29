@@ -101,7 +101,6 @@ class TestRRFFusion:
         assert score_map["bm25_chunk"] == 0.0
 
     def test_fused_results_tagged_as_ensemble(self) -> None:
-        """All fused results should have retriever_source='ensemble'."""
         bm25_results = [_make_result("a", 10.0, "bm25")]
         vector_results = [_make_result("b", 0.9, "vector")]
 
