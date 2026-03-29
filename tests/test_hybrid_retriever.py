@@ -1,4 +1,3 @@
-"""Unit tests for HybridRetriever RRF fusion logic."""
 
 from __future__ import annotations
 
