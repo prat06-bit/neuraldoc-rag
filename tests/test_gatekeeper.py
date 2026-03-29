@@ -47,7 +47,6 @@ class TestCIGatekeeper:
             }
         )
 
-        # Mock evaluator returning high faithfulness
         evaluator = MagicMock()
         evaluator.evaluate.return_value = EvaluationResult(
             context_precision=0.95,
