@@ -25,7 +25,6 @@ def _make_result(
         retriever_source=source,
     )
 
-
 class TestRRFFusion:
     def setup_method(self) -> None:
         self.config = RetrievalConfig(
