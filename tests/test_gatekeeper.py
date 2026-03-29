@@ -146,7 +146,6 @@ class TestCIGatekeeper:
         assert result.faithfulness_score == 0.42
 
     def test_invalid_dataset_raises_error(self) -> None:
-        """Loading an invalid dataset should raise ValueError."""
         bad_data = [{"question": "no other keys"}]
         dataset_path = _write_golden_dataset(bad_data)
         gatekeeper = CIGatekeeper()
