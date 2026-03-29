@@ -72,7 +72,6 @@ class TestRRFFusion:
         assert score_map["shared"] > score_map["vec_only"]
 
     def test_alpha_1_favors_bm25(self) -> None:
-        """With alpha=1.0, BM25-only chunks should score and vector-only should not."""
         config = RetrievalConfig(alpha=1.0, rrf_k=60, k_initial=10)
         bm25_results = [_make_result("bm25_chunk", 10.0, "bm25")]
         vector_results = [_make_result("vec_chunk", 0.9, "vector")]
