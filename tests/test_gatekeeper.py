@@ -94,7 +94,6 @@ class TestCIGatekeeper:
         assert result.exit_code == 1
 
     def test_fails_when_expected_citations_missing(self) -> None:
-        """Gatekeeper should fail when expected citations are not in the answer."""
         config = RAGConfig(
             evaluation=EvaluationConfig(faithfulness_threshold=0.85)
         )
