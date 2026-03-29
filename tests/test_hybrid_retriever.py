@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from rag.config import RetrievalConfig
