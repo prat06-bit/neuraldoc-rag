@@ -82,7 +82,6 @@ class TestRRFFusion:
         fused = retriever._rrf_fusion(bm25_results, vector_results)
         score_map = {r.chunk.chunk_id: r.score for r in fused}
 
-        # With alpha=1.0, vector contribution is 0
         assert score_map["bm25_chunk"] > 0
         assert score_map["vec_chunk"] == 0.0
 
