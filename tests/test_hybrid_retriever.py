@@ -6,7 +6,6 @@ from rag.retrieval.hybrid_retriever import HybridRetriever
 
 
 def _make_chunk(chunk_id: str, text: str = "sample text") -> Chunk:
-    """Helper: create a minimal Chunk for testing."""
     return Chunk(
         chunk_id=chunk_id,
         text=text,
