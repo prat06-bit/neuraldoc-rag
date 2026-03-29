@@ -36,7 +36,6 @@ class TestCIGatekeeper:
     def test_passes_when_faithfulness_above_threshold_and_citations_present(
         self,
     ) -> None:
-        """Gatekeeper should pass with high faithfulness and matching citations."""
         config = RAGConfig(
             evaluation=EvaluationConfig(faithfulness_threshold=0.85)
         )
