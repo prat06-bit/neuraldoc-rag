@@ -1,4 +1,3 @@
-"""Unit tests for the CI Gatekeeper."""
 
 from __future__ import annotations
 
