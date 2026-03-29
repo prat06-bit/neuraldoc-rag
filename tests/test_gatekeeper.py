@@ -80,7 +80,7 @@ class TestCIGatekeeper:
         evaluator = MagicMock()
         evaluator.evaluate.return_value = EvaluationResult(
             context_precision=0.50,
-            faithfulness=0.60,  # Below 0.85 threshold
+            faithfulness=0.60, 
             answer_relevancy=0.70,
         )
 
