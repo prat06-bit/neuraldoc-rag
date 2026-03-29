@@ -66,7 +66,7 @@ class TestCIGatekeeper:
 
     def test_fails_when_faithfulness_below_threshold(self) -> None:
         config = RAGConfig(
-            evaluation=EvaluationConfig(faithfulness_threshold=0.75)
+            evaluation=EvaluationConfig(faithfulness_threshold=0.85)
         )
 
         pipeline = MagicMock(
