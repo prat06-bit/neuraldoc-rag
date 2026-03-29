@@ -65,9 +65,8 @@ class TestCIGatekeeper:
         assert result.faithfulness_score >= 0.85
 
     def test_fails_when_faithfulness_below_threshold(self) -> None:
-        """Gatekeeper should fail with exit_code=1 when faithfulness is low."""
         config = RAGConfig(
-            evaluation=EvaluationConfig(faithfulness_threshold=0.85)
+            evaluation=EvaluationConfig(faithfulness_threshold=0.75)
         )
 
         pipeline = MagicMock(
