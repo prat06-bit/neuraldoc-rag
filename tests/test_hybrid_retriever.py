@@ -27,8 +27,6 @@ def _make_result(
 
 
 class TestRRFFusion:
-    """Tests for the RRF fusion logic in HybridRetriever."""
-
     def setup_method(self) -> None:
         self.config = RetrievalConfig(
             alpha=0.5, rrf_k=60, k_initial=10, k_final=3
