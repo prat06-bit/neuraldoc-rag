@@ -19,7 +19,6 @@ def _make_chunk(chunk_id: str, text: str = "sample text") -> Chunk:
 def _make_result(
     chunk_id: str, score: float, source: str = "bm25"
 ) -> RetrievalResult:
-    """Helper: create a RetrievalResult."""
     return RetrievalResult(
         chunk=_make_chunk(chunk_id),
         score=score,
