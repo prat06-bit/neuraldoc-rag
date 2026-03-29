@@ -15,7 +15,6 @@ def _make_chunk(chunk_id: str, text: str = "sample text") -> Chunk:
         token_count=5,
     )
 
-
 def _make_result(
     chunk_id: str, score: float, source: str = "bm25"
 ) -> RetrievalResult:
