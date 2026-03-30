@@ -191,9 +191,7 @@ class UnstructuredParser(BasePDFParser):
         )
 
 
-# ---------------------------------------------------------------------------
 # Factory
-# ---------------------------------------------------------------------------
 
 _REGISTRY: dict[str, type[BasePDFParser]] = {
     PDFPlumberParser.strategy_name: PDFPlumberParser,
