@@ -128,7 +128,6 @@ class Chunker:
         chunk_id = hashlib.sha256(
             f"{source}:{page}:{text[:64]}".encode()
         ).hexdigest()[:16]
-
         return DocumentChunk(
             chunk_id=chunk_id,
             text=text,
