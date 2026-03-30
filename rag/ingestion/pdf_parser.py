@@ -4,15 +4,7 @@ PDF parsing layer with a pluggable strategy pattern.
 Default strategy: pdfplumber (pure Python, works on all platforms including
 Windows + Python 3.14 where pymupdf has no wheel yet).
 
-Usage
------
-    from rag.ingestion.pdf_parser import ParserFactory
-    from rag.config import load_config
 
-    cfg = load_config()
-    parser = ParserFactory.create(cfg.ingestion.parser_strategy, cfg.ingestion)
-    doc = parser.parse("report.pdf")
-"""
 
 from __future__ import annotations
 
