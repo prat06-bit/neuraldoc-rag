@@ -120,7 +120,7 @@ _partition_pdf_fn: Optional[Callable[..., Any]] = None
 _UNSTRUCTURED_AVAILABLE = False
 
 try:
-    from unstructured.partition.pdf import (  # type: ignore[import-untyped]
+    from unstructured.partition.pdf import (  
         partition_pdf as _imported_partition_pdf,
     )
     _partition_pdf_fn = _imported_partition_pdf
