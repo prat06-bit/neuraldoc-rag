@@ -40,8 +40,6 @@ class PDFPlumberParser(BasePDFParser):
                 raw_text: str = page.extract_text(
                     x_tolerance=3, y_tolerance=3
                 ) or ""
-
-                # Strip header/footer margins
                 page_height: float = float(page.height)
                 header_y = page_height * self.config.header_margin_fraction
                 footer_y = page_height * self.config.footer_margin_fraction
