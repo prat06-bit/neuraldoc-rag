@@ -21,7 +21,7 @@ class BasePDFParser(ABC):
 
 
 
-# pdfplumber strategy  (default — pure Python, Windows-safe)
+# pdfplumber strategy 
 
 class PDFPlumberParser(BasePDFParser):
     """
