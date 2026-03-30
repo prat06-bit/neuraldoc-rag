@@ -22,8 +22,6 @@ class BasePDFParser(ABC):
 # pdfplumber strategy 
 
 class PDFPlumberParser(BasePDFParser):
-
-
     strategy_name = "pdfplumber"
 
     def parse(self, path: str | Path) -> ParsedDocument:
