@@ -130,8 +130,6 @@ except ImportError:
 
 
 class UnstructuredParser(BasePDFParser):
-
-
     strategy_name = "unstructured"
 
     def parse(self, path: str | Path) -> ParsedDocument:
