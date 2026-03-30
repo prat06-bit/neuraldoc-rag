@@ -1,8 +1,3 @@
-"""
-PDF parsing layer with a pluggable strategy pattern.
-
-Default strategy: pdfplumber (pure Python, works on all platforms including
-Windows + Python 3.14 where pymupdf has no wheel yet).
 
 
 
