@@ -198,7 +198,6 @@ _REGISTRY: dict[str, type[BasePDFParser]] = {
     UnstructuredParser.strategy_name: UnstructuredParser,
 }
 
-
 class ParserFactory:
     @staticmethod
     def create(strategy: str, config: IngestionConfig) -> BasePDFParser:
