@@ -139,7 +139,6 @@ Respond with ONLY a decimal number between 0.0 and 1.0 (e.g. 0.85). No other tex
             score = float(re.search(r"[01]?\.\d+|[01]", response).group())  
             return max(0.0, min(1.0, score))
         except Exception:
-            # Heuristic: if answer is non-empty and not a refusal
             refusal = "does not contain sufficient evidence"
             return 0.1 if refusal in answer.lower() else 0.7
 
