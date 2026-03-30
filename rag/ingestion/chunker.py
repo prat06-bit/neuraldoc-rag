@@ -101,8 +101,6 @@ class Chunker:
             if tokens >= self.config.min_tokens or text.strip():
                 yield self._make_chunk(text, source, page, breadcrumb)
             return
-
-        # Section too large therfore help in split into sentence and  then reaccumulate
         sentences = _split_sentences(text)
         buffer: list[str] = []
         buffer_tokens = 0
