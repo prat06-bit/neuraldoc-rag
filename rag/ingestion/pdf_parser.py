@@ -26,7 +26,7 @@ class PDFPlumberParser(BasePDFParser):
 
     def parse(self, path: str | Path) -> ParsedDocument:
         try:
-            import pdfplumber  # type: ignore[import-untyped]
+            import pdfplumber 
         except ImportError as exc:
             raise ImportError(
                 "pdfplumber is required. Install with: uv add pdfplumber"
