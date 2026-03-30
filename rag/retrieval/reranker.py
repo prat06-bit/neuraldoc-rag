@@ -1,9 +1,4 @@
-"""Cross-encoder re-ranker with configurable similarity threshold.
 
-Re-ranks candidates from the hybrid retriever and enforces a minimum
-confidence gate. If no candidate exceeds the threshold, the system
-refuses to generate an answer.
-"""
 
 from __future__ import annotations
 
