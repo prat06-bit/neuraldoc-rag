@@ -59,7 +59,6 @@ class PDFPlumberParser(BasePDFParser):
                         if md:
                             tables.append(md)
 
-                # --- Multi-column detection (word x-coord clustering) ---
                 words = page.extract_words()
                 is_multi_column = self._detect_multi_column(words)
 
