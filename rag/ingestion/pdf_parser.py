@@ -8,7 +8,6 @@ from typing import Any, Callable, Optional, cast
 from rag.config import IngestionConfig
 from rag.models import ParsedDocument, ParsedPage
 
-
 # Abstract base
 
 class BasePDFParser(ABC):
