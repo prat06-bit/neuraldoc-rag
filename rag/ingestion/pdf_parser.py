@@ -81,7 +81,6 @@ class PDFPlumberParser(BasePDFParser):
 
     @staticmethod
     def _table_to_markdown(table: list[list[str | None]]) -> str:
-        """Convert a pdfplumber table (list of rows) to Markdown."""
         rows: list[list[str]] = [
             [str(cell).strip() if cell else "" for cell in row]
             for row in table
