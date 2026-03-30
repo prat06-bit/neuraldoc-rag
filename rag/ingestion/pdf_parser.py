@@ -114,9 +114,7 @@ class PDFPlumberParser(BasePDFParser):
         return bool(left) and bool(right)
 
 
-# ---------------------------------------------------------------------------
 # Unstructured strategy  (optional — heavy, high-accuracy)
-# ---------------------------------------------------------------------------
 
 _partition_pdf_fn: Optional[Callable[..., Any]] = None
 _UNSTRUCTURED_AVAILABLE = False
