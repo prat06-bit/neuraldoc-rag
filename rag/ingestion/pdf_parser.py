@@ -79,8 +79,6 @@ class PDFPlumberParser(BasePDFParser):
             parse_strategy=self.strategy_name,
         )
 
-    # ------------------------------------------------------------------
-
     @staticmethod
     def _table_to_markdown(table: list[list[str | None]]) -> str:
         """Convert a pdfplumber table (list of rows) to Markdown."""
