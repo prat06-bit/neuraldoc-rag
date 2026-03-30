@@ -18,7 +18,6 @@ class BasePDFParser(ABC):
 
     @abstractmethod
     def parse(self, path: str | Path) -> ParsedDocument:
-        """Parse *path* and return a ParsedDocument."""
 
 
 # ---------------------------------------------------------------------------
