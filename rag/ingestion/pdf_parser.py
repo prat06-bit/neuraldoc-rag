@@ -130,10 +130,7 @@ except ImportError:
 
 
 class UnstructuredParser(BasePDFParser):
-    """
-    Uses the `unstructured` library for high-fidelity extraction.
-    Install: uv add "unstructured[pdf]"
-    """
+
 
     strategy_name = "unstructured"
 
