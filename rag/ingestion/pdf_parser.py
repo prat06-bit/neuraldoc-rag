@@ -37,7 +37,6 @@ class PDFPlumberParser(BasePDFParser):
 
         with pdfplumber.open(str(path)) as pdf:
             for i, page in enumerate(pdf.pages):
-                # --- Text ---
                 raw_text: str = page.extract_text(
                     x_tolerance=3, y_tolerance=3
                 ) or ""
