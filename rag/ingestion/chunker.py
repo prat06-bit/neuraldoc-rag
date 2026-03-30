@@ -113,7 +113,6 @@ class Chunker:
                 buffer_tokens = 0
             buffer.append(sentence)
             buffer_tokens += s_tokens
-
         if buffer:
             yield self._make_chunk(" ".join(buffer), source, page, breadcrumb)
 
