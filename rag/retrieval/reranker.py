@@ -22,7 +22,6 @@ class CrossEncoderReranker:
         candidates: list[RetrievalResult],
         enforce_threshold: bool = True,
     ) -> list[RetrievalResult]:
-
         if not candidates:
             if enforce_threshold:
                 raise InsufficientEvidenceError(
