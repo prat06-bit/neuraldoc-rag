@@ -9,14 +9,7 @@ from rag.models import RetrievalResult
 logger = logging.getLogger(__name__)
 
 class CrossEncoderReranker:
-    """Re-rank retrieval candidates using a cross-encoder model.
 
-    The cross-encoder scores each (query, passage) pair jointly, producing
-    more accurate relevance estimates than bi-encoder similarity alone.
-
-    Args:
-        config: Retrieval configuration with model name, k_final, and threshold.
-    """
 
     def __init__(self, config: RetrievalConfig | None = None) -> None:
         self._config = config or RetrievalConfig()
