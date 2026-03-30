@@ -22,10 +22,7 @@ class BasePDFParser(ABC):
 # pdfplumber strategy 
 
 class PDFPlumberParser(BasePDFParser):
-    """
-    Uses pdfplumber for text and table extraction.
-    Install: uv add pdfplumber
-    """
+
 
     strategy_name = "pdfplumber"
 
