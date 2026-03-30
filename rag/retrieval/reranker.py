@@ -8,7 +8,6 @@ from rag.models import RetrievalResult
 
 logger = logging.getLogger(__name__)
 
-
 class CrossEncoderReranker:
     """Re-rank retrieval candidates using a cross-encoder model.
 
