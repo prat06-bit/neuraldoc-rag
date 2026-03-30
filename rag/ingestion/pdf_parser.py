@@ -103,7 +103,6 @@ class PDFPlumberParser(BasePDFParser):
 
     @staticmethod
     def _detect_multi_column(words: list[dict[str, Any]]) -> bool:
-        """Return True if x0 coordinates cluster into two groups."""
         if not words:
             return False
         x0s = [float(w.get("x0", 0)) for w in words]
