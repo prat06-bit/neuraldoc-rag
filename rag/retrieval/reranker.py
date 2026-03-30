@@ -22,21 +22,7 @@ class CrossEncoderReranker:
         candidates: list[RetrievalResult],
         enforce_threshold: bool = True,
     ) -> list[RetrievalResult]:
-        """Re-rank candidates and apply the similarity threshold gate.
 
-        Args:
-            query: The original user query.
-            candidates: Pre-filtered candidates from the hybrid retriever.
-            enforce_threshold: If True (default), raises InsufficientEvidenceError
-                when the best score is below the configured threshold.
-
-        Returns:
-            Top-k_final candidates, sorted by cross-encoder score descending.
-
-        Raises:
-            InsufficientEvidenceError: If best score < similarity_threshold
-                and enforce_threshold is True.
-        """
         if not candidates:
             if enforce_threshold:
                 raise InsufficientEvidenceError(
