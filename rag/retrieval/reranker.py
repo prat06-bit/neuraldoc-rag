@@ -9,8 +9,6 @@ from rag.models import RetrievalResult
 logger = logging.getLogger(__name__)
 
 class CrossEncoderReranker:
-
-
     def __init__(self, config: RetrievalConfig | None = None) -> None:
         self._config = config or RetrievalConfig()
         self._model = CrossEncoder(
