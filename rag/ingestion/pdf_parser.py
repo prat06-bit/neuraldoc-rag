@@ -9,7 +9,6 @@ from rag.config import IngestionConfig
 from rag.models import ParsedDocument, ParsedPage
 
 
-# ---------------------------------------------------------------------------
 # Abstract base
 # ---------------------------------------------------------------------------
 
