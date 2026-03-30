@@ -10,7 +10,6 @@ from rag.models import ParsedDocument, ParsedPage
 
 
 # Abstract base
-# ---------------------------------------------------------------------------
 
 class BasePDFParser(ABC):
     strategy_name: str = "base"
