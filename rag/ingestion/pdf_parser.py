@@ -19,8 +19,6 @@ class BasePDFParser(ABC):
     @abstractmethod
     def parse(self, path: str | Path) -> ParsedDocument:
 
-
-
 # pdfplumber strategy 
 
 class PDFPlumberParser(BasePDFParser):
