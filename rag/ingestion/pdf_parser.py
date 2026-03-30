@@ -52,7 +52,6 @@ class PDFPlumberParser(BasePDFParser):
                     x_tolerance=3, y_tolerance=3
                 ) or raw_text
 
-                # --- Tables ---
                 tables: list[str] = []
                 for tbl in page.extract_tables():
                     if tbl:
