@@ -1,10 +1,7 @@
-
 from __future__ import annotations
 
 import logging
-
 from sentence_transformers import CrossEncoder
-
 from rag.config import RetrievalConfig
 from rag.exceptions import InsufficientEvidenceError
 from rag.models import RetrievalResult
