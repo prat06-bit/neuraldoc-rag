@@ -20,7 +20,7 @@ class BasePDFParser(ABC):
     def parse(self, path: str | Path) -> ParsedDocument:
 
 
-# ---------------------------------------------------------------------------
+
 # pdfplumber strategy  (default — pure Python, Windows-safe)
 # ---------------------------------------------------------------------------
 
