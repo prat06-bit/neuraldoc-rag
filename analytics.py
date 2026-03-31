@@ -4,7 +4,6 @@ from pathlib import Path
 
 ANALYTICS_FILE = Path("analytics.json")
 
-
 def _load() -> dict:
     if not ANALYTICS_FILE.exists():
         return {"queries": [], "total": 0, "refused": 0, "total_latency_ms": 0}
