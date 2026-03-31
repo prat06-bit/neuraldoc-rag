@@ -16,7 +16,6 @@ def _load() -> dict:
 def _save(data: dict) -> None:
     ANALYTICS_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
-
 def record_query(query: str, latency_ms: float, refused: bool, model: str = "llama3.1:8b") -> None:
     data = _load()
     data["queries"].append({
