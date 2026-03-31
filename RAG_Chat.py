@@ -244,7 +244,7 @@ st.html("""
 </div>
 """)
 
-# ── Feature Cards ─────────────────────────────────────────────────────────────
+# ── Feature Cards
 st.html("""
 <style>
 .nd-section {
