@@ -170,7 +170,7 @@ st.html("""
 </div>
 """)
 
-# ── CTA Buttons
+# CTA Buttons
 st.html("""
 <style>
 .nd-cta-wrap {
