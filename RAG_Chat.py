@@ -332,7 +332,7 @@ st.html("""
 </div>
 """)
 
-# ── Pipeline ──────────────────────────────────────────────────────────────────
+# ── Pipeline
 st.html("""
 <style>
 .nd-pipe-wrap { position:relative; z-index:10; max-width:1200px; margin:80px auto 0; padding:0 40px; }
