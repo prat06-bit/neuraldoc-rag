@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from rag.config import RetrievalConfig
 from rag.models import Chunk, RetrievalResult
 from rag.retrieval.hybrid_retriever import HybridRetriever
