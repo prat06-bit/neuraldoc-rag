@@ -208,7 +208,7 @@ with cta2:
     if st.button("Launch App →", key="launch", use_container_width=True):
         st.switch_page("pages/RAG_Chat.py")
 
-# ── Stats bar ─────────────────────────────────────────────────────────────────
+# ── Stats bar
 st.html("""
 <style>
 .nd-stats {
