@@ -170,7 +170,7 @@ st.html("""
 </div>
 """)
 
-# ── CTA Buttons (native Streamlit — navigation guaranteed to work) ─────────────
+# ── CTA Buttons
 st.html("""
 <style>
 .nd-cta-wrap {
