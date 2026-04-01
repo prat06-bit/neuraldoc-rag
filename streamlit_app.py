@@ -353,7 +353,6 @@ else:
     st.html("""<style>
     [data-testid="stAppViewContainer"]{
       background:var(--bg)!important;
-      /* subtle animated mesh */
     }
     [data-testid="stAppViewContainer"]::before{
       content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
