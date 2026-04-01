@@ -370,7 +370,6 @@ else:
     [data-testid="stMain"],[data-testid="stMainBlockContainer"],.block-container{
       padding:0!important;background:transparent!important;max-width:100%!important;}
 
-    /* ── Input ── */
     .stTextInput input{
       background:var(--s)!important;border:1.5px solid var(--bd)!important;
       border-radius:var(--r)!important;color:var(--t1)!important;
