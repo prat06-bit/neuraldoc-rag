@@ -430,7 +430,6 @@ else:
     }
     hr{border-color:var(--bd2)!important;}
 
-    /* ── Card entrance animations ── */
     @keyframes slideUp{
       from{opacity:0;transform:translateY(16px);}
       to{opacity:1;transform:translateY(0);}
