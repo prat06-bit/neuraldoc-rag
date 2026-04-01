@@ -81,7 +81,6 @@ section[data-testid="stSidebar"],#MainMenu,footer{display:none!important;height:
 
 # ══════════════════════════════════════════════════════════════
 # LANDING
-# ══════════════════════════════════════════════════════════════
 if st.session_state.page == "landing":
     # Apply dark mode to landing if enabled
     if st.session_state.dark_mode:
