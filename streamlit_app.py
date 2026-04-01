@@ -509,7 +509,7 @@ else:
         bs = "color:#DC2626;background:rgba(220,38,38,0.08);border:1.5px solid rgba(220,38,38,0.3);"
         bd = "#DC2626"; bt = "API offline"
 
-    # ── TOPBAR ────────────────────────────────────────────────────────────────
+    # TOPBAR
     st.html(f"""
     <div style="
       display:flex;align-items:center;justify-content:space-between;
