@@ -385,7 +385,6 @@ else:
     .stTextInput input::placeholder{color:var(--t3)!important;}
     .stTextInput label,.stFileUploader label{display:none!important;}
 
-    /* ── Buttons — animated gradient ── */
     .stButton>button{
       background:linear-gradient(135deg,var(--v),var(--v3))!important;
       color:#fff!important;border:none!important;border-radius:var(--r)!important;
