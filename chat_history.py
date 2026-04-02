@@ -42,7 +42,6 @@ def load_conversation(conv_id: str) -> list:
             return conv["messages"]
     return []
 
-
 def delete_conversation(conv_id: str) -> None:
     data = [c for c in _load_raw() if c["id"] != conv_id]
     _save_raw(data)

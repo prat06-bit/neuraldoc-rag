@@ -79,7 +79,7 @@ st.html("""
 <div class="nd-orb nd-o3"></div>
 """)
 
-# ── Nav ───────────────────────────────────────────────────────────────────────
+# Nav
 st.html("""
 <style>
 .nd-nav {
@@ -107,7 +107,7 @@ st.html("""
 </nav>
 """)
 
-# ── Hero ──────────────────────────────────────────────────────────────────────
+# Hero
 st.html("""
 <style>
 .nd-hero {
@@ -170,7 +170,7 @@ st.html("""
 </div>
 """)
 
-# ── CTA Buttons (native Streamlit — navigation guaranteed to work) ─────────────
+# CTA Buttons
 st.html("""
 <style>
 .nd-cta-wrap {
@@ -208,7 +208,7 @@ with cta2:
     if st.button("Launch App →", key="launch", use_container_width=True):
         st.switch_page("pages/RAG_Chat.py")
 
-# ── Stats bar ─────────────────────────────────────────────────────────────────
+# Stats bar
 st.html("""
 <style>
 .nd-stats {
@@ -244,7 +244,7 @@ st.html("""
 </div>
 """)
 
-# ── Feature Cards ─────────────────────────────────────────────────────────────
+# Feature Cards
 st.html("""
 <style>
 .nd-section {
@@ -332,7 +332,7 @@ st.html("""
 </div>
 """)
 
-# ── Pipeline ──────────────────────────────────────────────────────────────────
+# Pipeline
 st.html("""
 <style>
 .nd-pipe-wrap { position:relative; z-index:10; max-width:1200px; margin:80px auto 0; padding:0 40px; }
@@ -385,7 +385,7 @@ st.html("""
 </div>
 """)
 
-# ── Tech Stack ────────────────────────────────────────────────────────────────
+# Tech Stack 
 st.html("""
 <style>
 .nd-stack-wrap { position:relative; z-index:10; max-width:1200px; margin:80px auto 0; padding:0 40px; }
@@ -421,7 +421,7 @@ st.html("""
 </div>
 """)
 
-# ── Footer ────────────────────────────────────────────────────────────────────
+# Footer 
 st.html("""
 <style>
 .nd-foot {

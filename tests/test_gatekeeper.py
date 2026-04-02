@@ -1,7 +1,4 @@
-"""Unit tests for the CI Gatekeeper."""
-
 from __future__ import annotations
-
 import json
 import tempfile
 from pathlib import Path
@@ -14,7 +11,6 @@ from rag.models import EvaluationResult
 
 
 def _write_golden_dataset(samples: list[dict[str, Any]]) -> Path:
-    """Write a golden dataset to a temporary file and return its path."""
     tmp = tempfile.NamedTemporaryFile(
         mode="w", suffix=".json", delete=False, encoding="utf-8"
     )
@@ -24,7 +20,6 @@ def _write_golden_dataset(samples: list[dict[str, Any]]) -> Path:
 
 
 def _sample_dataset() -> list[dict[str, Any]]:
-    """Return a minimal golden dataset."""
     return [
         {
             "question": "What is the dosage?",
@@ -37,17 +32,12 @@ def _sample_dataset() -> list[dict[str, Any]]:
 
 
 class TestCIGatekeeper:
-    """Tests for the CIGatekeeper class."""
-
     def test_passes_when_faithfulness_above_threshold_and_citations_present(
         self,
     ) -> None:
-        """Gatekeeper should pass with high faithfulness and matching citations."""
         config = RAGConfig(
             evaluation=EvaluationConfig(faithfulness_threshold=0.85)
         )
-
-        # Mock pipeline that returns an answer containing the expected citation
         pipeline = MagicMock(
             return_value={
                 "answer": "The dosage is 500mg [guide, p. 10].",
@@ -56,7 +46,6 @@ class TestCIGatekeeper:
             }
         )
 
-        # Mock evaluator returning high faithfulness
         evaluator = MagicMock()
         evaluator.evaluate.return_value = EvaluationResult(
             context_precision=0.95,
@@ -75,7 +64,6 @@ class TestCIGatekeeper:
         assert result.faithfulness_score >= 0.85
 
     def test_fails_when_faithfulness_below_threshold(self) -> None:
-        """Gatekeeper should fail with exit_code=1 when faithfulness is low."""
         config = RAGConfig(
             evaluation=EvaluationConfig(faithfulness_threshold=0.85)
         )
@@ -91,7 +79,7 @@ class TestCIGatekeeper:
         evaluator = MagicMock()
         evaluator.evaluate.return_value = EvaluationResult(
             context_precision=0.50,
-            faithfulness=0.60,  # Below 0.85 threshold
+            faithfulness=0.60, 
             answer_relevancy=0.70,
         )
 
@@ -105,12 +93,9 @@ class TestCIGatekeeper:
         assert result.exit_code == 1
 
     def test_fails_when_expected_citations_missing(self) -> None:
-        """Gatekeeper should fail when expected citations are not in the answer."""
         config = RAGConfig(
             evaluation=EvaluationConfig(faithfulness_threshold=0.85)
         )
-
-        # Pipeline answer does NOT contain the expected citation
         pipeline = MagicMock(
             return_value={
                 "answer": "The dosage is 500mg daily.",
@@ -138,7 +123,6 @@ class TestCIGatekeeper:
         assert result.missing_citations[0]["expected_source"] == "guide.pdf"
 
     def test_reports_faithfulness_score(self) -> None:
-        """Result should always contain the faithfulness score."""
         config = RAGConfig()
         pipeline = MagicMock(
             return_value={"answer": "", "citations": [], "contexts": []}
@@ -157,7 +141,6 @@ class TestCIGatekeeper:
         assert result.faithfulness_score == 0.42
 
     def test_invalid_dataset_raises_error(self) -> None:
-        """Loading an invalid dataset should raise ValueError."""
         bad_data = [{"question": "no other keys"}]
         dataset_path = _write_golden_dataset(bad_data)
         gatekeeper = CIGatekeeper()

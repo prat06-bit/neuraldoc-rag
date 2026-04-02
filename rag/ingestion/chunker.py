@@ -101,8 +101,6 @@ class Chunker:
             if tokens >= self.config.min_tokens or text.strip():
                 yield self._make_chunk(text, source, page, breadcrumb)
             return
-
-        # Section too large therfore help in split into sentence and  then reaccumulate
         sentences = _split_sentences(text)
         buffer: list[str] = []
         buffer_tokens = 0
@@ -115,7 +113,6 @@ class Chunker:
                 buffer_tokens = 0
             buffer.append(sentence)
             buffer_tokens += s_tokens
-
         if buffer:
             yield self._make_chunk(" ".join(buffer), source, page, breadcrumb)
 
@@ -131,7 +128,6 @@ class Chunker:
         chunk_id = hashlib.sha256(
             f"{source}:{page}:{text[:64]}".encode()
         ).hexdigest()[:16]
-
         return DocumentChunk(
             chunk_id=chunk_id,
             text=text,

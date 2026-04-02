@@ -4,7 +4,6 @@ from pathlib import Path
 
 ANALYTICS_FILE = Path("analytics.json")
 
-
 def _load() -> dict:
     if not ANALYTICS_FILE.exists():
         return {"queries": [], "total": 0, "refused": 0, "total_latency_ms": 0}
@@ -16,7 +15,6 @@ def _load() -> dict:
 
 def _save(data: dict) -> None:
     ANALYTICS_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-
 
 def record_query(query: str, latency_ms: float, refused: bool, model: str = "llama3.1:8b") -> None:
     data = _load()
@@ -35,7 +33,6 @@ def record_query(query: str, latency_ms: float, refused: bool, model: str = "lla
     data["queries"] = data["queries"][-200:]
     _save(data)
 
-
 def get_stats() -> dict:
     data = _load()
     total = data.get("total", 0)
@@ -50,7 +47,6 @@ def get_stats() -> dict:
         "avg_latency_ms":   round((total_lat / total) if total > 0 else 0, 0),
         "recent":           list(reversed(data.get("queries", [])))[:5],
     }
-
 
 def reset_analytics() -> None:
     _save({"queries": [], "total": 0, "refused": 0, "total_latency_ms": 0})

@@ -1,19 +1,3 @@
-"""
-PDF parsing layer with a pluggable strategy pattern.
-
-Default strategy: pdfplumber (pure Python, works on all platforms including
-Windows + Python 3.14 where pymupdf has no wheel yet).
-
-Usage
------
-    from rag.ingestion.pdf_parser import ParserFactory
-    from rag.config import load_config
-
-    cfg = load_config()
-    parser = ParserFactory.create(cfg.ingestion.parser_strategy, cfg.ingestion)
-    doc = parser.parse("report.pdf")
-"""
-
 from __future__ import annotations
 
 import re
@@ -24,10 +8,7 @@ from typing import Any, Callable, Optional, cast
 from rag.config import IngestionConfig
 from rag.models import ParsedDocument, ParsedPage
 
-
-# ---------------------------------------------------------------------------
 # Abstract base
-# ---------------------------------------------------------------------------
 
 class BasePDFParser(ABC):
     strategy_name: str = "base"
@@ -37,24 +18,15 @@ class BasePDFParser(ABC):
 
     @abstractmethod
     def parse(self, path: str | Path) -> ParsedDocument:
-        """Parse *path* and return a ParsedDocument."""
 
-
-# ---------------------------------------------------------------------------
-# pdfplumber strategy  (default — pure Python, Windows-safe)
-# ---------------------------------------------------------------------------
+# pdfplumber strategy 
 
 class PDFPlumberParser(BasePDFParser):
-    """
-    Uses pdfplumber for text and table extraction.
-    Install: uv add pdfplumber
-    """
-
     strategy_name = "pdfplumber"
 
     def parse(self, path: str | Path) -> ParsedDocument:
         try:
-            import pdfplumber  # type: ignore[import-untyped]
+            import pdfplumber 
         except ImportError as exc:
             raise ImportError(
                 "pdfplumber is required. Install with: uv add pdfplumber"
@@ -65,12 +37,9 @@ class PDFPlumberParser(BasePDFParser):
 
         with pdfplumber.open(str(path)) as pdf:
             for i, page in enumerate(pdf.pages):
-                # --- Text ---
                 raw_text: str = page.extract_text(
                     x_tolerance=3, y_tolerance=3
                 ) or ""
-
-                # Strip header/footer margins
                 page_height: float = float(page.height)
                 header_y = page_height * self.config.header_margin_fraction
                 footer_y = page_height * self.config.footer_margin_fraction
@@ -83,7 +52,6 @@ class PDFPlumberParser(BasePDFParser):
                     x_tolerance=3, y_tolerance=3
                 ) or raw_text
 
-                # --- Tables ---
                 tables: list[str] = []
                 for tbl in page.extract_tables():
                     if tbl:
@@ -91,7 +59,6 @@ class PDFPlumberParser(BasePDFParser):
                         if md:
                             tables.append(md)
 
-                # --- Multi-column detection (word x-coord clustering) ---
                 words = page.extract_words()
                 is_multi_column = self._detect_multi_column(words)
 
@@ -112,11 +79,8 @@ class PDFPlumberParser(BasePDFParser):
             parse_strategy=self.strategy_name,
         )
 
-    # ------------------------------------------------------------------
-
     @staticmethod
     def _table_to_markdown(table: list[list[str | None]]) -> str:
-        """Convert a pdfplumber table (list of rows) to Markdown."""
         rows: list[list[str]] = [
             [str(cell).strip() if cell else "" for cell in row]
             for row in table
@@ -139,7 +103,6 @@ class PDFPlumberParser(BasePDFParser):
 
     @staticmethod
     def _detect_multi_column(words: list[dict[str, Any]]) -> bool:
-        """Return True if x0 coordinates cluster into two groups."""
         if not words:
             return False
         x0s = [float(w.get("x0", 0)) for w in words]
@@ -151,15 +114,13 @@ class PDFPlumberParser(BasePDFParser):
         return bool(left) and bool(right)
 
 
-# ---------------------------------------------------------------------------
-# Unstructured strategy  (optional — heavy, high-accuracy)
-# ---------------------------------------------------------------------------
+# Unstructured strategy  
 
 _partition_pdf_fn: Optional[Callable[..., Any]] = None
 _UNSTRUCTURED_AVAILABLE = False
 
 try:
-    from unstructured.partition.pdf import (  # type: ignore[import-untyped]
+    from unstructured.partition.pdf import (  
         partition_pdf as _imported_partition_pdf,
     )
     _partition_pdf_fn = _imported_partition_pdf
@@ -169,11 +130,6 @@ except ImportError:
 
 
 class UnstructuredParser(BasePDFParser):
-    """
-    Uses the `unstructured` library for high-fidelity extraction.
-    Install: uv add "unstructured[pdf]"
-    """
-
     strategy_name = "unstructured"
 
     def parse(self, path: str | Path) -> ParsedDocument:
@@ -235,15 +191,12 @@ class UnstructuredParser(BasePDFParser):
         )
 
 
-# ---------------------------------------------------------------------------
 # Factory
-# ---------------------------------------------------------------------------
 
 _REGISTRY: dict[str, type[BasePDFParser]] = {
     PDFPlumberParser.strategy_name: PDFPlumberParser,
     UnstructuredParser.strategy_name: UnstructuredParser,
 }
-
 
 class ParserFactory:
     @staticmethod
