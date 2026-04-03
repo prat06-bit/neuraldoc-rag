@@ -1,4 +1,3 @@
-"""NeuralDoc RAG — Minimal pastel SaaS UI. Clean rewrite."""
 import requests
 import streamlit as st
 from datetime import datetime
