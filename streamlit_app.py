@@ -20,7 +20,7 @@ except ImportError:
         "total_queries": 0, "answered": 0, "refused": 0,
         "refusal_rate": 0, "avg_latency_ms": 0, "recent": []}
 
-# ── Page config ────────────────────────────────────────────────────────────────
+# ── Page config
 st.set_page_config(
     page_title="NeuralDoc",
     page_icon="N",
