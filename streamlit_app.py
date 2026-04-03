@@ -1,1479 +1,1117 @@
+"""NeuralDoc — Production SaaS RAG Dashboard."""
+import requests
 import streamlit as st
-import hashlib
-import json
-import os
-import time
-import random
 from datetime import datetime
 
-# ─── Page Config ────────────────────────────────────────────────────────────
-st.set_page_config(
-    page_title="NeuralDoc",
-    page_icon="⚡",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-)
-
-# ─── User Store (flat JSON file, swap for SQLite in prod) ───────────────────
-USERS_FILE = "users.json"
-
-def load_users():
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE) as f:
-            return json.load(f)
-    # seed a demo account
-    demo = {"demo": hash_pw("demo1234"), "admin": hash_pw("admin123")}
-    save_users(demo)
-    return demo
-
-def save_users(users):
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f)
-
-def hash_pw(pw: str) -> str:
-    return hashlib.sha256(pw.encode()).hexdigest()
-
-def verify_user(username, password):
-    users = load_users()
-    return users.get(username) == hash_pw(password)
-
-def register_user(username, password):
-    users = load_users()
-    if username in users:
-        return False
-    users[username] = hash_pw(password)
-    save_users(users)
-    return True
-
-# ─── Session State Init ──────────────────────────────────────────────────────
-def init_session():
-    defaults = {
-        "logged_in": False,
-        "username": "",
-        "page": "login",         # login | home | chat | analytics
-        "theme": "dark",
-        "chat_messages": [],
-        "query_log": [],
-        "chunks": 0,
-        "doc_ready": False,
-        "auth_tab": "login",     # login | register
-    }
-    for k, v in defaults.items():
-        if k not in st.session_state:
-            st.session_state[k] = v
-
-init_session()
-
-# ─── Global CSS ─────────────────────────────────────────────────────────────
-def inject_css():
-    st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
-
-    /* ── Reset & Base ──────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html, body, [data-testid="stApp"] {
-        background: #08091a !important;
-        color: #e2e8f0 !important;
-        font-family: 'DM Sans', sans-serif !important;
-        font-size: 14px;
-        min-height: 100vh;
-    }
-
-    /* animated mesh background */
-    [data-testid="stApp"]::before {
-        content: '';
-        position: fixed;
-        inset: 0;
-        background:
-            radial-gradient(ellipse 80% 60% at 20% 10%, rgba(99,102,241,0.12) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 50% at 80% 80%, rgba(139,92,246,0.10) 0%, transparent 55%),
-            radial-gradient(ellipse 50% 40% at 60% 30%, rgba(59,130,246,0.07) 0%, transparent 50%);
-        pointer-events: none;
-        z-index: 0;
-        animation: meshShift 12s ease-in-out infinite alternate;
-    }
-
-    @keyframes meshShift {
-        0%   { opacity: 0.8; filter: hue-rotate(0deg); }
-        100% { opacity: 1;   filter: hue-rotate(20deg); }
-    }
-
-    /* hide streamlit chrome */
-    #MainMenu, footer, header,
-    [data-testid="stToolbar"],
-    [data-testid="stSidebar"],
-    [data-testid="collapsedControl"],
-    .stDeployButton { display: none !important; }
-
-    /* kill default padding */
-    .main .block-container {
-        padding: 0 !important;
-        max-width: 100% !important;
-    }
-
-    /* ── Typography ────────────────────────────────── */
-    h1, h2, h3, .nd-display {
-        font-family: 'Syne', sans-serif !important;
-        letter-spacing: -0.03em;
-    }
-
-    /* ── Glassmorphism Card ─────────────────────────── */
-    .glass {
-        background: rgba(255,255,255,0.04);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 16px;
-    }
-
-    /* ── Navbar ─────────────────────────────────────── */
-    .nd-navbar {
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 28px;
-        height: 52px;
-        background: rgba(8,9,26,0.85);
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .nd-logo {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-family: 'Syne', sans-serif;
-        font-size: 16px;
-        font-weight: 700;
-        color: #e2e8f0;
-        text-decoration: none;
-    }
-    .nd-logo-dot {
-        width: 8px; height: 8px;
-        border-radius: 50%;
-        background: linear-gradient(135deg,#818cf8,#a78bfa);
-        box-shadow: 0 0 8px rgba(129,140,248,0.8);
-        animation: pulse 2s ease-in-out infinite;
-    }
-    @keyframes pulse {
-        0%,100% { box-shadow: 0 0 8px rgba(129,140,248,0.8); }
-        50%      { box-shadow: 0 0 16px rgba(167,139,250,1); }
-    }
-
-    .nd-nav-left  { display: flex; align-items: center; gap: 16px; }
-    .nd-nav-center{ display: flex; align-items: center; gap: 4px; }
-    .nd-nav-right { display: flex; align-items: center; gap: 12px; }
-
-    .nd-home-btn {
-        padding: 5px 12px;
-        font-size: 12px;
-        font-weight: 500;
-        color: rgba(226,232,240,0.65);
-        background: transparent;
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-        font-family: 'DM Sans', sans-serif;
-        white-space: nowrap;
-    }
-    .nd-home-btn:hover {
-        color: #e2e8f0;
-        background: rgba(255,255,255,0.06);
-        box-shadow: 0 0 10px rgba(129,140,248,0.2);
-    }
-
-    /* toggle pill */
-    .nd-toggle-pill {
-        display: flex;
-        align-items: center;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 10px;
-        padding: 3px;
-        gap: 2px;
-    }
-    .nd-toggle-opt {
-        padding: 4px 14px;
-        font-size: 12px;
-        font-weight: 500;
-        border-radius: 7px;
-        cursor: pointer;
-        transition: all 0.2s;
-        color: rgba(226,232,240,0.5);
-        font-family: 'DM Sans', sans-serif;
-    }
-    .nd-toggle-opt.active {
-        background: linear-gradient(135deg,#6366f1,#8b5cf6);
-        color: #fff;
-        box-shadow: 0 2px 12px rgba(99,102,241,0.4);
-    }
-    .nd-toggle-opt:hover:not(.active) {
-        color: #e2e8f0;
-        background: rgba(255,255,255,0.06);
-    }
-
-    /* icon button */
-    .nd-icon-btn {
-        width: 30px; height: 30px;
-        display: flex; align-items: center; justify-content: center;
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 8px;
-        background: transparent;
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.2s;
-        color: rgba(226,232,240,0.6);
-    }
-    .nd-icon-btn:hover {
-        background: rgba(255,255,255,0.07);
-        color: #e2e8f0;
-        box-shadow: 0 0 10px rgba(129,140,248,0.2);
-    }
-
-    /* user chip */
-    .nd-user-chip {
-        display: flex; align-items: center; gap: 6px;
-        padding: 4px 10px;
-        background: rgba(99,102,241,0.12);
-        border: 1px solid rgba(99,102,241,0.25);
-        border-radius: 20px;
-        font-size: 12px;
-        color: #a5b4fc;
-    }
-    .nd-user-chip .avatar {
-        width: 20px; height: 20px; border-radius: 50%;
-        background: linear-gradient(135deg,#6366f1,#8b5cf6);
-        display: flex; align-items: center; justify-content: center;
-        font-size: 10px; font-weight: 700; color: #fff;
-    }
-
-    /* ── Page Wrapper ───────────────────────────────── */
-    .nd-page {
-        padding: 32px 36px;
-        animation: fadeIn 0.4s ease;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(8px); }
-        to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── Metric Cards ──────────────────────────────── */
-    .nd-metrics-row {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 14px;
-        margin-bottom: 24px;
-    }
-    .nd-metric-card {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.07);
-        border-radius: 14px;
-        padding: 20px 20px 16px;
-        transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
-        position: relative;
-        overflow: hidden;
-    }
-    .nd-metric-card::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border-radius: 14px;
-        padding: 1px;
-        background: linear-gradient(135deg, var(--c1), var(--c2));
-        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-        -webkit-mask-composite: destination-out;
-        mask-composite: exclude;
-        opacity: 0.5;
-        transition: opacity 0.25s;
-    }
-    .nd-metric-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
-    .nd-metric-card:hover::before { opacity: 1; }
-
-    .nd-metric-icon {
-        font-size: 20px;
-        margin-bottom: 10px;
-        display: block;
-    }
-    .nd-metric-value {
-        font-family: 'Syne', sans-serif;
-        font-size: 32px;
-        font-weight: 800;
-        line-height: 1;
-        margin-bottom: 4px;
-    }
-    .nd-metric-label {
-        font-size: 11px;
-        font-weight: 500;
-        color: rgba(226,232,240,0.45);
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-    }
-    .nd-metric-sub {
-        font-size: 11px;
-        margin-top: 6px;
-    }
-
-    /* ── Bottom Grid ────────────────────────────────── */
-    .nd-grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 380px;
-        gap: 16px;
-    }
-
-    /* ── Panel ──────────────────────────────────────── */
-    .nd-panel {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.07);
-        border-radius: 14px;
-        overflow: hidden;
-    }
-    .nd-panel-header {
-        padding: 14px 20px;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    .nd-panel-title {
-        font-family: 'Syne', sans-serif;
-        font-size: 13px;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        color: rgba(226,232,240,0.6);
-    }
-    .nd-panel-body { padding: 20px; }
-
-    /* empty state */
-    .nd-empty {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 48px 20px;
-        gap: 12px;
-        border: 1px dashed rgba(255,255,255,0.1);
-        border-radius: 10px;
-        background: rgba(255,255,255,0.02);
-    }
-    .nd-empty-icon { font-size: 36px; opacity: 0.35; }
-    .nd-empty-text { font-size: 13px; color: rgba(226,232,240,0.4); }
-
-    /* ── Status Pill ────────────────────────────────── */
-    .nd-status-list { display: flex; flex-direction: column; gap: 12px; }
-    .nd-status-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 14px;
-        background: rgba(255,255,255,0.025);
-        border-radius: 10px;
-        border: 1px solid rgba(255,255,255,0.05);
-    }
-    .nd-status-left { display: flex; align-items: center; gap: 10px; font-size: 13px; }
-    .nd-status-icon { font-size: 16px; }
-    .nd-dot {
-        width: 7px; height: 7px; border-radius: 50%;
-        display: inline-block; margin-right: 2px;
-    }
-    .nd-dot.green { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
-    .nd-dot.red   { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
-    .nd-dot.yellow{ background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
-
-    .nd-pill {
-        font-size: 11px;
-        font-weight: 600;
-        padding: 3px 10px;
-        border-radius: 20px;
-        letter-spacing: 0.04em;
-    }
-    .nd-pill.green  { background: rgba(34,197,94,0.12);  color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
-    .nd-pill.red    { background: rgba(239,68,68,0.12);  color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
-    .nd-pill.yellow { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
-    .nd-pill.blue   { background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
-
-    /* ── Alert Card ─────────────────────────────────── */
-    .nd-alert-card {
-        padding: 16px 18px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(239,68,68,0.06));
-        border: 1px solid rgba(245,158,11,0.2);
-    }
-    .nd-alert-head {
-        display: flex; align-items: center; gap: 8px;
-        font-size: 12px; font-weight: 600; color: #fbbf24;
-        margin-bottom: 10px; letter-spacing: 0.05em; text-transform: uppercase;
-    }
-    .nd-alert-item {
-        font-size: 12px;
-        color: rgba(226,232,240,0.6);
-        padding: 4px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.04);
-        display: flex; align-items: flex-start; gap: 6px;
-    }
-    .nd-alert-item:last-child { border-bottom: none; }
-
-    /* ── Section Label ──────────────────────────────── */
-    .nd-section-label {
-        font-family: 'Syne', sans-serif;
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: rgba(99,102,241,0.8);
-        margin-bottom: 4px;
-    }
-    .nd-section-title {
-        font-family: 'Syne', sans-serif;
-        font-size: 26px;
-        font-weight: 800;
-        margin-bottom: 20px;
-        color: #e2e8f0;
-    }
-    .nd-section-title em {
-        font-style: italic;
-        background: linear-gradient(135deg,#818cf8,#a78bfa);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    /* ── Login Page ─────────────────────────────────── */
-    .nd-auth-wrapper {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 24px;
-        position: relative;
-        overflow: hidden;
-    }
-    .nd-auth-card {
-        width: 100%;
-        max-width: 420px;
-        background: rgba(255,255,255,0.04);
-        backdrop-filter: blur(30px);
-        border: 1px solid rgba(255,255,255,0.09);
-        border-radius: 20px;
-        padding: 40px 36px 36px;
-        position: relative;
-        z-index: 1;
-        animation: fadeIn 0.5s ease;
-    }
-    .nd-auth-card::before {
-        content: '';
-        position: absolute;
-        inset: -1px;
-        border-radius: 21px;
-        background: linear-gradient(135deg,rgba(99,102,241,0.3),rgba(139,92,246,0.15),transparent 60%);
-        z-index: -1;
-    }
-
-    .nd-auth-logo {
-        display: flex; align-items: center; gap: 10px;
-        font-family: 'Syne', sans-serif;
-        font-size: 20px; font-weight: 800;
-        margin-bottom: 28px;
-    }
-    .nd-auth-logo .dot {
-        width: 10px; height: 10px; border-radius: 50%;
-        background: linear-gradient(135deg,#818cf8,#a78bfa);
-        box-shadow: 0 0 10px rgba(129,140,248,0.9);
-        animation: pulse 2s ease-in-out infinite;
-    }
-
-    .nd-auth-tabs {
-        display: flex;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.07);
-        border-radius: 10px;
-        padding: 3px;
-        margin-bottom: 24px;
-    }
-    .nd-auth-tab {
-        flex: 1; text-align: center;
-        padding: 7px; font-size: 13px; font-weight: 500;
-        border-radius: 7px; cursor: pointer;
-        transition: all 0.2s;
-        color: rgba(226,232,240,0.5);
-        font-family: 'DM Sans', sans-serif;
-    }
-    .nd-auth-tab.active {
-        background: linear-gradient(135deg,#6366f1,#8b5cf6);
-        color: #fff;
-        box-shadow: 0 2px 12px rgba(99,102,241,0.4);
-    }
-
-    /* form inputs via Streamlit */
-    .stTextInput > div > div > input {
-        background: rgba(255,255,255,0.05) !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        border-radius: 10px !important;
-        color: #e2e8f0 !important;
-        font-family: 'DM Sans', sans-serif !important;
-        font-size: 13px !important;
-        padding: 10px 14px !important;
-        transition: border-color 0.2s, box-shadow 0.2s !important;
-    }
-    .stTextInput > div > div > input:focus {
-        border-color: rgba(99,102,241,0.6) !important;
-        box-shadow: 0 0 0 3px rgba(99,102,241,0.15) !important;
-        outline: none !important;
-    }
-    .stTextInput > div > div > input::placeholder { color: rgba(226,232,240,0.3) !important; }
-    label[data-testid="stWidgetLabel"] p {
-        color: rgba(226,232,240,0.65) !important;
-        font-size: 12px !important;
-        font-weight: 500 !important;
-        font-family: 'DM Sans', sans-serif !important;
-        letter-spacing: 0.03em;
-    }
-
-    /* primary buttons */
-    .stButton > button {
-        width: 100% !important;
-        background: linear-gradient(135deg,#6366f1,#8b5cf6) !important;
-        color: #fff !important;
-        border: none !important;
-        border-radius: 10px !important;
-        padding: 10px 20px !important;
-        font-family: 'DM Sans', sans-serif !important;
-        font-size: 13px !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.02em !important;
-        cursor: pointer !important;
-        transition: all 0.2s !important;
-        box-shadow: 0 4px 14px rgba(99,102,241,0.35) !important;
-    }
-    .stButton > button:hover {
-        transform: translateY(-1px) !important;
-        box-shadow: 0 6px 20px rgba(99,102,241,0.5) !important;
-        filter: brightness(1.05) !important;
-    }
-    .stButton > button:active { transform: translateY(0) !important; }
-
-    /* secondary / ghost buttons */
-    .nd-ghost-btn > button {
-        background: rgba(255,255,255,0.05) !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        box-shadow: none !important;
-        color: rgba(226,232,240,0.7) !important;
-    }
-    .nd-ghost-btn > button:hover {
-        background: rgba(255,255,255,0.08) !important;
-        box-shadow: 0 0 10px rgba(129,140,248,0.15) !important;
-        color: #e2e8f0 !important;
-    }
-
-    /* ── Chat Page ──────────────────────────────────── */
-    .nd-chat-layout {
-        display: grid;
-        grid-template-columns: 1fr 340px;
-        gap: 16px;
-        height: calc(100vh - 52px - 64px);
-    }
-    .nd-chat-container {
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.07);
-        border-radius: 14px;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-    .nd-chat-messages {
-        flex: 1;
-        overflow-y: auto;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(99,102,241,0.3) transparent;
-    }
-    .nd-msg {
-        display: flex;
-        gap: 10px;
-        animation: fadeIn 0.3s ease;
-    }
-    .nd-msg.user { flex-direction: row-reverse; }
-
-    .nd-msg-avatar {
-        width: 30px; height: 30px;
-        border-radius: 50%;
-        flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 12px; font-weight: 700;
-    }
-    .nd-msg.user .nd-msg-avatar {
-        background: linear-gradient(135deg,#6366f1,#8b5cf6);
-        color: #fff;
-    }
-    .nd-msg.assistant .nd-msg-avatar {
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.1);
-        color: #818cf8;
-    }
-    .nd-msg-bubble {
-        max-width: 72%;
-        padding: 12px 16px;
-        border-radius: 14px;
-        font-size: 13px;
-        line-height: 1.6;
-    }
-    .nd-msg.user .nd-msg-bubble {
-        background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.18));
-        border: 1px solid rgba(99,102,241,0.3);
-        border-bottom-right-radius: 4px;
-        color: #e2e8f0;
-    }
-    .nd-msg.assistant .nd-msg-bubble {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.07);
-        border-bottom-left-radius: 4px;
-        color: #cbd5e1;
-    }
-    .nd-msg-time {
-        font-size: 10px;
-        color: rgba(226,232,240,0.3);
-        margin-top: 4px;
-        align-self: flex-end;
-    }
-
-    /* chat input row */
-    .nd-chat-input-row {
-        padding: 12px 16px;
-        border-top: 1px solid rgba(255,255,255,0.06);
-        display: flex;
-        gap: 10px;
-        align-items: flex-end;
-    }
-
-    /* upload panel */
-    .nd-upload-panel {
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.07);
-        border-radius: 14px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    }
-
-    /* file uploader */
-    [data-testid="stFileUploader"] {
-        background: rgba(255,255,255,0.02) !important;
-        border: 2px dashed rgba(99,102,241,0.25) !important;
-        border-radius: 12px !important;
-        transition: border-color 0.2s !important;
-    }
-    [data-testid="stFileUploader"]:hover {
-        border-color: rgba(99,102,241,0.5) !important;
-    }
-
-    /* text area */
-    .stTextArea textarea {
-        background: rgba(255,255,255,0.04) !important;
-        border: 1px solid rgba(255,255,255,0.09) !important;
-        border-radius: 10px !important;
-        color: #e2e8f0 !important;
-        font-family: 'DM Sans', sans-serif !important;
-        font-size: 13px !important;
-        resize: none !important;
-    }
-    .stTextArea textarea:focus {
-        border-color: rgba(99,102,241,0.5) !important;
-        box-shadow: 0 0 0 3px rgba(99,102,241,0.12) !important;
-    }
-
-    /* ── Home / Landing ─────────────────────────────── */
-    .nd-hero {
-        display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-        text-align: center;
-        padding: 80px 20px 60px;
-        gap: 20px;
-    }
-    .nd-hero-badge {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 5px 14px;
-        background: rgba(99,102,241,0.1);
-        border: 1px solid rgba(99,102,241,0.25);
-        border-radius: 20px;
-        font-size: 11px; font-weight: 600;
-        color: #818cf8; letter-spacing: 0.07em;
-        text-transform: uppercase;
-    }
-    .nd-hero-title {
-        font-family: 'Syne', sans-serif;
-        font-size: clamp(36px, 6vw, 64px);
-        font-weight: 800;
-        line-height: 1.1;
-        letter-spacing: -0.03em;
-        color: #e2e8f0;
-    }
-    .nd-hero-title span {
-        background: linear-gradient(135deg,#818cf8 0%,#a78bfa 50%,#c4b5fd 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    .nd-hero-sub {
-        max-width: 520px;
-        font-size: 15px;
-        line-height: 1.7;
-        color: rgba(226,232,240,0.55);
-    }
-    .nd-hero-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-
-    .nd-btn-primary {
-        padding: 11px 26px;
-        background: linear-gradient(135deg,#6366f1,#8b5cf6);
-        color: #fff;
-        border: none;
-        border-radius: 10px;
-        font-family: 'DM Sans', sans-serif;
-        font-size: 14px; font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-        box-shadow: 0 4px 16px rgba(99,102,241,0.35);
-        text-decoration: none;
-    }
-    .nd-btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(99,102,241,0.5);
-    }
-    .nd-btn-ghost {
-        padding: 11px 26px;
-        background: rgba(255,255,255,0.05);
-        color: rgba(226,232,240,0.75);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 10px;
-        font-family: 'DM Sans', sans-serif;
-        font-size: 14px; font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-decoration: none;
-    }
-    .nd-btn-ghost:hover {
-        background: rgba(255,255,255,0.08);
-        color: #e2e8f0;
-        box-shadow: 0 0 12px rgba(129,140,248,0.15);
-    }
-
-    /* feature cards */
-    .nd-feature-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-        max-width: 900px;
-        margin: 0 auto 48px;
-    }
-    .nd-feature-card {
-        padding: 24px;
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.07);
-        border-radius: 14px;
-        transition: all 0.25s;
-    }
-    .nd-feature-card:hover {
-        background: rgba(255,255,255,0.05);
-        transform: translateY(-3px);
-        box-shadow: 0 12px 30px rgba(0,0,0,0.2);
-        border-color: rgba(99,102,241,0.2);
-    }
-    .nd-feature-icon { font-size: 28px; margin-bottom: 12px; }
-    .nd-feature-title {
-        font-family: 'Syne', sans-serif;
-        font-size: 15px; font-weight: 700;
-        margin-bottom: 6px; color: #e2e8f0;
-    }
-    .nd-feature-desc { font-size: 13px; color: rgba(226,232,240,0.5); line-height: 1.6; }
-
-    /* ── Spinner / typing indicator ─────────────────── */
-    .nd-typing { display: flex; align-items: center; gap: 4px; padding: 10px 14px; }
-    .nd-typing span {
-        width: 6px; height: 6px; border-radius: 50%;
-        background: #818cf8;
-        animation: typingBounce 1.2s ease-in-out infinite;
-    }
-    .nd-typing span:nth-child(2) { animation-delay: 0.2s; }
-    .nd-typing span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes typingBounce {
-        0%,60%,100% { transform: translateY(0); opacity: 0.4; }
-        30%          { transform: translateY(-6px); opacity: 1; }
-    }
-
-    /* ── Scrollbar ──────────────────────────────────── */
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.5); }
-
-    /* ── Divider ────────────────────────────────────── */
-    .nd-divider {
-        height: 1px;
-        background: linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);
-        margin: 8px 0;
-    }
-
-    /* hide streamlit form border */
-    [data-testid="stForm"] { border: none !important; padding: 0 !important; }
-
-    /* selectbox */
-    .stSelectbox > div > div {
-        background: rgba(255,255,255,0.05) !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        border-radius: 10px !important;
-        color: #e2e8f0 !important;
-    }
-
-    /* ── Tip box ────────────────────────────────────── */
-    .nd-tip-box {
-        background: rgba(99,102,241,0.06);
-        border: 1px solid rgba(99,102,241,0.15);
-        border-radius: 12px;
-        padding: 14px 16px;
-    }
-    .nd-tip-head {
-        font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
-        text-transform: uppercase; color: #818cf8; margin-bottom: 8px;
-    }
-    .nd-tip-item {
-        font-size: 12px; color: rgba(226,232,240,0.55);
-        padding: 3px 0;
-        display: flex; align-items: flex-start; gap: 6px;
-    }
-
-    /* doc status badge */
-    .nd-doc-badge {
-        display: inline-flex; align-items: center; gap: 5px;
-        padding: 3px 10px; border-radius: 20px;
-        font-size: 11px; font-weight: 600;
-    }
-    .nd-doc-badge.ready   { background: rgba(34,197,94,0.12);  color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
-    .nd-doc-badge.not-ready { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
-    .nd-doc-badge.processing { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
-
-    /* suggestion pills */
-    .nd-suggestions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
-    .nd-sugg-pill {
-        padding: 6px 14px;
-        background: rgba(99,102,241,0.1);
-        border: 1px solid rgba(99,102,241,0.2);
-        border-radius: 20px;
-        font-size: 12px; color: #a5b4fc;
-        cursor: pointer;
-        transition: all 0.2s;
-        font-family: 'DM Sans', sans-serif;
-    }
-    .nd-sugg-pill:hover {
-        background: rgba(99,102,241,0.2);
-        border-color: rgba(99,102,241,0.4);
-        color: #c4b5fd;
-    }
-
-    /* chunk badge */
-    .nd-chunk-badge {
-        display: inline-flex; align-items: center; gap: 5px;
-        padding: 3px 10px; border-radius: 20px;
-        font-size: 11px; font-weight: 600;
-        background: rgba(99,102,241,0.12);
-        color: #818cf8;
-        border: 1px solid rgba(99,102,241,0.25);
-    }
-
-    </style>
-    """, unsafe_allow_html=True)
-
-inject_css()
-
-# ─── Navbar Component ────────────────────────────────────────────────────────
-def render_navbar(show_toggle: bool = True):
-    page = st.session_state.page
-    username = st.session_state.username
-
-    chat_active   = "active" if page == "chat"      else ""
-    analyt_active = "active" if page == "analytics" else ""
-
-    user_chip = f"""
-    <div class="nd-user-chip">
-        <div class="avatar">{username[0].upper() if username else "U"}</div>
-        {username}
-    </div>
-    """ if username else ""
-
-    toggle_html = f"""
-    <div class="nd-toggle-pill">
-        <div class="nd-toggle-opt {chat_active}"
-             onclick="window.parent.document.querySelector('[data-testid=stApp]').dispatchEvent(
-                 new CustomEvent('nd-nav', {{detail:'chat'}}))">
-             Chat
+import sys, os
+sys.path.insert(0, os.path.dirname(__file__))
+
+try:
+    from chat_history import (save_conversation, load_all_conversations,
+                               load_conversation, export_as_markdown)
+    from analytics import record_query, get_stats
+except ImportError:
+    def save_conversation(m, t=None): return ""
+    def load_all_conversations(): return []
+    def load_conversation(cid): return []
+    def export_as_markdown(m, title="Chat"): return "\n".join(f"{x['role']}: {x['content']}" for x in m)
+    def record_query(q, lat, ref, model=""): pass
+    def get_stats(): return {"total_queries":0,"answered":0,"refused":0,"refusal_rate":0,"avg_latency_ms":0,"recent":[]}
+
+st.set_page_config(page_title="NeuralDoc", page_icon="N", layout="wide",
+                   initial_sidebar_state="collapsed")
+
+# ── Session state ──────────────────────────────────────────────────────────────
+for k, v in [("page","landing"),("messages",[]),("tab","chat"),
+              ("dark",True),("authed",False),("username","")]:
+    if k not in st.session_state:
+        st.session_state[k] = v
+
+API_BASE = "http://localhost:8000"
+AUTH_KEY = "neural2024"
+D = st.session_state.dark
+
+# ══════════════════════════════════════════════════════════════════════════════
+# THEME TOKENS — recomputed every rerun
+# ══════════════════════════════════════════════════════════════════════════════
+if D:
+    BG        = "#0b0f1a"
+    BG2       = "#0f1420"
+    CARD      = "rgba(255,255,255,0.04)"
+    CARD_S    = "rgba(255,255,255,0.07)"
+    GLASS     = "rgba(255,255,255,0.05)"
+    BORDER    = "rgba(255,255,255,0.08)"
+    BORDER_A  = "rgba(139,140,245,0.35)"
+    T1        = "#e5e7eb"
+    T2        = "#9ca3af"
+    T3        = "#6b7280"
+    ACC       = "#8b8cf5"
+    ACC2      = "#6c6de0"
+    ACC_S     = "rgba(139,140,245,0.15)"
+    GREEN_C   = "#10b981"; GREEN_B = "rgba(16,185,129,0.15)"
+    RED_C     = "#ef4444";  RED_B   = "rgba(239,68,68,0.15)"
+    YELLOW_C  = "#f59e0b";  YELLOW_B= "rgba(245,158,11,0.15)"
+    CYAN_C    = "#06b6d4"
+    PINK_C    = "#ec4899"
+    NAV_BG    = "rgba(11,15,26,0.92)"
+    INP_BG    = "rgba(255,255,255,0.05)"
+    SH        = "0 4px 24px rgba(0,0,0,0.4)"
+    SH2       = "0 8px 40px rgba(0,0,0,0.6)"
+    PILL_BG   = "rgba(139,140,245,0.12)"
+    PILL_BD   = "rgba(139,140,245,0.3)"
+else:
+    BG        = "#f7f7fb"
+    BG2       = "#eeeef8"
+    CARD      = "#ffffff"
+    CARD_S    = "#f3f3fb"
+    GLASS     = "rgba(255,255,255,0.8)"
+    BORDER    = "rgba(0,0,0,0.07)"
+    BORDER_A  = "rgba(124,111,247,0.4)"
+    T1        = "#1a1840"
+    T2        = "#4a4870"
+    T3        = "#9b98b8"
+    ACC       = "#7c6ff7"
+    ACC2      = "#6459e8"
+    ACC_S     = "rgba(124,111,247,0.1)"
+    GREEN_C   = "#059669"; GREEN_B = "rgba(5,150,105,0.1)"
+    RED_C     = "#dc2626";  RED_B   = "rgba(220,38,38,0.1)"
+    YELLOW_C  = "#d97706";  YELLOW_B= "rgba(217,119,6,0.1)"
+    CYAN_C    = "#0891b2"
+    PINK_C    = "#db2777"
+    NAV_BG    = "rgba(247,247,251,0.95)"
+    INP_BG    = "#ffffff"
+    SH        = "0 4px 16px rgba(124,111,247,0.08)"
+    SH2       = "0 8px 32px rgba(124,111,247,0.15)"
+    PILL_BG   = "rgba(124,111,247,0.08)"
+    PILL_BD   = "rgba(124,111,247,0.25)"
+
+# ── Kill chrome + inject global theme ──────────────────────────────────────────
+st.markdown(f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap');
+
+[data-testid="stHeader"],[data-testid="stToolbar"],[data-testid="stDecoration"],
+[data-testid="stStatusWidget"],[data-testid="collapsedControl"],
+section[data-testid="stSidebar"],#MainMenu,footer {{
+    display:none!important; height:0!important; visibility:hidden!important;
+}}
+[data-testid="stAppViewContainer"],[data-testid="stMain"],
+[data-testid="stMainBlockContainer"],.block-container {{
+    background:transparent!important; padding:0!important;
+    margin:0!important; max-width:100%!important; border:none!important;
+}}
+[data-testid="stVerticalBlock"]{{gap:0!important;}}
+[data-testid="stVerticalBlock"]>div{{margin:0!important;padding:0!important;}}
+
+html,body{{
+    font-family:'Inter',sans-serif!important;
+    background:{BG}!important; color:{T1}!important;
+}}
+[data-testid="stAppViewContainer"]{{background:{BG}!important;}}
+
+/* ─── Buttons ─────────────────────────────────────────────────────── */
+[data-testid="stButton"]>button{{
+    background:{ACC}!important; color:#fff!important;
+    border:none!important; border-radius:8px!important;
+    font-family:'Inter',sans-serif!important; font-size:13px!important;
+    font-weight:600!important; padding:9px 0!important;
+    box-shadow:0 0 0 0 transparent!important;
+    transition:all 0.2s ease!important; letter-spacing:0.01em!important;
+}}
+[data-testid="stButton"]>button:hover{{
+    background:{ACC2}!important; transform:translateY(-1px)!important;
+    box-shadow:0 0 18px {ACC}55!important;
+}}
+[data-testid="stButton"]>button:active{{transform:scale(0.97)!important;}}
+
+[data-testid="stDownloadButton"]>button{{
+    background:transparent!important; color:{ACC}!important;
+    border:1px solid {PILL_BD}!important; border-radius:8px!important;
+    font-size:13px!important; font-weight:600!important;
+    transition:all 0.2s!important;
+}}
+[data-testid="stDownloadButton"]>button:hover{{
+    background:{PILL_BG}!important; transform:translateY(-1px)!important;
+}}
+
+/* ─── Inputs ──────────────────────────────────────────────────────── */
+.stTextInput input{{
+    background:{INP_BG}!important;
+    border:1px solid {BORDER}!important;
+    border-radius:10px!important; color:{T1}!important;
+    font-family:'Inter',sans-serif!important; font-size:14px!important;
+    padding:12px 18px!important;
+    transition:all 0.2s!important;
+}}
+.stTextInput input:focus{{
+    border-color:{ACC}!important;
+    box-shadow:0 0 0 3px {ACC_S}!important; outline:none!important;
+}}
+.stTextInput input::placeholder{{color:{T3}!important;}}
+.stTextInput label,.stFileUploader label{{display:none!important;}}
+
+/* ─── File uploader ───────────────────────────────────────────────── */
+[data-testid="stFileUploaderDropzone"]{{
+    background:{INP_BG}!important;
+    border:2px dashed {PILL_BD}!important;
+    border-radius:12px!important; transition:all 0.2s!important;
+}}
+[data-testid="stFileUploaderDropzone"]:hover{{
+    border-color:{ACC}!important; background:{PILL_BG}!important;
+}}
+[data-testid="stFileUploaderDropzone"] *{{color:{T2}!important;}}
+hr{{border-color:{BORDER}!important;}}
+
+/* ─── Animations ──────────────────────────────────────────────────── */
+@keyframes fadeUp{{
+    from{{opacity:0;transform:translateY(16px);}}
+    to{{opacity:1;transform:translateY(0);}}
+}}
+@keyframes fadeIn{{from{{opacity:0;}}to{{opacity:1;}}}}
+@keyframes pulse{{
+    0%,100%{{box-shadow:0 0 0 0 {ACC}44;}}
+    50%{{box-shadow:0 0 0 6px transparent;}}
+}}
+@keyframes float{{
+    0%,100%{{transform:translateY(0);}}
+    50%{{transform:translateY(-4px);}}
+}}
+@keyframes shimmer{{
+    0%{{background-position:-200% 0;}}
+    100%{{background-position:200% 0;}}
+}}
+@keyframes gradBG{{
+    0%{{background-position:0% 50%;}}
+    50%{{background-position:100% 50%;}}
+    100%{{background-position:0% 50%;}}
+}}
+</style>
+""", unsafe_allow_html=True)
+
+
+def mdiv(html: str):
+    """Shorthand for st.markdown with unsafe_allow_html."""
+    st.markdown(html, unsafe_allow_html=True)
+
+
+def tag(text, color, bg, border):
+    return (f'<span style="display:inline-flex;align-items:center;gap:4px;'
+            f'font-size:11px;font-weight:600;color:{color};'
+            f'background:{bg};border:1px solid {border};'
+            f'padding:2px 9px;border-radius:9999px;">{text}</span>')
+
+
+def sec_label(text):
+    return (f'<div style="font-size:10px;font-weight:700;color:{ACC};'
+            f'letter-spacing:0.12em;text-transform:uppercase;'
+            f'margin-bottom:5px;">{text}</div>')
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# AUTH PAGE
+# ══════════════════════════════════════════════════════════════════════════════
+if st.session_state.page == "auth":
+
+    mdiv(f"""
+    <div style="position:fixed;inset:0;background:{BG};
+      background:radial-gradient(ellipse 70% 60% at 30% 20%,
+        rgba(139,140,245,0.15),transparent 55%),
+        radial-gradient(ellipse 60% 50% at 75% 75%,
+        rgba(6,182,212,0.08),transparent 55%),{BG};
+      z-index:0;"></div>
+
+    <div style="position:relative;z-index:1;min-height:100vh;
+      display:flex;align-items:center;justify-content:center;padding:40px 20px;">
+      <div style="width:100%;max-width:400px;animation:fadeUp 0.5s ease both;">
+
+        <!-- Logo -->
+        <div style="text-align:center;margin-bottom:32px;">
+          <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <div style="width:36px;height:36px;border-radius:10px;
+              background:linear-gradient(135deg,{ACC},{CYAN_C});
+              display:flex;align-items:center;justify-content:center;
+              font-family:'Instrument Serif',serif;font-size:18px;
+              color:#fff;box-shadow:0 4px 16px {ACC}44;">N</div>
+            <span style="font-family:'Instrument Serif',serif;font-size:22px;
+              color:{T1};">NeuralDoc</span>
+          </div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:26px;
+            color:{T1};margin-bottom:6px;font-weight:400;">Welcome back</h2>
+          <p style="font-size:14px;color:{T3};">
+            Sign in to your workspace</p>
         </div>
-        <div class="nd-toggle-opt {analyt_active}"
-             onclick="window.parent.document.querySelector('[data-testid=stApp]').dispatchEvent(
-                 new CustomEvent('nd-nav', {{detail:'analytics'}}))">
-             Analytics
-        </div>
-    </div>
-    """ if show_toggle else "<div></div>"
 
-    st.markdown(f"""
-    <div class="nd-navbar">
-        <div class="nd-nav-left">
-            <a class="nd-logo" href="#">
-                <div class="nd-logo-dot"></div>
-                NeuralDoc
-            </a>
-        </div>
-        <div class="nd-nav-center">
-            {toggle_html}
-        </div>
-        <div class="nd-nav-right">
-            {user_chip}
-            <div class="nd-icon-btn" title="Toggle theme">🌙</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        <!-- Card -->
+        <div style="background:{CARD};border:1px solid {BORDER};
+          border-radius:18px;padding:32px;box-shadow:{SH2};
+          backdrop-filter:blur(12px);">
+    """)
 
-    # Streamlit-native nav buttons (hidden visually but functional)
-    if show_toggle and st.session_state.logged_in:
-        nav_cols = st.columns([1, 1, 1, 8, 1])
-        with nav_cols[0]:
-            if st.button("⬅ Home", key="nav_home", help="Go home"):
-                st.session_state.page = "home"
-                st.rerun()
-        with nav_cols[1]:
-            if st.button("💬 Chat", key="nav_chat"):
+    username = st.text_input("Username", placeholder="Username...",
+                              label_visibility="hidden", key="auth_user")
+    mdiv('<div style="height:10px;"></div>')
+    pwd = st.text_input("Password", type="password",
+                         placeholder="Password or access key...",
+                         label_visibility="hidden", key="auth_pwd")
+    mdiv('<div style="height:16px;"></div>')
+
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("Sign In", use_container_width=True, key="signin_btn"):
+            if pwd == AUTH_KEY:
+                st.session_state.authed = True
+                st.session_state.username = username or "User"
                 st.session_state.page = "chat"
                 st.rerun()
-        with nav_cols[2]:
-            if st.button("📊 Analytics", key="nav_analytics"):
-                st.session_state.page = "analytics"
-                st.rerun()
-        with nav_cols[4]:
-            if st.button("Logout", key="nav_logout"):
-                st.session_state.logged_in = False
-                st.session_state.username  = ""
-                st.session_state.page      = "login"
-                st.rerun()
-
-        # style the nav helper row to be subtle
-        st.markdown("""
-        <style>
-        /* Make the helper nav compact */
-        div[data-testid="column"]:has(button[kind="secondary"]) {
-            min-width: 0 !important;
-        }
-        </style>""", unsafe_allow_html=True)
-
-# ─── LOGIN PAGE ──────────────────────────────────────────────────────────────
-def page_login():
-    st.markdown("""
-    <div class="nd-auth-wrapper">
-        <div style="position:fixed;inset:0;
-            background:radial-gradient(ellipse 70% 60% at 30% 20%,rgba(99,102,241,0.15),transparent 60%),
-                       radial-gradient(ellipse 50% 50% at 70% 70%,rgba(139,92,246,0.12),transparent 55%);
-            pointer-events:none;z-index:0;">
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Center card using columns
-    _, col, _ = st.columns([1, 1.6, 1])
-    with col:
-        st.markdown("""
-        <div class="nd-auth-card">
-            <div class="nd-auth-logo">
-                <div class="dot"></div>
-                NeuralDoc
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Tab toggle
-        tab_col1, tab_col2 = st.columns(2)
-        with tab_col1:
-            if st.button("Sign In", key="tab_login"):
-                st.session_state.auth_tab = "login"
-                st.rerun()
-        with tab_col2:
-            if st.button("Register", key="tab_register"):
-                st.session_state.auth_tab = "register"
-                st.rerun()
-
-        st.markdown("<div class='nd-divider'></div>", unsafe_allow_html=True)
-
-        if st.session_state.auth_tab == "login":
-            st.markdown("<p style='color:rgba(226,232,240,0.5);font-size:13px;margin-bottom:16px;'>Welcome back — sign in to continue.</p>", unsafe_allow_html=True)
-            username = st.text_input("Username", placeholder="your_username", key="login_user")
-            password = st.text_input("Password", placeholder="••••••••", type="password", key="login_pass")
-
-            col_a, col_b = st.columns(2)
-            with col_a:
-                if st.button("Sign In →", key="do_login"):
-                    if verify_user(username, password):
-                        st.session_state.logged_in = True
-                        st.session_state.username  = username
-                        st.session_state.page      = "home"
-                        st.rerun()
-                    else:
-                        st.error("Invalid credentials.")
-            with col_b:
-                st.markdown("<div class='nd-ghost-btn'>", unsafe_allow_html=True)
-                if st.button("Demo →", key="demo_login"):
-                    st.session_state.logged_in = True
-                    st.session_state.username  = "demo"
-                    st.session_state.page      = "home"
-                    st.rerun()
-                st.markdown("</div>", unsafe_allow_html=True)
-
-            st.markdown("<p style='text-align:center;font-size:11px;color:rgba(226,232,240,0.3);margin-top:12px;'>Demo credentials: demo / demo1234</p>", unsafe_allow_html=True)
-
-        else:  # register
-            st.markdown("<p style='color:rgba(226,232,240,0.5);font-size:13px;margin-bottom:16px;'>Create your account.</p>", unsafe_allow_html=True)
-            new_user = st.text_input("Username", placeholder="choose_username", key="reg_user")
-            new_pass = st.text_input("Password", placeholder="min 6 characters", type="password", key="reg_pass")
-            conf_pass = st.text_input("Confirm Password", placeholder="repeat password", type="password", key="reg_conf")
-
-            if st.button("Create Account →", key="do_register"):
-                if len(new_pass) < 6:
-                    st.error("Password must be at least 6 characters.")
-                elif new_pass != conf_pass:
-                    st.error("Passwords do not match.")
-                elif not new_user.strip():
-                    st.error("Username cannot be empty.")
-                elif register_user(new_user.strip(), new_pass):
-                    st.success("Account created! Sign in now.")
-                    st.session_state.auth_tab = "login"
-                    st.rerun()
-                else:
-                    st.error("Username already exists.")
-
-# ─── HOME PAGE ───────────────────────────────────────────────────────────────
-def page_home():
-    render_navbar(show_toggle=False)
-
-    st.markdown(f"""
-    <div class="nd-hero">
-        <div class="nd-hero-badge">⚡ RAG-Powered Document Intelligence</div>
-        <div class="nd-hero-title">
-            Ask your<br><span>documents anything</span>
-        </div>
-        <p class="nd-hero-sub">
-            Upload PDFs, get instant cited answers. Powered by a production-grade
-            Retrieval-Augmented Generation pipeline.
-        </p>
-        <div class="nd-hero-btns">
-            <a class="nd-btn-primary" href="#">Start Chatting →</a>
-            <a class="nd-btn-ghost" href="#">View Analytics</a>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # CTA streamlit buttons
-    _, c1, c2, _ = st.columns([2, 1, 1, 2])
-    with c1:
-        if st.button("💬 Open Chat", key="home_chat"):
-            st.session_state.page = "chat"
-            st.rerun()
+            else:
+                st.error("Incorrect credentials.")
     with c2:
-        if st.button("📊 Analytics", key="home_analytics"):
-            st.session_state.page = "analytics"
+        if st.button("← Back", use_container_width=True, key="auth_back"):
+            st.session_state.page = "landing"
             st.rerun()
 
-    st.markdown("""
-    <div style='max-width:900px;margin:0 auto;'>
-    <div class="nd-feature-grid">
-        <div class="nd-feature-card">
-            <div class="nd-feature-icon">📄</div>
-            <div class="nd-feature-title">Semantic Search</div>
-            <p class="nd-feature-desc">Vector embeddings find the most relevant chunks across all your documents instantly.</p>
+    mdiv(f"""
         </div>
-        <div class="nd-feature-card">
-            <div class="nd-feature-icon">🔗</div>
-            <div class="nd-feature-title">Inline Citations</div>
-            <p class="nd-feature-desc">Every answer includes source references so you can verify the context directly.</p>
+        <div style="text-align:center;margin-top:18px;">
+          <span style="font-size:12px;color:{T3};">Demo credentials: &nbsp;</span>
+          <code style="font-size:11px;background:{PILL_BG};color:{ACC};
+            padding:3px 10px;border-radius:6px;border:1px solid {PILL_BD};">
+            neural2024</code>
         </div>
-        <div class="nd-feature-card">
-            <div class="nd-feature-icon">🛡️</div>
-            <div class="nd-feature-title">Refusal Guard</div>
-            <p class="nd-feature-desc">Unanswerable queries return a clear refusal — not a hallucinated guess.</p>
-        </div>
-        <div class="nd-feature-card">
-            <div class="nd-feature-icon">⚡</div>
-            <div class="nd-feature-title">Low Latency</div>
-            <p class="nd-feature-desc">FastAPI backend + async pipeline keeps response times under 2 seconds.</p>
-        </div>
-        <div class="nd-feature-card">
-            <div class="nd-feature-icon">📊</div>
-            <div class="nd-feature-title">Live Analytics</div>
-            <p class="nd-feature-desc">Track query volume, success rate, latency, and system health in real time.</p>
-        </div>
-        <div class="nd-feature-card">
-            <div class="nd-feature-icon">🔒</div>
-            <div class="nd-feature-title">Secure Auth</div>
-            <p class="nd-feature-desc">Session-based login with password hashing. Your data stays private.</p>
-        </div>
+      </div>
     </div>
+    """)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# LANDING PAGE
+# ══════════════════════════════════════════════════════════════════════════════
+elif st.session_state.page == "landing":
+
+    # ── Navbar ─────────────────────────────────────────────────────────────────
+    mdiv(f"""
+    <nav style="position:sticky;top:0;z-index:200;height:52px;
+      background:{NAV_BG};backdrop-filter:blur(16px);
+      border-bottom:1px solid {BORDER};
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 48px;animation:fadeIn 0.4s ease both;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:26px;height:26px;border-radius:7px;
+          background:linear-gradient(135deg,{ACC},{CYAN_C});
+          display:flex;align-items:center;justify-content:center;
+          font-family:'Instrument Serif',serif;font-size:13px;color:#fff;">N</div>
+        <span style="font-family:'Instrument Serif',serif;font-size:17px;
+          color:{T1};">NeuralDoc</span>
+      </div>
+      <div style="font-size:11px;font-weight:600;color:{ACC};
+        background:{PILL_BG};border:1px solid {PILL_BD};
+        padding:4px 14px;border-radius:9999px;letter-spacing:0.06em;
+        text-transform:uppercase;">Production RAG v1.0</div>
+    </nav>
+    """)
+
+    # Dark mode toggle row (top right, no overlap)
+    _sp, _dm = st.columns([10, 1])
+    with _dm:
+        mdiv('<div style="padding:8px 16px 0 0;display:flex;justify-content:flex-end;">')
+        if st.button("☀" if D else "☽", key="dm_land", use_container_width=False):
+            st.session_state.dark = not D
+            st.rerun()
+        mdiv('</div>')
+
+    # Background gradient blobs
+    mdiv(f"""
+    <div style="position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;">
+      <div style="position:absolute;width:600px;height:600px;border-radius:50%;
+        background:radial-gradient(circle,{ACC}22,transparent 70%);
+        top:-200px;left:-100px;animation:float 12s ease-in-out infinite;"></div>
+      <div style="position:absolute;width:500px;height:500px;border-radius:50%;
+        background:radial-gradient(circle,{CYAN_C}18,transparent 70%);
+        bottom:-150px;right:-100px;animation:float 15s ease-in-out 3s infinite;"></div>
     </div>
-    """, unsafe_allow_html=True)
 
-# ─── CHAT PAGE ───────────────────────────────────────────────────────────────
-def page_chat():
-    render_navbar(show_toggle=True)
+    <!-- Hero -->
+    <div style="position:relative;z-index:1;max-width:800px;margin:0 auto;
+      padding:72px 48px 0;text-align:center;animation:fadeUp 0.6s ease 0.1s both;">
+      <div style="display:inline-flex;align-items:center;gap:6px;margin-bottom:24px;
+        font-size:12px;font-weight:600;color:{ACC};
+        background:{PILL_BG};border:1px solid {PILL_BD};
+        padding:5px 16px;border-radius:9999px;">
+        <div style="width:6px;height:6px;border-radius:50%;background:{GREEN_C};
+          animation:pulse 2s ease-in-out infinite;"></div>
+        Zero hallucination tolerance
+      </div>
+      <h1 style="font-family:'Instrument Serif',serif;
+        font-size:clamp(40px,5.5vw,64px);color:{T1};
+        line-height:1.06;letter-spacing:-1px;margin-bottom:6px;font-weight:400;">
+        Ask anything.
+      </h1>
+      <h1 style="font-family:'Instrument Serif',serif;
+        font-size:clamp(40px,5.5vw,64px);font-style:italic;color:{ACC};
+        line-height:1.06;letter-spacing:-1px;margin-bottom:24px;font-weight:400;">
+        Know everything.
+      </h1>
+      <p style="font-size:16px;color:{T2};line-height:1.8;
+        max-width:500px;margin:0 auto 36px;">
+        A <strong style="color:{T1};">production-grade</strong> RAG system with
+        <strong style="color:{T1};">inline citations</strong>, hybrid retrieval,
+        persistent history, and live analytics.
+      </p>
+    </div>
+    """)
 
-    st.markdown("<div class='nd-page' style='padding-top:16px;'>", unsafe_allow_html=True)
-
-    # Header row
-    h1, h2 = st.columns([3, 1])
-    with h1:
-        st.markdown("""
-        <div class='nd-section-label'>Document QA</div>
-        <div class='nd-section-title'>Ask your <em>documents</em></div>
-        """, unsafe_allow_html=True)
-    with h2:
-        badge_class = "ready" if st.session_state.doc_ready else "not-ready"
-        badge_text  = "✓ Ready" if st.session_state.doc_ready else "✗ Not Ready"
-        chunks = st.session_state.chunks
-        st.markdown(f"""
-        <div style='display:flex;gap:8px;align-items:center;justify-content:flex-end;padding-top:20px;'>
-            <div class='nd-chunk-badge'>📦 {chunks} chunks</div>
-            <div class='nd-doc-badge {badge_class}'>{badge_text}</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # Two-column layout
-    chat_col, upload_col = st.columns([1.6, 1])
-
-    # ── Chat Column ──────────────────────────────────────────
-    with chat_col:
-        st.markdown("<div class='nd-chat-container'>", unsafe_allow_html=True)
-
-        # Messages
-        st.markdown("<div class='nd-chat-messages' id='chat-scroll'>", unsafe_allow_html=True)
-        messages = st.session_state.chat_messages
-
-        if not messages:
-            st.markdown("""
-            <div style='display:flex;flex-direction:column;align-items:center;justify-content:center;
-                        padding:48px 20px;gap:12px;text-align:center;'>
-                <div style='font-size:40px;opacity:0.3;'>💬</div>
-                <div style='font-family:Syne,sans-serif;font-size:18px;font-weight:700;color:rgba(226,232,240,0.5);'>
-                    Ask anything
-                </div>
-                <div style='font-size:13px;color:rgba(226,232,240,0.35);max-width:280px;line-height:1.6;'>
-                    Upload a PDF on the right, then start asking questions. Every answer is cited.
-                </div>
-            </div>
-            <div class='nd-suggestions'>
-                <div class='nd-sugg-pill'>📋 What is the main finding?</div>
-                <div class='nd-sugg-pill'>📝 Summarise section 3</div>
-                <div class='nd-sugg-pill'>⚠️ What are the key risks?</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            uname = st.session_state.username or "U"
-            for msg in messages:
-                role  = msg["role"]
-                text  = msg["text"]
-                ts    = msg.get("time", "")
-                if role == "user":
-                    st.markdown(f"""
-                    <div class='nd-msg user'>
-                        <div>
-                            <div class='nd-msg-bubble'>{text}</div>
-                            <div class='nd-msg-time' style='text-align:right;'>{ts}</div>
-                        </div>
-                        <div class='nd-msg-avatar'>{uname[0].upper()}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                    <div class='nd-msg assistant'>
-                        <div class='nd-msg-avatar'>⚡</div>
-                        <div>
-                            <div class='nd-msg-bubble'>{text}</div>
-                            <div class='nd-msg-time'>{ts}</div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-        st.markdown("</div>", unsafe_allow_html=True)  # end chat-messages
-
-        # Input row
-        st.markdown("<div class='nd-chat-input-row'>", unsafe_allow_html=True)
-        inp_col, btn_col = st.columns([5, 1])
-        with inp_col:
-            user_input = st.text_input(
-                label="",
-                placeholder="Ask anything about your documents…",
-                key="chat_input",
-                label_visibility="collapsed",
-            )
-        with btn_col:
-            send = st.button("Send ↗", key="chat_send")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown("</div>", unsafe_allow_html=True)  # end chat-container
-
-        # Handle send
-        if send and user_input.strip():
-            ts = datetime.now().strftime("%H:%M")
-            st.session_state.chat_messages.append({
-                "role": "user", "text": user_input.strip(), "time": ts
-            })
-            # Simulate typing & response
-            with st.spinner(""):
-                time.sleep(0.8)
-            demo_responses = [
-                "Based on the document, the main finding indicates that [placeholder — connect your RAG API here]. <em style='color:rgba(226,232,240,0.4);font-size:11px;'>[Source: page 3, §2.1]</em>",
-                "The document does not contain enough information to answer this precisely. Please rephrase or upload a more relevant file.",
-                "According to section 3 of the uploaded PDF, the analysis shows [placeholder]. <em style='color:rgba(226,232,240,0.4);font-size:11px;'>[Source: page 7]</em>",
-            ]
-            reply = random.choice(demo_responses)
-            st.session_state.chat_messages.append({
-                "role": "assistant", "text": reply, "time": datetime.now().strftime("%H:%M")
-            })
-
-            # Log to analytics
-            st.session_state.query_log.append({
-                "query": user_input.strip(),
-                "status": "answered",
-                "latency": random.randint(220, 980),
-                "time": datetime.now().strftime("%H:%M:%S"),
-            })
+    # CTA
+    _l, _m, _r = st.columns([3, 2, 3])
+    with _m:
+        mdiv(f"""<style>
+        [data-testid="stButton"] button{{
+          height:50px!important;font-size:15px!important;
+          border-radius:9999px!important;
+          background:linear-gradient(135deg,{ACC},{CYAN_C})!important;
+          box-shadow:0 4px 24px {ACC}44!important;
+        }}
+        </style>""")
+        if st.button("Open App  →", key="launch_btn", use_container_width=True):
+            st.session_state.page = "auth"
             st.rerun()
 
-    # ── Upload Column ────────────────────────────────────────
-    with upload_col:
-        st.markdown("""
-        <div class='nd-upload-panel'>
-        <div class='nd-panel-header'>
-            <span class='nd-panel-title'>📚 Knowledge Base</span>
-        </div>
-        <div class='nd-panel-body' style='display:flex;flex-direction:column;gap:14px;'>
-        """, unsafe_allow_html=True)
+    # Stats bar
+    stat_items = [("0%","Hallucination"),("3×","Retrieval Modes"),
+                  ("100%","Local & Private"),("∞","Documents")]
+    stats_html = ""
+    for i,(v,l) in enumerate(stat_items):
+        border_r = f"border-right:1px solid {BORDER};" if i<3 else ""
+        stats_html += f"""
+        <div style="flex:1;padding:20px 12px;text-align:center;{border_r}
+          transition:background 0.18s;cursor:default;"
+          onmouseover="this.style.background='{PILL_BG}'"
+          onmouseout="this.style.background='transparent'">
+          <div style="font-family:'Instrument Serif',serif;font-size:28px;
+            color:{ACC};line-height:1;margin-bottom:4px;">{v}</div>
+          <div style="font-size:10px;font-weight:700;color:{T3};
+            letter-spacing:0.1em;text-transform:uppercase;">{l}</div>
+        </div>"""
 
-        uploaded = st.file_uploader(
-            "Drop your PDF below",
-            type=["pdf"],
-            label_visibility="collapsed",
-            key="pdf_upload",
-        )
-
-        if uploaded:
-            with st.spinner("Parsing → Chunking → Embedding…"):
-                time.sleep(1.5)
-            st.session_state.doc_ready = True
-            st.session_state.chunks    = random.randint(48, 240)
-            st.success(f"✓ Indexed {uploaded.name}")
-
-        col_clear, _ = st.columns([1, 2])
-        with col_clear:
-            if st.button("🗑 Clear", key="clear_docs"):
-                st.session_state.doc_ready = False
-                st.session_state.chunks    = 0
-                st.rerun()
-
-        st.markdown("""
-        <div class='nd-tip-box'>
-            <div class='nd-tip-head'>💡 Tips</div>
-            <div class='nd-tip-item'><span>→</span> Clear before switching documents</div>
-            <div class='nd-tip-item'><span>→</span> Ask precise questions for best citation accuracy</div>
-            <div class='nd-tip-item'><span>→</span> Unanswerable queries return a refusal</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("</div></div>", unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)  # nd-page
-
-# ─── ANALYTICS PAGE ──────────────────────────────────────────────────────────
-def page_analytics():
-    render_navbar(show_toggle=True)
-
-    logs = st.session_state.query_log
-    total    = len(logs)
-    answered = sum(1 for q in logs if q["status"] == "answered")
-    refused  = total - answered
-    success  = f"{int(answered/total*100)}%" if total else "—"
-    avg_lat  = f"{int(sum(q['latency'] for q in logs)/total)}ms" if total else "0ms"
-    lat_label= "Fast" if total == 0 or int(sum(q['latency'] for q in logs)/max(total,1)) < 500 else "Moderate"
-
-    st.markdown("<div class='nd-page'>", unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class='nd-section-label'>Live Observability</div>
-    <div class='nd-section-title'>Query <em>Analytics</em></div>
-    """, unsafe_allow_html=True)
-
-    # Metric cards
-    st.markdown(f"""
-    <div class="nd-metrics-row">
-        <div class="nd-metric-card" style="--c1:#6366f1;--c2:#8b5cf6;">
-            <span class="nd-metric-icon">🔍</span>
-            <div class="nd-metric-value" style="color:#818cf8;">{total}</div>
-            <div class="nd-metric-label">Total Queries</div>
-        </div>
-        <div class="nd-metric-card" style="--c1:#22c55e;--c2:#16a34a;">
-            <span class="nd-metric-icon">✅</span>
-            <div class="nd-metric-value" style="color:#4ade80;">{answered}</div>
-            <div class="nd-metric-label">Answered</div>
-        </div>
-        <div class="nd-metric-card" style="--c1:#ef4444;--c2:#dc2626;">
-            <span class="nd-metric-icon">🚫</span>
-            <div class="nd-metric-value" style="color:#f87171;">{refused}</div>
-            <div class="nd-metric-label">Refused</div>
-        </div>
-        <div class="nd-metric-card" style="--c1:#f59e0b;--c2:#d97706;">
-            <span class="nd-metric-icon">📈</span>
-            <div class="nd-metric-value" style="color:#fbbf24;">{success}</div>
-            <div class="nd-metric-label">Success Rate</div>
-            <div class="nd-metric-sub" style="color:rgba(226,232,240,0.4);">{"Good" if success != "—" else "No data"}</div>
-        </div>
-        <div class="nd-metric-card" style="--c1:#06b6d4;--c2:#0891b2;">
-            <span class="nd-metric-icon">⚡</span>
-            <div class="nd-metric-value" style="color:#22d3ee;">{avg_lat}</div>
-            <div class="nd-metric-label">Avg Latency</div>
-            <div class="nd-metric-sub" style="color:rgba(226,232,240,0.4);">{lat_label}</div>
-        </div>
+    mdiv(f"""
+    <div style="position:relative;z-index:1;display:flex;max-width:700px;
+      margin:44px auto 0;background:{CARD};border:1px solid {BORDER};
+      border-radius:20px;overflow:hidden;box-shadow:{SH};
+      animation:fadeUp 0.6s ease 0.3s both;">
+      {stats_html}
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
-    # Bottom grid
-    left_col, right_col = st.columns([2.4, 1])
+    # Pillars grid
+    pillars = [
+        ("01","Ingestion","Smart PDF Parsing","Multi-column layouts, tables, complex structures.",
+         "pdfplumber",GREEN_C,f"rgba(16,185,129,0.2)","rgba(16,185,129,0.08)"),
+        ("02","Chunking","Semantic Chunking","Header-aware 500-800 token chunks with metadata.",
+         "tiktoken",ACC,PILL_BD,PILL_BG),
+        ("03","Retrieval","Hybrid Search","BM25 + dense vector via Reciprocal Rank Fusion.",
+         "RRF Fusion",CYAN_C,"rgba(6,182,212,0.3)","rgba(6,182,212,0.08)"),
+        ("04","Reranking","Cross-Encoder","Top 20 re-scored — best 5 reach generation.",
+         "ms-marco",YELLOW_C,f"rgba(245,158,11,0.3)","rgba(245,158,11,0.08)"),
+        ("05","Generation","Attributed Answers","Every claim has [Source, p.X] citation.",
+         "LangGraph",ACC,PILL_BD,PILL_BG),
+        ("06","Safety","Hard Refusal Gate","Below threshold = fixed refusal. No hallucination.",
+         "Threshold Gate",PINK_C,"rgba(236,72,153,0.3)","rgba(236,72,153,0.08)"),
+    ]
+    cards = "".join([
+        f'<div style="background:{CARD};border:1px solid {BORDER};border-radius:14px;'
+        f'padding:22px;backdrop-filter:blur(8px);'
+        f'transition:transform 0.2s,box-shadow 0.2s,border-color 0.2s;"'
+        f'onmouseover="this.style.transform=\'translateY(-4px)\';'
+        f'this.style.boxShadow=\'0 8px 32px {tc}33\';'
+        f'this.style.borderColor=\'{tc}55\'"'
+        f'onmouseout="this.style.transform=\'\';'
+        f'this.style.boxShadow=\'\';this.style.borderColor=\'{BORDER}\'">'
+        f'<div style="font-size:10px;font-weight:700;color:{T3};letter-spacing:0.1em;'
+        f'text-transform:uppercase;margin-bottom:6px;">{num} — {cat}</div>'
+        f'<div style="font-size:14px;font-weight:700;color:{T1};margin-bottom:5px;">{t}</div>'
+        f'<div style="font-size:12px;color:{T2};line-height:1.7;">{b}</div>'
+        f'<span style="display:inline-block;margin-top:10px;font-size:10px;font-weight:700;'
+        f'padding:2px 9px;border-radius:9999px;color:{tc};'
+        f'background:{tbg};border:1px solid {tbd};">{tag_text}</span></div>'
+        for num,cat,t,b,tag_text,tc,tbd,tbg in pillars
+    ])
 
-    with left_col:
-        st.markdown("""
-        <div class="nd-panel" style="height:100%;">
-            <div class="nd-panel-header">
-                <span class="nd-panel-title">📋 Recent Queries</span>
-            </div>
-            <div class="nd-panel-body">
-        """, unsafe_allow_html=True)
+    steps = [("Parse","pdfplumber"),("Chunk","tiktoken"),("Embed","miniLM"),
+             ("BM25","keyword"),("Fuse","RRF"),("Rerank","cross-enc"),
+             ("Generate","llama3.1"),("Cite","attributed")]
+    pipe = ""
+    for i,(s,sub) in enumerate(steps):
+        pipe += (f'<div style="display:flex;flex-direction:column;align-items:center;'
+                 f'gap:4px;flex:1;padding:7px 3px;border-radius:8px;transition:all 0.16s;cursor:default;"'
+                 f'onmouseover="this.style.background=\'{PILL_BG}\'"'
+                 f'onmouseout="this.style.background=\'\'">'
+                 f'<div style="font-size:11px;font-weight:700;color:{T1};">{s}</div>'
+                 f'<div style="font-size:10px;color:{T3};">{sub}</div></div>')
+        if i<7:
+            pipe += f'<div style="color:{BORDER_A};font-size:12px;flex-shrink:0;">&rarr;</div>'
 
-        if not logs:
-            st.markdown("""
-            <div class="nd-empty">
-                <div class="nd-empty-icon">🔎</div>
-                <div class="nd-empty-text">No queries yet — start chatting to see data here</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            # Table header
-            st.markdown("""
-            <div style="display:grid;grid-template-columns:1fr 100px 80px 80px;
-                        gap:8px;padding:8px 12px;
-                        font-size:11px;font-weight:600;letter-spacing:0.05em;
-                        text-transform:uppercase;color:rgba(226,232,240,0.35);
-                        border-bottom:1px solid rgba(255,255,255,0.05);">
-                <span>Query</span><span>Time</span><span>Status</span><span>Latency</span>
-            </div>
-            """, unsafe_allow_html=True)
-            for q in reversed(logs[-20:]):
-                status_cls = "green" if q["status"] == "answered" else "red"
-                st.markdown(f"""
-                <div style="display:grid;grid-template-columns:1fr 100px 80px 80px;
-                            gap:8px;padding:10px 12px;
-                            font-size:12px;color:rgba(226,232,240,0.7);
-                            border-bottom:1px solid rgba(255,255,255,0.03);
-                            transition:background 0.15s;"
-                     onmouseover="this.style.background='rgba(255,255,255,0.03)'"
-                     onmouseout="this.style.background='transparent'">
-                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-                          title="{q['query']}">{q['query'][:60]}{'…' if len(q['query'])>60 else ''}</span>
-                    <span style="color:rgba(226,232,240,0.4);">{q['time']}</span>
-                    <span><span class="nd-pill {status_cls}">{q['status']}</span></span>
-                    <span style="color:rgba(226,232,240,0.4);">{q['latency']}ms</span>
-                </div>
-                """, unsafe_allow_html=True)
+    mdiv(f"""
+    <div style="position:relative;z-index:1;max-width:1100px;margin:80px auto 0;padding:0 48px;">
+      <div style="font-size:10px;font-weight:700;color:{ACC};letter-spacing:0.12em;
+        text-transform:uppercase;margin-bottom:8px;">Capabilities</div>
+      <div style="font-family:'Instrument Serif',serif;font-size:30px;color:{T1};
+        margin-bottom:24px;font-weight:400;">
+        Six <em style="font-style:italic;color:{ACC};">pillars</em> of precision</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">{cards}</div>
+    </div>
+    <div style="position:relative;z-index:1;max-width:1100px;margin:64px auto 0;padding:0 48px;">
+      <div style="font-size:10px;font-weight:700;color:{ACC};letter-spacing:0.12em;
+        text-transform:uppercase;margin-bottom:8px;">Architecture</div>
+      <div style="font-family:'Instrument Serif',serif;font-size:30px;color:{T1};
+        margin-bottom:22px;font-weight:400;">
+        The <em style="font-style:italic;color:{ACC};">pipeline</em></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;
+        background:{CARD};border:1px solid {BORDER};border-radius:14px;
+        padding:22px 24px;backdrop-filter:blur(8px);">{pipe}</div>
+    </div>
+    <div style="max-width:1100px;margin:60px auto 0;padding:20px 48px 64px;
+      border-top:1px solid {BORDER};
+      display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:12px;color:{T3};">NeuralDoc — Production RAG System</span>
+      <span style="font-size:12px;color:{T3};">Ollama · ChromaDB · LangGraph · FastAPI</span>
+    </div>
+    """)
 
-        st.markdown("</div></div>", unsafe_allow_html=True)
 
-    with right_col:
-        # System Status
-        st.markdown("""
-        <div class="nd-panel" style="margin-bottom:14px;">
-            <div class="nd-panel-header">
-                <span class="nd-panel-title">🖥 System Status</span>
-            </div>
-            <div class="nd-panel-body">
-                <div class="nd-status-list">
-                    <div class="nd-status-item">
-                        <div class="nd-status-left">
-                            <span class="nd-status-icon">⚡</span>
-                            <span>FastAPI</span>
-                        </div>
-                        <span class="nd-pill red">Offline</span>
-                    </div>
-                    <div class="nd-status-item">
-                        <div class="nd-status-left">
-                            <span class="nd-status-icon">🔗</span>
-                            <span>RAG Pipeline</span>
-                        </div>
-                        <span class="nd-pill yellow">Standby</span>
-                    </div>
-                    <div class="nd-status-item">
-                        <div class="nd-status-left">
-                            <span class="nd-status-icon">📂</span>
-                            <span>Indexed Files</span>
-                        </div>
-        """, unsafe_allow_html=True)
+# ══════════════════════════════════════════════════════════════════════════════
+# CHAT / ANALYTICS APP
+# ══════════════════════════════════════════════════════════════════════════════
+elif st.session_state.page == "chat":
 
-        idx_count = 1 if st.session_state.doc_ready else 0
-        idx_cls   = "green" if idx_count > 0 else "red"
-        idx_text  = f"{idx_count} doc" if idx_count > 0 else "No docs"
+    def get_health():
+        try:
+            r = requests.get(f"{API_BASE}/health", timeout=3).json()
+            r["_ok"] = True; return r
+        except Exception:
+            return {"pipeline_ready":False,"total_chunks":0,"indexed_files":[],"_ok":False}
 
-        st.markdown(f"""
-                        <span class="nd-pill {idx_cls}">{idx_text}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    h      = get_health()
+    api_ok = h.get("_ok", False)
+    ready  = h.get("pipeline_ready", False)
+    chunks = h.get("total_chunks", 0)
+    files  = h.get("indexed_files", [])
 
-        # Ops Notes alert
-        st.markdown("""
-        <div class="nd-panel">
-            <div class="nd-panel-header">
-                <span class="nd-panel-title">⚠️ Ops Notes</span>
-            </div>
-            <div class="nd-panel-body">
-                <div class="nd-alert-card">
-                    <div class="nd-alert-head">⚠ Recommendations</div>
-                    <div class="nd-alert-item">
-                        <span>→</span>
-                        <span>Refusal &gt; 25%: threshold may be too strict</span>
-                    </div>
-                    <div class="nd-alert-item">
-                        <span>→</span>
-                        <span>Latency &gt; 5s: try GPU or GPT-4o mini</span>
-                    </div>
-                    <div class="nd-alert-item">
-                        <span>→</span>
-                        <span>Rolling window: last 200 queries</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)  # nd-page
-
-# ─── Router ──────────────────────────────────────────────────────────────────
-if not st.session_state.logged_in:
-    page_login()
-else:
-    p = st.session_state.page
-    if p == "home":
-        page_home()
-    elif p == "chat":
-        page_chat()
-    elif p == "analytics":
-        page_analytics()
+    # Status pill values (plain Python strings — no HTML injection risk)
+    if ready:
+        _sc = GREEN_C; _sb = GREEN_B; _sd = GREEN_C
+        _st = f"Ready · {chunks} chunks"
+    elif api_ok:
+        _sc = YELLOW_C; _sb = YELLOW_B; _sd = YELLOW_C
+        _st = "API online · No docs"
     else:
-        page_home()
+        _sc = RED_C; _sb = RED_B; _sd = RED_C
+        _st = "API offline"
+
+    tab = st.session_state.tab
+    tab_chat_s = (f"background:{ACC};color:#fff;"
+                  f"box-shadow:0 2px 10px {ACC}55;" if tab=="chat"
+                  else f"color:{T2};background:transparent;")
+    tab_anlyt_s = (f"background:{ACC};color:#fff;"
+                   f"box-shadow:0 2px 10px {ACC}55;" if tab=="analytics"
+                   else f"color:{T2};background:transparent;")
+
+    uname = st.session_state.username or "User"
+    initial = uname[0].upper()
+
+    # ── NAVBAR — logo+home | tab pill | dark+user ────────────────────────────
+    mdiv(f"""
+    <nav style="position:sticky;top:0;z-index:200;height:52px;
+      background:{NAV_BG};backdrop-filter:blur(16px);
+      border-bottom:1px solid {BORDER};
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 32px;animation:fadeIn 0.4s ease both;">
+
+      <!-- LEFT: Logo + Home button placeholder -->
+      <div style="display:flex;align-items:center;gap:10px;min-width:160px;">
+        <div style="width:26px;height:26px;border-radius:7px;
+          background:linear-gradient(135deg,{ACC},{CYAN_C});
+          display:flex;align-items:center;justify-content:center;
+          font-family:'Instrument Serif',serif;font-size:13px;color:#fff;">N</div>
+        <span style="font-family:'Instrument Serif',serif;font-size:16px;
+          color:{T1};">NeuralDoc</span>
+      </div>
+
+      <!-- CENTER: Tab pill -->
+      <div style="display:flex;gap:2px;background:{CARD_S};
+        border:1px solid {BORDER};border-radius:9px;padding:3px;">
+        <div style="padding:5px 20px;border-radius:7px;font-size:13px;
+          font-weight:600;{tab_chat_s}transition:all 0.18s;cursor:default;">Chat</div>
+        <div style="padding:5px 20px;border-radius:7px;font-size:13px;
+          font-weight:600;{tab_anlyt_s}transition:all 0.18s;cursor:default;">Analytics</div>
+      </div>
+
+      <!-- RIGHT: status + dark toggle + avatar -->
+      <div style="display:flex;align-items:center;gap:10px;min-width:160px;
+        justify-content:flex-end;">
+        <div style="display:inline-flex;align-items:center;gap:5px;font-size:12px;
+          font-weight:600;padding:4px 12px;border-radius:9999px;
+          color:{_sc};background:{_sb};border:1px solid {_sc}44;">
+          <div style="width:5px;height:5px;border-radius:50%;background:{_sd};
+            {'animation:pulse 1.5s ease-in-out infinite;' if ready else ''}"></div>
+          {_st}
+        </div>
+        <div style="width:28px;height:28px;border-radius:50%;
+          background:linear-gradient(135deg,{ACC},{PINK_C});
+          display:flex;align-items:center;justify-content:center;
+          font-size:12px;font-weight:700;color:#fff;
+          box-shadow:0 2px 8px {ACC}44;">{initial}</div>
+      </div>
+    </nav>
+    """)
+
+    # ── Toolbar — minimal, one row ────────────────────────────────────────────
+    mdiv(f'<div style="padding:10px 32px;display:flex;align-items:center;gap:8px;">')
+    _cols = st.columns([1, 1, 1, 1, 1, 0.8, 0.5, 6])
+
+    with _cols[0]:
+        if st.button("⌂ Home", key="home_btn", use_container_width=True):
+            if st.session_state.messages:
+                save_conversation(st.session_state.messages)
+            st.session_state.page = "landing"
+            st.rerun()
+    with _cols[1]:
+        if st.button("Clear", key="clr_btn", use_container_width=True):
+            if st.session_state.messages:
+                save_conversation(st.session_state.messages)
+            st.session_state.messages = []
+            st.rerun()
+    with _cols[2]:
+        chat_label = "Analytics →" if tab == "chat" else "← Chat"
+        if st.button(chat_label, key="tab_switch", use_container_width=True):
+            st.session_state.tab = "analytics" if tab=="chat" else "chat"
+            st.rerun()
+    with _cols[3]:
+        if st.button("☀" if D else "☽ Dark", key="dm_chat", use_container_width=True):
+            st.session_state.dark = not D
+            st.rerun()
+    with _cols[4]:
+        if st.button("Sign Out", key="logout_btn", use_container_width=True):
+            st.session_state.authed = False
+            st.session_state.username = ""
+            st.session_state.messages = []
+            st.session_state.page = "auth"
+            st.rerun()
+    with _cols[5]:
+        if st.session_state.messages:
+            md = export_as_markdown(st.session_state.messages, "NeuralDoc Chat")
+            st.download_button("Export", data=md,
+                file_name=f"chat_{datetime.now().strftime('%Y%m%d_%H%M')}.md",
+                mime="text/markdown", use_container_width=True, key="exp_md")
+
+    mdiv('</div>')
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # ANALYTICS TAB
+    # ══════════════════════════════════════════════════════════════════════════
+    if tab == "analytics":
+        stats = get_stats()
+
+        # KPI cards
+        ans_pct = round((stats["answered"]/stats["total_queries"]*100) if stats["total_queries"] else 0)
+        ref_pct = round((stats["refused"]/stats["total_queries"]*100)  if stats["total_queries"] else 0)
+
+        kpis = [
+            ("⬡","Total Queries",   str(stats["total_queries"]),  ACC,    f"rgba(139,140,245,0.12)", ""),
+            ("✓","Answered",        str(stats["answered"]),        GREEN_C, GREEN_B,
+             f'<div style="height:3px;background:{GREEN_C}22;border-radius:2px;overflow:hidden;margin-top:8px;"><div style="height:100%;width:{ans_pct}%;background:{GREEN_C};border-radius:2px;transition:width 1s;"></div></div>'),
+            ("✕","Refused",         str(stats["refused"]),         RED_C,   RED_B,
+             f'<div style="height:3px;background:{RED_C}22;border-radius:2px;overflow:hidden;margin-top:8px;"><div style="height:100%;width:{ref_pct}%;background:{RED_C};border-radius:2px;"></div></div>'),
+            ("◎","Refusal Rate",    f"{stats['refusal_rate']}%",   YELLOW_C,YELLOW_B,
+             f'<div style="font-size:10px;color:{T3};margin-top:6px;">{"Good" if stats["refusal_rate"]<20 else "High — review threshold"}</div>'),
+            ("⚡","Avg Latency",     f"{int(stats['avg_latency_ms'])}ms", CYAN_C, f"rgba(6,182,212,0.12)",
+             f'<div style="font-size:10px;color:{T3};margin-top:6px;">{"Fast" if stats["avg_latency_ms"]<3000 else "Consider GPU"}</div>'),
+        ]
+
+        kpi_html = ""
+        for icon, lbl, val, col, bg, extra in kpis:
+            kpi_html += f"""
+            <div style="background:{bg};border:1px solid {col}33;border-radius:16px;
+              padding:22px 18px;text-align:center;backdrop-filter:blur(8px);
+              transition:transform 0.2s,box-shadow 0.2s,border-color 0.2s;
+              animation:fadeUp 0.4s ease both;"
+              onmouseover="this.style.transform='translateY(-5px)';
+                this.style.boxShadow='0 8px 32px {col}33';
+                this.style.borderColor='{col}55'"
+              onmouseout="this.style.transform='';
+                this.style.boxShadow='';this.style.borderColor='{col}33'">
+              <div style="font-size:18px;color:{col};margin-bottom:6px;">{icon}</div>
+              <div style="font-family:'Instrument Serif',serif;font-size:36px;
+                color:{col};line-height:1;margin-bottom:5px;">{val}</div>
+              <div style="font-size:10px;font-weight:700;color:{T3};
+                letter-spacing:0.1em;text-transform:uppercase;">{lbl}</div>
+              {extra}
+            </div>"""
+
+        # Recent queries
+        rows_html = ""
+        for q in stats["recent"]:
+            ic = RED_C if q["refused"] else GREEN_C
+            symbol = "✕" if q["refused"] else "✓"
+            rows_html += f"""
+            <div style="display:flex;align-items:center;gap:10px;
+              padding:10px 14px;border-radius:8px;margin-bottom:4px;
+              background:{CARD_S};border:1px solid {BORDER};
+              transition:all 0.15s;"
+              onmouseover="this.style.borderColor='{BORDER_A}';
+                this.style.transform='translateX(2px)'"
+              onmouseout="this.style.borderColor='{BORDER}';
+                this.style.transform=''">
+              <div style="width:20px;height:20px;border-radius:50%;flex-shrink:0;
+                background:{ic}20;border:1.5px solid {ic}55;
+                display:flex;align-items:center;justify-content:center;
+                font-size:9px;font-weight:700;color:{ic};">{symbol}</div>
+              <span style="flex:1;font-size:13px;color:{T1};
+                overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                {q["query"][:80]}</span>
+              <code style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                color:{T3};background:{PILL_BG};padding:2px 8px;
+                border-radius:6px;">{q["latency_ms"]}ms</code>
+            </div>"""
+
+        empty_q = f"""
+        <div style="display:flex;flex-direction:column;align-items:center;
+          justify-content:center;padding:48px 24px;
+          border:2px dashed {BORDER};border-radius:12px;
+          background:linear-gradient(135deg,{PILL_BG},transparent);">
+          <div style="font-size:36px;margin-bottom:12px;opacity:0.4;">◎</div>
+          <div style="font-size:14px;font-weight:600;color:{T2};margin-bottom:4px;">
+            No queries yet</div>
+          <div style="font-size:12px;color:{T3};text-align:center;max-width:220px;">
+            Send a message in the Chat tab to start tracking performance.</div>
+        </div>"""
+
+        # System status rows
+        sys_items = [
+            ("⬡ FastAPI",     "Online" if api_ok else "Offline",
+             GREEN_C if api_ok else RED_C, GREEN_B if api_ok else RED_B),
+            ("⬡ RAG Pipeline", "Ready" if ready else "No docs",
+             GREEN_C if ready else (YELLOW_C if api_ok else RED_C),
+             GREEN_B if ready else (YELLOW_B if api_ok else RED_B)),
+            ("⬡ Chunks Indexed", str(chunks), ACC, PILL_BG),
+            ("⬡ Files Indexed",  str(len(files)), ACC, PILL_BG),
+        ]
+        sys_html = ""
+        for label, val, col, bg in sys_items:
+            sys_html += f"""
+            <div style="display:flex;align-items:center;
+              justify-content:space-between;padding:8px 0;
+              border-bottom:1px solid {BORDER};">
+              <span style="font-size:13px;color:{T2};">{label}</span>
+              <span style="font-size:11px;font-weight:700;padding:2px 10px;
+                border-radius:9999px;color:{col};background:{bg};
+                border:1px solid {col}44;">{val}</span>
+            </div>"""
+
+        mdiv(f"""
+        <div style="padding:0 32px 48px;">
+          <!-- Header -->
+          <div style="margin-bottom:20px;animation:fadeUp 0.4s ease both;">
+            <div style="font-size:10px;font-weight:700;color:{ACC};
+              letter-spacing:0.12em;text-transform:uppercase;margin-bottom:5px;">
+              Live Observability</div>
+            <div style="font-family:'Instrument Serif',serif;font-size:28px;color:{T1};">
+              Query <em style="font-style:italic;color:{ACC};">Analytics</em></div>
+          </div>
+
+          <!-- KPI row -->
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);
+            gap:12px;margin-bottom:16px;">
+            {kpi_html}
+          </div>
+
+          <!-- Bottom: Recent + Status + Notes -->
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;">
+
+            <!-- Recent queries -->
+            <div style="background:{CARD};border:1px solid {BORDER};
+              border-radius:16px;padding:22px;
+              backdrop-filter:blur(8px);">
+              <div style="display:flex;align-items:center;
+                justify-content:space-between;margin-bottom:14px;">
+                <div style="font-size:13px;font-weight:700;color:{T1};">
+                  Recent Queries</div>
+                <span style="font-size:11px;color:{T3};background:{PILL_BG};
+                  padding:3px 10px;border-radius:9999px;border:1px solid {PILL_BD};">
+                  {len(stats["recent"])} of {stats["total_queries"]}</span>
+              </div>
+              <div style="max-height:340px;overflow-y:auto;
+                scrollbar-width:thin;scrollbar-color:{PILL_BD} transparent;">
+                {"".join([rows_html]) if stats["recent"] else empty_q}
+              </div>
+            </div>
+
+            <!-- Right column: status + notes -->
+            <div style="display:flex;flex-direction:column;gap:12px;">
+
+              <!-- System Status -->
+              <div style="background:{CARD};border:1px solid {BORDER};
+                border-radius:16px;padding:20px;backdrop-filter:blur(8px);">
+                <div style="font-size:10px;font-weight:700;color:{T3};
+                  letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">
+                  System Status</div>
+                {sys_html}
+              </div>
+
+              <!-- MLOps Notes — styled as info alert -->
+              <div style="background:linear-gradient(135deg,{PILL_BG},{CARD});
+                border:1px solid {BORDER_A};border-radius:16px;padding:20px;
+                flex:1;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                  <div style="width:24px;height:24px;border-radius:6px;
+                    background:{ACC};display:flex;align-items:center;
+                    justify-content:center;font-size:12px;color:#fff;">ℹ</div>
+                  <div style="font-size:12px;font-weight:700;color:{ACC};">
+                    MLOps Notes</div>
+                </div>
+                <div style="font-size:12px;color:{T2};line-height:1.85;">
+                  Refusal &gt;25%: threshold too strict.<br>
+                  Latency &gt;5s: try GPU or GPT-4o-mini.<br>
+                  Rolling window: last 200 queries.
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;">
+                  <code style="font-size:10px;color:{ACC};background:{PILL_BG};
+                    padding:2px 8px;border-radius:6px;border:1px solid {PILL_BD};">
+                    analytics.json</code>
+                  <code style="font-size:10px;color:{CYAN_C};
+                    background:rgba(6,182,212,0.08);padding:2px 8px;border-radius:6px;
+                    border:1px solid rgba(6,182,212,0.25);">200 query window</code>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        """)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # CHAT TAB
+    # ══════════════════════════════════════════════════════════════════════════
+    else:
+        mdiv(f'<div style="padding:0 32px 48px;">')
+        col_chat, col_right = st.columns([3, 2], gap="large")
+
+        # ── RIGHT: Upload ───────────────────────────────────────────────────────
+        with col_right:
+            mdiv(f"""
+            <div style="background:{CARD};border:1px solid {BORDER};
+              border-radius:16px;padding:24px;backdrop-filter:blur(8px);
+              margin-bottom:14px;animation:fadeUp 0.5s ease 0.1s both;
+              transition:box-shadow 0.2s,border-color 0.2s;"
+              onmouseover="this.style.boxShadow='{SH2}';
+                this.style.borderColor='{BORDER_A}'"
+              onmouseout="this.style.boxShadow='';
+                this.style.borderColor='{BORDER}'">
+            """)
+
+            uh1, uh2 = st.columns([3, 1])
+            with uh1:
+                mdiv(f"""<div style="margin-bottom:14px;">
+                  {sec_label("Knowledge Base")}
+                  <div style="font-family:'Instrument Serif',serif;
+                    font-size:20px;color:{T1};">Upload
+                    <em style="font-style:italic;color:{ACC};">documents</em></div>
+                </div>""")
+            with uh2:
+                mdiv('<div style="height:24px;"></div>')
+                if st.button("Clear KB", key="clear_idx", use_container_width=True):
+                    try:
+                        r = requests.delete(f"{API_BASE}/index", timeout=15)
+                        if r.status_code == 200:
+                            st.success("Index cleared.")
+                            st.rerun()
+                        else:
+                            st.error(f"Error {r.status_code}")
+                    except Exception:
+                        st.error("API offline.")
+
+            mdiv(f"""
+            <div style="background:{PILL_BG};border:2px dashed {PILL_BD};
+              border-radius:12px;padding:16px;margin-bottom:10px;text-align:center;
+              transition:all 0.18s;"
+              onmouseover="this.style.borderColor='{ACC}';
+                this.style.background='{ACC_S}';this.style.transform='scale(1.01)'"
+              onmouseout="this.style.borderColor='{PILL_BD}';
+                this.style.background='{PILL_BG}';this.style.transform=''">
+              <div style="font-size:24px;margin-bottom:6px;opacity:0.6;">⬆</div>
+              <div style="font-size:13px;font-weight:500;color:{T1};margin-bottom:3px;">
+                Drop your PDF below</div>
+              <div style="font-size:11px;color:{T3};">
+                Parsed → Chunked → Embedded → Indexed</div>
+            </div>
+            """)
+
+            uploaded = st.file_uploader("PDF", type=["pdf"], label_visibility="hidden")
+            if uploaded:
+                mdiv(f"""
+                <div style="background:{GREEN_B};border:1px solid {GREEN_C}44;
+                  border-radius:8px;padding:9px 13px;margin-bottom:9px;">
+                  <div style="font-size:13px;font-weight:600;color:{T1};">
+                    {uploaded.name}</div>
+                  <div style="font-size:11px;color:{GREEN_C};margin-top:1px;">
+                    {uploaded.size//1024} KB · Ready to index</div>
+                </div>""")
+                if st.button("Index Document", use_container_width=True, key="idx_btn"):
+                    with st.spinner("Processing PDF..."):
+                        try:
+                            resp = requests.post(
+                                f"{API_BASE}/ingest",
+                                files={"file":(uploaded.name,uploaded,"application/pdf")},
+                                timeout=120)
+                            if resp.status_code == 200:
+                                d = resp.json()
+                                st.success(f"Indexed {d['chunks_indexed']} chunks")
+                                st.rerun()
+                            else:
+                                st.error(f"Error: {resp.text}")
+                        except requests.exceptions.ConnectionError:
+                            st.error("API offline — run: uv run uvicorn api:app --reload --port 8000")
+                        except Exception as e:
+                            st.error(str(e))
+
+            if files:
+                mdiv(f'<div style="font-size:10px;font-weight:700;color:{T3};'
+                     f'letter-spacing:0.08em;text-transform:uppercase;margin:10px 0 6px;">'
+                     f'Indexed files</div>')
+                for f in files:
+                    fname = f.replace("\\","/").split("/")[-1]
+                    mdiv(f"""
+                    <div style="background:{CARD_S};border:1px solid {BORDER};
+                      border-radius:8px;padding:7px 12px;margin-bottom:4px;
+                      display:flex;align-items:center;transition:all 0.15s;"
+                      onmouseover="this.style.borderColor='{BORDER_A}';
+                        this.style.transform='translateX(2px)'"
+                      onmouseout="this.style.borderColor='{BORDER}';
+                        this.style.transform=''">
+                      <span style="font-size:12px;color:{T1};flex:1;">{fname}</span>
+                      <span style="font-size:10px;font-weight:700;padding:2px 8px;
+                        border-radius:9999px;color:{GREEN_C};background:{GREEN_B};
+                        border:1px solid {GREEN_C}44;">indexed</span>
+                    </div>""")
+
+            mdiv(f"""
+            <div style="margin-top:12px;background:{CARD_S};border:1px solid {BORDER};
+              border-radius:10px;padding:13px 14px;">
+              <div style="font-size:10px;font-weight:700;color:{T3};
+                letter-spacing:0.08em;text-transform:uppercase;margin-bottom:7px;">Tips</div>
+              <div style="font-size:12px;color:{T2};line-height:1.9;">
+                Click <strong style="color:{ACC};">Clear KB</strong> before switching documents.<br>
+                Ask precise questions for best citation accuracy.<br>
+                Every answer includes inline source references.<br>
+                Unanswerable queries return a refusal, not a guess.
+              </div>
+            </div>
+            """)
+            mdiv('</div>')  # close upload card
+
+            # Chat History
+            convs = load_all_conversations()
+            if convs:
+                mdiv(f"""
+                <div style="background:{CARD};border:1px solid {BORDER};
+                  border-radius:16px;padding:18px 20px 12px;
+                  backdrop-filter:blur(8px);animation:fadeUp 0.5s ease 0.2s both;">
+                  <div style="font-size:10px;font-weight:700;color:{ACC};
+                    letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">
+                    Chat History</div>
+                """)
+                for i, conv in enumerate(convs[:5]):
+                    ts  = conv["timestamp"][:10]
+                    ttl = conv["title"][:32] + ("…" if len(conv["title"])>32 else "")
+                    n   = len([m for m in conv["messages"] if m["role"]=="user"])
+                    hc1, hc2 = st.columns([4, 1])
+                    with hc1:
+                        mdiv(f"""
+                        <div style="padding:7px 10px;border-radius:8px;
+                          border:1px solid {BORDER};margin-bottom:4px;
+                          transition:all 0.15s;cursor:default;"
+                          onmouseover="this.style.borderColor='{BORDER_A}';
+                            this.style.background='{PILL_BG}'"
+                          onmouseout="this.style.borderColor='{BORDER}';
+                            this.style.background=''">
+                          <div style="font-size:12px;font-weight:500;color:{T1};">
+                            {ttl}</div>
+                          <div style="font-size:10px;color:{T3};margin-top:1px;">
+                            {ts} · {n} quer{'y' if n==1 else 'ies'}</div>
+                        </div>""")
+                    with hc2:
+                        if st.button("Load", key=f"ld_{conv['id']}_{i}",
+                                     use_container_width=True):
+                            st.session_state.messages = load_conversation(conv["id"])
+                            st.rerun()
+                mdiv('</div>')
+
+        # ── LEFT: Chat ──────────────────────────────────────────────────────────
+        with col_chat:
+            mdiv(f"""
+            <div style="background:{CARD};border:1px solid {BORDER};
+              border-radius:16px;padding:22px 24px 20px;
+              backdrop-filter:blur(8px);animation:fadeUp 0.5s ease both;">
+              <div style="display:flex;align-items:flex-start;
+                justify-content:space-between;margin-bottom:18px;">
+                <div>
+                  {sec_label("Document QA")}
+                  <div style="font-family:'Instrument Serif',serif;
+                    font-size:24px;color:{T1};">
+                    Ask your
+                    <em style="font-style:italic;color:{ACC};">documents</em>
+                  </div>
+                </div>
+                <div style="display:flex;gap:6px;padding-top:14px;flex-shrink:0;">
+                  <span style="font-size:11px;font-weight:600;color:{ACC};
+                    background:{PILL_BG};border:1px solid {PILL_BD};
+                    padding:3px 10px;border-radius:9999px;">{chunks} chunks</span>
+                  <span style="font-size:11px;font-weight:700;padding:3px 10px;
+                    border-radius:9999px;border:1px solid;
+                    {'color:'+GREEN_C+';background:'+GREEN_B+';border-color:'+GREEN_C+'44;' if ready
+                     else 'color:'+RED_C+';background:'+RED_B+';border-color:'+RED_C+'44;'}">
+                    {'Ready' if ready else 'Not ready'}
+                  </span>
+                </div>
+              </div>
+            """)
+
+            # Messages
+            if st.session_state.messages:
+                msgs_html = ""
+                for idx, m in enumerate(st.session_state.messages):
+                    delay = min(idx * 0.04, 0.24)
+                    if m["role"] == "user":
+                        msgs_html += f"""
+                        <div style="display:flex;justify-content:flex-end;
+                          margin-bottom:12px;animation:fadeUp 0.3s ease {delay:.2f}s both;">
+                          <div style="max-width:74%;padding:12px 16px;
+                            background:linear-gradient(135deg,{ACC},{ACC2});
+                            color:#fff;border-radius:14px 3px 14px 14px;
+                            font-size:14px;line-height:1.6;
+                            box-shadow:0 2px 12px {ACC}44;">
+                            {m['content']}</div>
+                        </div>"""
+                    else:
+                        refs = ""
+                        if m.get("references"):
+                            refs = '<div style="margin-top:9px;display:flex;flex-wrap:wrap;gap:4px;">'
+                            for ref in m["references"]:
+                                refs += (f'<code style="font-family:JetBrains Mono,monospace;'
+                                         f'font-size:10px;padding:2px 8px;border-radius:6px;'
+                                         f'color:{CYAN_C};background:rgba(6,182,212,0.08);'
+                                         f'border:1px solid rgba(6,182,212,0.2);">{ref}</code>')
+                            refs += "</div>"
+                        rfsd = ""
+                        if m.get("refused"):
+                            rfsd = (f'<div style="margin-top:7px;font-size:12px;font-weight:600;'
+                                    f'color:{RED_C};background:{RED_B};'
+                                    f'border:1px solid {RED_C}44;padding:5px 11px;'
+                                    f'border-radius:8px;display:inline-block;">'
+                                    f'Insufficient evidence — refusal triggered</div>')
+                        lat = ""
+                        if m.get("latency_ms"):
+                            lat = (f'<div style="margin-top:4px;font-family:JetBrains Mono,'
+                                   f'monospace;font-size:10px;color:{T3};">'
+                                   f'{m["latency_ms"]} ms</div>')
+                        msgs_html += f"""
+                        <div style="display:flex;margin-bottom:12px;gap:9px;
+                          align-items:flex-start;
+                          animation:fadeUp 0.3s ease {delay:.2f}s both;">
+                          <div style="width:26px;height:26px;border-radius:8px;
+                            flex-shrink:0;margin-top:2px;
+                            background:linear-gradient(135deg,{PILL_BG},{CARD_S});
+                            display:flex;align-items:center;justify-content:center;
+                            font-family:'Instrument Serif',serif;font-size:12px;
+                            color:{ACC};border:1px solid {PILL_BD};
+                            animation:float 4s ease-in-out {delay:.2f}s infinite;">N</div>
+                          <div style="max-width:86%;padding:12px 16px;
+                            background:{CARD_S};border:1px solid {BORDER};
+                            border-radius:3px 14px 14px 14px;
+                            font-size:14px;color:{T1};line-height:1.75;
+                            transition:border-color 0.15s;"
+                            onmouseover="this.style.borderColor='{BORDER_A}'"
+                            onmouseout="this.style.borderColor='{BORDER}'">
+                            {m['content']}{refs}{rfsd}{lat}
+                          </div>
+                        </div>"""
+
+                mdiv(f"""
+                <div style="max-height:50vh;overflow-y:auto;margin-bottom:14px;
+                  padding:2px;scrollbar-width:thin;
+                  scrollbar-color:{BORDER_A} transparent;">
+                  {msgs_html}
+                </div>""")
+
+            else:
+                # Empty state
+                mdiv(f"""
+                <div style="text-align:center;padding:44px 20px 36px;
+                  background:{CARD_S};border:2px dashed {BORDER};
+                  border-radius:14px;margin-bottom:14px;
+                  animation:fadeUp 0.4s ease both;">
+                  <div style="width:42px;height:42px;border-radius:12px;
+                    background:linear-gradient(135deg,{PILL_BG},{CARD_S});
+                    border:1px solid {PILL_BD};
+                    display:flex;align-items:center;justify-content:center;
+                    margin:0 auto 13px;font-family:'Instrument Serif',serif;
+                    font-size:16px;color:{ACC};
+                    animation:float 4s ease-in-out infinite;">N</div>
+                  <div style="font-family:'Instrument Serif',serif;font-size:20px;
+                    color:{T1};margin-bottom:7px;">Ask anything</div>
+                  <div style="font-size:13px;color:{T3};max-width:280px;
+                    margin:0 auto 18px;line-height:1.7;">
+                    Upload a PDF on the right, then ask questions.
+                    Every answer is cited.</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:7px;justify-content:center;">
+                    {"".join([
+                        f'<span style="font-size:12px;font-weight:500;color:{ACC};'
+                        f'background:{PILL_BG};border:1px solid {PILL_BD};'
+                        f'padding:5px 13px;border-radius:9999px;cursor:default;'
+                        f'transition:all 0.15s;"'
+                        f'onmouseover="this.style.transform=\'translateY(-2px)\';'
+                        f'this.style.boxShadow=\'0 4px 12px {ACC}33\'"'
+                        f'onmouseout="this.style.transform=\'\';'
+                        f'this.style.boxShadow=\'\'">{q}</span>'
+                        for q in ["What is the main finding?",
+                                  "Summarise section 3",
+                                  "What are the key risks?"]
+                    ])}
+                  </div>
+                </div>""")
+
+            # Input row
+            qc, bc = st.columns([6, 1])
+            with qc:
+                query = st.text_input("Q",
+                    placeholder="Ask anything about your documents...",
+                    label_visibility="hidden", key="q_in")
+            with bc:
+                ask = st.button("Send", use_container_width=True)
+
+            mdiv('</div>')  # close chat card
+
+            if ask and query:
+                if not ready:
+                    st.warning("Upload and index a PDF first.")
+                else:
+                    with st.spinner("Thinking..."):
+                        try:
+                            resp = requests.post(
+                                f"{API_BASE}/query", json={"query":query}, timeout=120)
+                            if resp.status_code == 200:
+                                d = resp.json()
+                                st.session_state.messages.extend([
+                                    {"role":"user","content":query},
+                                    {"role":"assistant","content":d["answer"],
+                                     "references":d["references"],"refused":d["refused"],
+                                     "latency_ms":d["latency_ms"]},
+                                ])
+                                record_query(query=query,latency_ms=d["latency_ms"],
+                                             refused=d["refused"])
+                                st.rerun()
+                            else:
+                                st.error(f"API error: {resp.json().get('detail',resp.text)}")
+                        except requests.exceptions.ConnectionError:
+                            st.error("Cannot reach API. Run: "
+                                     "uv run uvicorn api:app --reload --port 8000")
+
+        mdiv('</div>')  # close padding wrapper
