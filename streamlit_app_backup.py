@@ -1,5 +1,3 @@
-
-
 """NeuralDoc RAG — Premium animated chat page."""
 import requests
 import streamlit as st
