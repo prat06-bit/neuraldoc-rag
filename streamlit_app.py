@@ -1,4 +1,4 @@
-"""NeuralDoc — Production SaaS RAG Dashboard."""
+"""NeuralDoc RAG — Premium animated chat page."""
 import requests
 import streamlit as st
 from datetime import datetime
@@ -14,1080 +14,1094 @@ except ImportError:
     def save_conversation(m, t=None): return ""
     def load_all_conversations(): return []
     def load_conversation(cid): return []
-    def export_as_markdown(m, title="Chat"): return "\n".join(f"{x['role']}: {x['content']}" for x in m)
+    def export_as_markdown(m, title=""): return "\n".join(f"{x['role']}: {x['content']}" for x in m)
     def record_query(q, lat, ref, model=""): pass
     def get_stats(): return {"total_queries":0,"answered":0,"refused":0,"refusal_rate":0,"avg_latency_ms":0,"recent":[]}
 
 st.set_page_config(page_title="NeuralDoc", page_icon="N", layout="wide",
                    initial_sidebar_state="collapsed")
 
-# ── Session state ──────────────────────────────────────────────────────────────
-for k, v in [("page","landing"),("messages",[]),("tab","chat"),
-              ("dark",True),("authed",False),("username","")]:
+for k, v in [("page","landing"),("messages",[]),("active_tab","chat"),
+             ("show_analytics",False),("dark_mode",False)]:
     if k not in st.session_state:
         st.session_state[k] = v
 
 API_BASE = "http://localhost:8000"
-AUTH_KEY = "neural2024"
-D = st.session_state.dark
 
-# ══════════════════════════════════════════════════════════════════════════════
-# THEME TOKENS — recomputed every rerun
-# ══════════════════════════════════════════════════════════════════════════════
-if D:
-    BG        = "#0b0f1a"
-    BG2       = "#0f1420"
-    CARD      = "rgba(255,255,255,0.04)"
-    CARD_S    = "rgba(255,255,255,0.07)"
-    GLASS     = "rgba(255,255,255,0.05)"
-    BORDER    = "rgba(255,255,255,0.08)"
-    BORDER_A  = "rgba(139,140,245,0.35)"
-    T1        = "#e5e7eb"
-    T2        = "#9ca3af"
-    T3        = "#6b7280"
-    ACC       = "#8b8cf5"
-    ACC2      = "#6c6de0"
-    ACC_S     = "rgba(139,140,245,0.15)"
-    GREEN_C   = "#10b981"; GREEN_B = "rgba(16,185,129,0.15)"
-    RED_C     = "#ef4444";  RED_B   = "rgba(239,68,68,0.15)"
-    YELLOW_C  = "#f59e0b";  YELLOW_B= "rgba(245,158,11,0.15)"
-    CYAN_C    = "#06b6d4"
-    PINK_C    = "#ec4899"
-    NAV_BG    = "rgba(11,15,26,0.92)"
-    INP_BG    = "rgba(255,255,255,0.05)"
-    SH        = "0 4px 24px rgba(0,0,0,0.4)"
-    SH2       = "0 8px 40px rgba(0,0,0,0.6)"
-    PILL_BG   = "rgba(139,140,245,0.12)"
-    PILL_BD   = "rgba(139,140,245,0.3)"
-else:
-    BG        = "#f7f7fb"
-    BG2       = "#eeeef8"
-    CARD      = "#ffffff"
-    CARD_S    = "#f3f3fb"
-    GLASS     = "rgba(255,255,255,0.8)"
-    BORDER    = "rgba(0,0,0,0.07)"
-    BORDER_A  = "rgba(124,111,247,0.4)"
-    T1        = "#1a1840"
-    T2        = "#4a4870"
-    T3        = "#9b98b8"
-    ACC       = "#7c6ff7"
-    ACC2      = "#6459e8"
-    ACC_S     = "rgba(124,111,247,0.1)"
-    GREEN_C   = "#059669"; GREEN_B = "rgba(5,150,105,0.1)"
-    RED_C     = "#dc2626";  RED_B   = "rgba(220,38,38,0.1)"
-    YELLOW_C  = "#d97706";  YELLOW_B= "rgba(217,119,6,0.1)"
-    CYAN_C    = "#0891b2"
-    PINK_C    = "#db2777"
-    NAV_BG    = "rgba(247,247,251,0.95)"
-    INP_BG    = "#ffffff"
-    SH        = "0 4px 16px rgba(124,111,247,0.08)"
-    SH2       = "0 8px 32px rgba(124,111,247,0.15)"
-    PILL_BG   = "rgba(124,111,247,0.08)"
-    PILL_BD   = "rgba(124,111,247,0.25)"
+if st.query_params.get("launch") == "1":
+    st.query_params.clear()
+    st.session_state.page = "chat"
+    st.session_state.active_tab = "chat"
+    st.rerun()
 
-# ── Kill chrome + inject global theme ──────────────────────────────────────────
-st.markdown(f"""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap');
+if st.query_params.get("darkmode") == "on":
+    st.query_params.clear()
+    st.session_state.dark_mode = True
 
+if st.query_params.get("darkmode") == "off":
+    st.query_params.clear()
+    st.session_state.dark_mode = False
+
+st.html("""<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Instrument+Serif:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#F6F5FF; --s:#FFFFFF; --s2:#F0EEFF; --s3:#EAE7FF;
+  --v:#7C3AED; --v2:#6D28D9; --v3:#8B5CF6;
+  --v-10:rgba(124,58,237,0.10); --v-15:rgba(124,58,237,0.15);
+  --v-20:rgba(124,58,237,0.20); --vp:#EDE9FE; --vpb:#DDD6FE;
+  --cyan:#06B6D4; --pink:#EC4899; --green:#10B981; --amber:#F59E0B;
+  --t1:#1E1B4B; --t2:#4C4888; --t3:#9CA3AF;
+  --bd:rgba(124,58,237,0.12); --bd2:rgba(0,0,0,0.06);
+  --sh:0 1px 3px rgba(124,58,237,0.08),0 4px 16px rgba(124,58,237,0.06);
+  --sh2:0 8px 40px rgba(124,58,237,0.14),0 2px 8px rgba(0,0,0,0.04);
+  --r:10px; --r2:18px; --r3:24px; --rf:9999px;
+}
+/* ── Dark mode overrides ── */
+.dark{
+  --bg:#0F0D1A; --s:#1A1730; --s2:#221E3A; --s3:#2A2550;
+  --vp:#2D2060; --vpb:#4C3A9E;
+  --t1:#F0EEFF; --t2:#A89EC9; --t3:#6B6490;
+  --bd:rgba(167,139,250,0.18); --bd2:rgba(255,255,255,0.07);
+  --sh:0 1px 3px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.2);
+  --sh2:0 8px 40px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{font-family:'Plus Jakarta Sans',sans-serif!important;
+  background:var(--bg)!important;color:var(--t1)!important;}
 [data-testid="stHeader"],[data-testid="stToolbar"],[data-testid="stDecoration"],
 [data-testid="stStatusWidget"],[data-testid="collapsedControl"],
-section[data-testid="stSidebar"],#MainMenu,footer {{
-    display:none!important; height:0!important; visibility:hidden!important;
-}}
+section[data-testid="stSidebar"],#MainMenu,footer{display:none!important;height:0!important;}
 [data-testid="stAppViewContainer"],[data-testid="stMain"],
-[data-testid="stMainBlockContainer"],.block-container {{
-    background:transparent!important; padding:0!important;
-    margin:0!important; max-width:100%!important; border:none!important;
-}}
-[data-testid="stVerticalBlock"]{{gap:0!important;}}
-[data-testid="stVerticalBlock"]>div{{margin:0!important;padding:0!important;}}
-
-html,body{{
-    font-family:'Inter',sans-serif!important;
-    background:{BG}!important; color:{T1}!important;
-}}
-[data-testid="stAppViewContainer"]{{background:{BG}!important;}}
-
-/* ─── Buttons ─────────────────────────────────────────────────────── */
-[data-testid="stButton"]>button{{
-    background:{ACC}!important; color:#fff!important;
-    border:none!important; border-radius:8px!important;
-    font-family:'Inter',sans-serif!important; font-size:13px!important;
-    font-weight:600!important; padding:9px 0!important;
-    box-shadow:0 0 0 0 transparent!important;
-    transition:all 0.2s ease!important; letter-spacing:0.01em!important;
-}}
-[data-testid="stButton"]>button:hover{{
-    background:{ACC2}!important; transform:translateY(-1px)!important;
-    box-shadow:0 0 18px {ACC}55!important;
-}}
-[data-testid="stButton"]>button:active{{transform:scale(0.97)!important;}}
-
-[data-testid="stDownloadButton"]>button{{
-    background:transparent!important; color:{ACC}!important;
-    border:1px solid {PILL_BD}!important; border-radius:8px!important;
-    font-size:13px!important; font-weight:600!important;
-    transition:all 0.2s!important;
-}}
-[data-testid="stDownloadButton"]>button:hover{{
-    background:{PILL_BG}!important; transform:translateY(-1px)!important;
-}}
-
-/* ─── Inputs ──────────────────────────────────────────────────────── */
-.stTextInput input{{
-    background:{INP_BG}!important;
-    border:1px solid {BORDER}!important;
-    border-radius:10px!important; color:{T1}!important;
-    font-family:'Inter',sans-serif!important; font-size:14px!important;
-    padding:12px 18px!important;
-    transition:all 0.2s!important;
-}}
-.stTextInput input:focus{{
-    border-color:{ACC}!important;
-    box-shadow:0 0 0 3px {ACC_S}!important; outline:none!important;
-}}
-.stTextInput input::placeholder{{color:{T3}!important;}}
-.stTextInput label,.stFileUploader label{{display:none!important;}}
-
-/* ─── File uploader ───────────────────────────────────────────────── */
-[data-testid="stFileUploaderDropzone"]{{
-    background:{INP_BG}!important;
-    border:2px dashed {PILL_BD}!important;
-    border-radius:12px!important; transition:all 0.2s!important;
-}}
-[data-testid="stFileUploaderDropzone"]:hover{{
-    border-color:{ACC}!important; background:{PILL_BG}!important;
-}}
-[data-testid="stFileUploaderDropzone"] *{{color:{T2}!important;}}
-hr{{border-color:{BORDER}!important;}}
-
-/* ─── Animations ──────────────────────────────────────────────────── */
-@keyframes fadeUp{{
-    from{{opacity:0;transform:translateY(16px);}}
-    to{{opacity:1;transform:translateY(0);}}
-}}
-@keyframes fadeIn{{from{{opacity:0;}}to{{opacity:1;}}}}
-@keyframes pulse{{
-    0%,100%{{box-shadow:0 0 0 0 {ACC}44;}}
-    50%{{box-shadow:0 0 0 6px transparent;}}
-}}
-@keyframes float{{
-    0%,100%{{transform:translateY(0);}}
-    50%{{transform:translateY(-4px);}}
-}}
-@keyframes shimmer{{
-    0%{{background-position:-200% 0;}}
-    100%{{background-position:200% 0;}}
-}}
-@keyframes gradBG{{
-    0%{{background-position:0% 50%;}}
-    50%{{background-position:100% 50%;}}
-    100%{{background-position:0% 50%;}}
-}}
-</style>
-""", unsafe_allow_html=True)
+[data-testid="stMainBlockContainer"],.block-container{
+  background:transparent!important;padding:0!important;
+  margin:0!important;max-width:100%!important;border:none!important;}
+[data-testid="stVerticalBlock"]{gap:0!important;}
+[data-testid="stVerticalBlock"]>div{margin:0!important;padding:0!important;}
+</style>""")
 
 
-def mdiv(html: str):
-    """Shorthand for st.markdown with unsafe_allow_html."""
-    st.markdown(html, unsafe_allow_html=True)
-
-
-def tag(text, color, bg, border):
-    return (f'<span style="display:inline-flex;align-items:center;gap:4px;'
-            f'font-size:11px;font-weight:600;color:{color};'
-            f'background:{bg};border:1px solid {border};'
-            f'padding:2px 9px;border-radius:9999px;">{text}</span>')
-
-
-def sec_label(text):
-    return (f'<div style="font-size:10px;font-weight:700;color:{ACC};'
-            f'letter-spacing:0.12em;text-transform:uppercase;'
-            f'margin-bottom:5px;">{text}</div>')
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# AUTH PAGE
-# ══════════════════════════════════════════════════════════════════════════════
-if st.session_state.page == "auth":
-
-    mdiv(f"""
-    <div style="position:fixed;inset:0;background:{BG};
-      background:radial-gradient(ellipse 70% 60% at 30% 20%,
-        rgba(139,140,245,0.15),transparent 55%),
-        radial-gradient(ellipse 60% 50% at 75% 75%,
-        rgba(6,182,212,0.08),transparent 55%),{BG};
-      z-index:0;"></div>
-
-    <div style="position:relative;z-index:1;min-height:100vh;
-      display:flex;align-items:center;justify-content:center;padding:40px 20px;">
-      <div style="width:100%;max-width:400px;animation:fadeUp 0.5s ease both;">
-
-        <!-- Logo -->
-        <div style="text-align:center;margin-bottom:32px;">
-          <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;">
-            <div style="width:36px;height:36px;border-radius:10px;
-              background:linear-gradient(135deg,{ACC},{CYAN_C});
-              display:flex;align-items:center;justify-content:center;
-              font-family:'Instrument Serif',serif;font-size:18px;
-              color:#fff;box-shadow:0 4px 16px {ACC}44;">N</div>
-            <span style="font-family:'Instrument Serif',serif;font-size:22px;
-              color:{T1};">NeuralDoc</span>
-          </div>
-          <h2 style="font-family:'Instrument Serif',serif;font-size:26px;
-            color:{T1};margin-bottom:6px;font-weight:400;">Welcome back</h2>
-          <p style="font-size:14px;color:{T3};">
-            Sign in to your workspace</p>
-        </div>
-
-        <!-- Card -->
-        <div style="background:{CARD};border:1px solid {BORDER};
-          border-radius:18px;padding:32px;box-shadow:{SH2};
-          backdrop-filter:blur(12px);">
-    """)
-
-    username = st.text_input("Username", placeholder="Username...",
-                              label_visibility="hidden", key="auth_user")
-    mdiv('<div style="height:10px;"></div>')
-    pwd = st.text_input("Password", type="password",
-                         placeholder="Password or access key...",
-                         label_visibility="hidden", key="auth_pwd")
-    mdiv('<div style="height:16px;"></div>')
-
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("Sign In", use_container_width=True, key="signin_btn"):
-            if pwd == AUTH_KEY:
-                st.session_state.authed = True
-                st.session_state.username = username or "User"
-                st.session_state.page = "chat"
-                st.rerun()
-            else:
-                st.error("Incorrect credentials.")
-    with c2:
-        if st.button("← Back", use_container_width=True, key="auth_back"):
-            st.session_state.page = "landing"
-            st.rerun()
-
-    mdiv(f"""
-        </div>
-        <div style="text-align:center;margin-top:18px;">
-          <span style="font-size:12px;color:{T3};">Demo credentials: &nbsp;</span>
-          <code style="font-size:11px;background:{PILL_BG};color:{ACC};
-            padding:3px 10px;border-radius:6px;border:1px solid {PILL_BD};">
-            neural2024</code>
-        </div>
-      </div>
-    </div>
-    """)
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# LANDING PAGE
-# ══════════════════════════════════════════════════════════════════════════════
-elif st.session_state.page == "landing":
-
-    # ── Navbar ─────────────────────────────────────────────────────────────────
-    mdiv(f"""
-    <nav style="position:sticky;top:0;z-index:200;height:52px;
-      background:{NAV_BG};backdrop-filter:blur(16px);
-      border-bottom:1px solid {BORDER};
-      display:flex;align-items:center;justify-content:space-between;
-      padding:0 48px;animation:fadeIn 0.4s ease both;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div style="width:26px;height:26px;border-radius:7px;
-          background:linear-gradient(135deg,{ACC},{CYAN_C});
-          display:flex;align-items:center;justify-content:center;
-          font-family:'Instrument Serif',serif;font-size:13px;color:#fff;">N</div>
-        <span style="font-family:'Instrument Serif',serif;font-size:17px;
-          color:{T1};">NeuralDoc</span>
-      </div>
-      <div style="font-size:11px;font-weight:600;color:{ACC};
-        background:{PILL_BG};border:1px solid {PILL_BD};
-        padding:4px 14px;border-radius:9999px;letter-spacing:0.06em;
-        text-transform:uppercase;">Production RAG v1.0</div>
-    </nav>
-    """)
-
-    # Dark mode toggle row (top right, no overlap)
-    _sp, _dm = st.columns([10, 1])
-    with _dm:
-        mdiv('<div style="padding:8px 16px 0 0;display:flex;justify-content:flex-end;">')
-        if st.button("☀" if D else "☽", key="dm_land", use_container_width=False):
-            st.session_state.dark = not D
-            st.rerun()
-        mdiv('</div>')
-
-    # Background gradient blobs
-    mdiv(f"""
-    <div style="position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;">
-      <div style="position:absolute;width:600px;height:600px;border-radius:50%;
-        background:radial-gradient(circle,{ACC}22,transparent 70%);
-        top:-200px;left:-100px;animation:float 12s ease-in-out infinite;"></div>
-      <div style="position:absolute;width:500px;height:500px;border-radius:50%;
-        background:radial-gradient(circle,{CYAN_C}18,transparent 70%);
-        bottom:-150px;right:-100px;animation:float 15s ease-in-out 3s infinite;"></div>
-    </div>
-
-    <!-- Hero -->
-    <div style="position:relative;z-index:1;max-width:800px;margin:0 auto;
-      padding:72px 48px 0;text-align:center;animation:fadeUp 0.6s ease 0.1s both;">
-      <div style="display:inline-flex;align-items:center;gap:6px;margin-bottom:24px;
-        font-size:12px;font-weight:600;color:{ACC};
-        background:{PILL_BG};border:1px solid {PILL_BD};
-        padding:5px 16px;border-radius:9999px;">
-        <div style="width:6px;height:6px;border-radius:50%;background:{GREEN_C};
-          animation:pulse 2s ease-in-out infinite;"></div>
-        Zero hallucination tolerance
-      </div>
-      <h1 style="font-family:'Instrument Serif',serif;
-        font-size:clamp(40px,5.5vw,64px);color:{T1};
-        line-height:1.06;letter-spacing:-1px;margin-bottom:6px;font-weight:400;">
-        Ask anything.
-      </h1>
-      <h1 style="font-family:'Instrument Serif',serif;
-        font-size:clamp(40px,5.5vw,64px);font-style:italic;color:{ACC};
-        line-height:1.06;letter-spacing:-1px;margin-bottom:24px;font-weight:400;">
-        Know everything.
-      </h1>
-      <p style="font-size:16px;color:{T2};line-height:1.8;
-        max-width:500px;margin:0 auto 36px;">
-        A <strong style="color:{T1};">production-grade</strong> RAG system with
-        <strong style="color:{T1};">inline citations</strong>, hybrid retrieval,
-        persistent history, and live analytics.
-      </p>
-    </div>
-    """)
-
-    # CTA
-    _l, _m, _r = st.columns([3, 2, 3])
-    with _m:
-        mdiv(f"""<style>
-        [data-testid="stButton"] button{{
-          height:50px!important;font-size:15px!important;
-          border-radius:9999px!important;
-          background:linear-gradient(135deg,{ACC},{CYAN_C})!important;
-          box-shadow:0 4px 24px {ACC}44!important;
-        }}
+# ══════════════════════════════════════════════════════════════
+# LANDING
+# ══════════════════════════════════════════════════════════════
+if st.session_state.page == "landing":
+    # Apply dark mode to landing if enabled
+    if st.session_state.dark_mode:
+        st.html("""<style>
+        [data-testid="stAppViewContainer"]{background:#0F0D1A!important;}
+        body,html{
+          --bg:#0F0D1A!important;--s:#1A1730!important;--s2:#221E3A!important;
+          --s3:#2A2550!important;--vp:#2D2060!important;--vpb:#4C3A9E!important;
+          --t1:#F0EEFF!important;--t2:#A89EC9!important;--t3:#6B6490!important;
+          --bd:rgba(167,139,250,0.18)!important;--bd2:rgba(255,255,255,0.07)!important;
+          --sh:0 1px 3px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.2)!important;
+          --sh2:0 8px 40px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2)!important;
+        }
         </style>""")
-        if st.button("Open App  →", key="launch_btn", use_container_width=True):
-            st.session_state.page = "auth"
-            st.rerun()
+    st.html("""<style>
+    [data-testid="stAppViewContainer"]{background:var(--bg)!important;}
+    [data-testid="stButton"]>button{
+      background:var(--v)!important;color:#fff!important;border:none!important;
+      border-radius:var(--rf)!important;font-family:'Plus Jakarta Sans',sans-serif!important;
+      font-size:16px!important;font-weight:600!important;
+      height:52px!important;padding:0!important;width:100%!important;
+      box-shadow:0 4px 20px rgba(124,58,237,0.32)!important;
+      transition:background 0.18s,transform 0.15s,box-shadow 0.18s!important;
+    }
+    [data-testid="stButton"]>button:hover{
+      background:var(--v2)!important;transform:translateY(-2px)!important;
+      box-shadow:0 8px 28px rgba(124,58,237,0.42)!important;}
+    [data-testid="stButton"]>button:active{transform:scale(0.97)!important;}
+    </style>""")
 
-    # Stats bar
-    stat_items = [("0%","Hallucination"),("3×","Retrieval Modes"),
-                  ("100%","Local & Private"),("∞","Documents")]
-    stats_html = ""
-    for i,(v,l) in enumerate(stat_items):
-        border_r = f"border-right:1px solid {BORDER};" if i<3 else ""
-        stats_html += f"""
-        <div style="flex:1;padding:20px 12px;text-align:center;{border_r}
-          transition:background 0.18s;cursor:default;"
-          onmouseover="this.style.background='{PILL_BG}'"
-          onmouseout="this.style.background='transparent'">
-          <div style="font-family:'Instrument Serif',serif;font-size:28px;
-            color:{ACC};line-height:1;margin-bottom:4px;">{v}</div>
-          <div style="font-size:10px;font-weight:700;color:{T3};
-            letter-spacing:0.1em;text-transform:uppercase;">{l}</div>
-        </div>"""
+    st.html("""
+    <style>
+    .land{min-height:100vh;background:var(--bg);position:relative;overflow:hidden;}
+    .land::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+      background:
+        radial-gradient(ellipse 55% 50% at 15% 10%,rgba(167,139,250,0.18),transparent 60%),
+        radial-gradient(ellipse 45% 45% at 85% 85%,rgba(6,182,212,0.10),transparent 55%),
+        radial-gradient(ellipse 35% 35% at 50% 50%,rgba(236,72,153,0.06),transparent 55%);}
+    nav{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;
+      max-width:1200px;margin:0 auto;padding:28px 56px 0;animation:fD .6s cubic-bezier(0.16,1,0.3,1) both;}
+    @keyframes fD{from{opacity:0;transform:translateY(-12px);filter:blur(4px);}to{opacity:1;transform:translateY(0);filter:blur(0);}}
+    .logo{font-family:'Instrument Serif',serif;font-size:22px;color:var(--t1);
+      display:flex;align-items:center;gap:8px;}
+    .logo-dot{width:9px;height:9px;border-radius:50%;background:var(--v);}
+    .nav-pill{font-size:12px;font-weight:600;color:var(--v);text-transform:uppercase;
+      letter-spacing:0.08em;border:1px solid var(--vpb);background:var(--vp);
+      padding:6px 16px;border-radius:var(--rf);}
+    .hero{position:relative;z-index:10;max-width:820px;margin:0 auto;
+      padding:80px 56px 0;text-align:center;animation:fU .8s cubic-bezier(0.16,1,0.3,1) .15s both;}
+    @keyframes fU{from{opacity:0;transform:translateY(22px);filter:blur(4px);}to{opacity:1;transform:translateY(0);filter:blur(0);}}
+    .h-eyebrow{animation:fU .6s cubic-bezier(0.16,1,0.3,1) .25s both;}
+    .h1{animation:fU .8s cubic-bezier(0.16,1,0.3,1) .4s both;}
+    .h-sub{animation:fU .7s cubic-bezier(0.16,1,0.3,1) .55s both;}
+    .cta-form{animation:fU .6s cubic-bezier(0.16,1,0.3,1) .7s both;}
+    .stats{animation:fU .7s cubic-bezier(0.16,1,0.3,1) .85s both;}
+    .h-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+      color:var(--v);border:1px solid var(--vpb);background:var(--vp);
+      padding:5px 16px;border-radius:var(--rf);margin-bottom:28px;letter-spacing:0.04em;}
+    .h-dot{width:5px;height:5px;border-radius:50%;background:var(--v);
+      animation:dp 1.8s ease-in-out infinite;}
+    @keyframes dp{0%,100%{opacity:1;}50%{opacity:0.2;}}
+    .h1{font-family:'Instrument Serif',serif;font-size:clamp(44px,6vw,68px);font-weight:400;
+      color:var(--t1);line-height:1.06;letter-spacing:-1px;margin-bottom:8px;}
+    .h1 em{font-style:italic;color:var(--v);}
+    .h-sub{font-size:17px;color:var(--t2);line-height:1.8;max-width:560px;
+      margin:0 auto 44px;font-weight:400;}
+    .h-sub b{color:var(--t1);font-weight:600;}
+    .cta-form{display:flex;justify-content:center;margin-bottom:0;}
+    .btn-lnd{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      height:52px;padding:0 48px;background:var(--v);color:#fff;border:none;
+      border-radius:var(--rf);font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:16px;font-weight:600;cursor:pointer;
+      box-shadow:0 4px 20px rgba(124,58,237,0.32);
+      transition:background 0.18s,transform 0.15s,box-shadow 0.18s;}
+    .btn-lnd:hover{background:var(--v2);transform:translateY(-2px);
+      box-shadow:0 8px 28px rgba(124,58,237,0.42);}
+    .btn-lnd:active{transform:scale(0.97);}
+    .stats{position:relative;z-index:10;display:flex;max-width:780px;
+      margin:52px auto 0;background:var(--s);border:1px solid var(--bd2);
+      border-radius:var(--r3);overflow:hidden;box-shadow:var(--sh);
+      animation:fU .7s ease .3s both;}
+    .stat{flex:1;padding:26px 12px;text-align:center;border-right:1px solid var(--bd2);
+      transition:background 0.18s;}
+    .stat:last-child{border-right:none;}.stat:hover{background:var(--vp);}
+    .sv{font-family:'Instrument Serif',serif;font-size:32px;color:var(--v);
+      line-height:1;margin-bottom:5px;}
+    .sl{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:0.1em;text-transform:uppercase;}
+    .sec{position:relative;z-index:10;max-width:1200px;margin:88px auto 0;padding:0 56px;}
+    .sec-lbl{font-size:11px;font-weight:700;color:var(--v);letter-spacing:0.12em;
+      text-transform:uppercase;margin-bottom:10px;}
+    .sec-ttl{font-family:'Instrument Serif',serif;font-size:38px;color:var(--t1);
+      margin-bottom:36px;font-weight:400;}
+    .sec-ttl em{font-style:italic;color:var(--v);}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+    .card{background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
+      padding:26px;box-shadow:var(--sh);
+      transition:transform 0.22s,box-shadow 0.22s,border-color 0.22s;}
+    .card:hover{transform:translateY(-5px);box-shadow:var(--sh2);border-color:var(--vpb);}
+    .c-num{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:0.12em;
+      text-transform:uppercase;margin-bottom:10px;}
+    .c-ttl{font-size:15px;font-weight:700;color:var(--t1);margin-bottom:7px;}
+    .c-bdy{font-size:13px;color:var(--t2);line-height:1.75;}
+    .c-tag{display:inline-block;margin-top:13px;font-size:10px;font-weight:700;
+      padding:3px 10px;border-radius:var(--rf);border:1px solid;}
+    .tg{color:#059669;border-color:rgba(5,150,105,0.3);background:rgba(5,150,105,0.08);}
+    .tv{color:var(--v);border-color:var(--vpb);background:var(--vp);}
+    .tc{color:var(--cyan);border-color:rgba(6,182,212,0.3);background:rgba(6,182,212,0.08);}
+    .tp{color:var(--pink);border-color:rgba(236,72,153,0.3);background:rgba(236,72,153,0.08);}
+    .tam{color:var(--amber);border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.08);}
+    .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+    .feat{background:linear-gradient(135deg,var(--vp),var(--s2));
+      border:1px solid var(--vpb);border-radius:var(--r2);padding:24px;
+      transition:transform 0.2s,box-shadow 0.2s;}
+    .feat:hover{transform:translateY(-3px);box-shadow:var(--sh2);}
+    .feat-ttl{font-size:14px;font-weight:700;color:var(--t1);margin-bottom:6px;}
+    .feat-bdy{font-size:12px;color:var(--t2);line-height:1.7;}
+    .feat-badge{display:inline-block;margin-top:10px;font-size:10px;font-weight:700;
+      color:var(--v);background:var(--s);border:1px solid var(--vpb);
+      padding:3px 10px;border-radius:var(--rf);}
+    .pipe-row{display:flex;align-items:center;justify-content:space-between;
+      background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
+      padding:28px 36px;box-shadow:var(--sh);}
+    .p-step{display:flex;flex-direction:column;align-items:center;gap:5px;
+      flex:1;padding:8px 4px;border-radius:var(--r);transition:all 0.18s;cursor:default;}
+    .p-step:hover{background:var(--vp);transform:translateY(-2px);}
+    .p-lbl{font-size:11px;font-weight:700;color:var(--t1);letter-spacing:0.04em;}
+    .p-sub{font-size:10px;color:var(--t3);}
+    .p-arr{color:var(--vpb);font-size:14px;flex-shrink:0;
+      animation:aP 2.5s ease-in-out infinite;}
+    @keyframes aP{0%,100%{color:var(--vpb);}50%{color:var(--v);}}
+    .tags{display:flex;flex-wrap:wrap;gap:9px;}
+    .tag{padding:6px 14px;font-size:11px;font-weight:600;border-radius:var(--rf);
+      border:1px solid;transition:transform 0.15s;cursor:default;}
+    .tag:hover{transform:translateY(-2px);}
+    .foot{position:relative;z-index:10;max-width:1200px;margin:72px auto 0;
+      padding:22px 56px 64px;border-top:1px solid var(--bd2);
+      display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+    .foot span{font-size:12px;color:var(--t3);}
+    </style>""")
 
-    mdiv(f"""
-    <div style="position:relative;z-index:1;display:flex;max-width:700px;
-      margin:44px auto 0;background:{CARD};border:1px solid {BORDER};
-      border-radius:20px;overflow:hidden;box-shadow:{SH};
-      animation:fadeUp 0.6s ease 0.3s both;">
-      {stats_html}
+    dm_val = "off" if st.session_state.dark_mode else "on"
+    dm_icon = "☀" if st.session_state.dark_mode else "☽"
+    dm_label = "Light Mode" if st.session_state.dark_mode else "Dark Mode"
+    st.html(f"""
+    <div class="land">
+    <div style="position:relative;z-index:1;">
+      <nav>
+        <div class="logo"><div class="logo-dot"></div>NeuralDoc</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <form method="get" action="" style="margin:0;">
+            <input type="hidden" name="darkmode" value="{dm_val}">
+            <button type="submit" style="
+              display:flex;align-items:center;gap:6px;
+              height:34px;padding:0 14px;
+              background:var(--vp);border:1px solid var(--vpb);
+              border-radius:var(--rf);cursor:pointer;
+              font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;
+              color:var(--v);transition:all 0.2s;">
+              {dm_icon}&nbsp;{dm_label}
+            </button>
+          </form>
+          <div class="nav-pill">Production RAG v1.0</div>
+        </div>
+      </nav>
+
+      <section class="hero">
+        <div class="h-eyebrow"><span class="h-dot"></span>Zero hallucination tolerance</div>
+        <h1 class="h1">Ask anything.<br><em>Know everything.</em></h1>
+        <p class="h-sub">
+          A <b>production-grade</b> RAG system with <b>inline citations</b>,
+          persistent chat history, live analytics, and a hard refusal trigger — no guessing, ever.
+        </p>
+        <form class="cta-form" method="get" action="">
+          <input type="hidden" name="launch" value="1">
+          <button type="submit" class="btn-lnd">Open App &nbsp;&#8594;</button>
+        </form>
+      </section>
+
+      <div class="stats">
+        <div class="stat"><div class="sv">0%</div><div class="sl">Hallucination Rate</div></div>
+        <div class="stat"><div class="sv">3&times;</div><div class="sl">Retrieval Methods</div></div>
+        <div class="stat"><div class="sv">100%</div><div class="sl">Local &amp; Private</div></div>
+        <div class="stat"><div class="sv">&infin;</div><div class="sl">Documents</div></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-lbl">New in v1.0</div>
+        <div class="sec-ttl">Three <em>new</em> features</div>
+        <div class="feat-grid">
+          <div class="feat">
+            <div class="feat-ttl">Persistent Chat History</div>
+            <div class="feat-bdy">Every conversation auto-saved to disk. Load any past chat in one click.</div>
+            <span class="feat-badge">chat_history.py</span>
+          </div>
+          <div class="feat">
+            <div class="feat-ttl">Export as Markdown</div>
+            <div class="feat-bdy">Download any conversation as a clean .md file with all citations included.</div>
+            <span class="feat-badge" style="color:var(--cyan);border-color:rgba(6,182,212,0.3);background:rgba(6,182,212,0.08);">Export MD</span>
+          </div>
+          <div class="feat">
+            <div class="feat-ttl">Live Query Analytics</div>
+            <div class="feat-bdy">Real-time dashboard: total queries, refusal rate, avg latency. MLOps observability.</div>
+            <span class="feat-badge" style="color:var(--pink);border-color:rgba(236,72,153,0.3);background:rgba(236,72,153,0.08);">analytics.py</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-lbl">Capabilities</div>
+        <div class="sec-ttl">Six <em>pillars</em> of precision</div>
+        <div class="cards">
+          <div class="card"><div class="c-num">01 &mdash; Ingestion</div><div class="c-ttl">Smart PDF Parsing</div><div class="c-bdy">Multi-column layouts, embedded tables, complex structures. Headers and footers stripped automatically.</div><span class="c-tag tg">pdfplumber</span></div>
+          <div class="card"><div class="c-num">02 &mdash; Chunking</div><div class="c-ttl">Semantic Chunking</div><div class="c-bdy">Header-aware 500–800 token chunks. Source, page, and section breadcrumb on every chunk.</div><span class="c-tag tv">tiktoken</span></div>
+          <div class="card"><div class="c-num">03 &mdash; Retrieval</div><div class="c-ttl">Hybrid Search</div><div class="c-bdy">BM25 fused with dense vector search via Reciprocal Rank Fusion. Catches what either alone misses.</div><span class="c-tag tc">RRF Fusion</span></div>
+          <div class="card"><div class="c-num">04 &mdash; Reranking</div><div class="c-ttl">Cross-Encoder Precision</div><div class="c-bdy">Top 20 re-scored. Only the highest-confidence 5 reach the generation layer.</div><span class="c-tag tam">ms-marco</span></div>
+          <div class="card"><div class="c-num">05 &mdash; Generation</div><div class="c-ttl">Attributed Answers</div><div class="c-bdy">Every claim carries an inline citation [Source, p.X]. Full References section appended.</div><span class="c-tag tv">LangGraph</span></div>
+          <div class="card"><div class="c-num">06 &mdash; Safety</div><div class="c-ttl">Hard Refusal Gate</div><div class="c-bdy">Context below confidence threshold triggers a fixed refusal. No speculation, no hallucination.</div><span class="c-tag tp">Threshold Gate</span></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-lbl">Architecture</div>
+        <div class="sec-ttl">The <em>pipeline</em></div>
+        <div class="pipe-row">
+          <div class="p-step"><div class="p-lbl">Parse</div><div class="p-sub">pdfplumber</div></div>
+          <div class="p-arr">&#8594;</div>
+          <div class="p-step"><div class="p-lbl">Chunk</div><div class="p-sub">tiktoken</div></div>
+          <div class="p-arr">&#8594;</div>
+          <div class="p-step"><div class="p-lbl">Embed</div><div class="p-sub">miniLM</div></div>
+          <div class="p-arr">&#8594;</div>
+          <div class="p-step"><div class="p-lbl">BM25</div><div class="p-sub">keyword</div></div>
+          <div class="p-arr">&#8594;</div>
+          <div class="p-step"><div class="p-lbl">Fuse</div><div class="p-sub">RRF</div></div>
+          <div class="p-arr">&#8594;</div>
+          <div class="p-step"><div class="p-lbl">Rerank</div><div class="p-sub">cross-enc</div></div>
+          <div class="p-arr">&#8594;</div>
+          <div class="p-step"><div class="p-lbl">Generate</div><div class="p-sub">llama3.1</div></div>
+          <div class="p-arr">&#8594;</div>
+          <div class="p-step"><div class="p-lbl">Cite</div><div class="p-sub">attributed</div></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-lbl">Stack</div>
+        <div class="sec-ttl">Built <em>with</em></div>
+        <div class="tags">
+          <span class="tag tg">pdfplumber</span><span class="tag tg">ChromaDB</span>
+          <span class="tag tg">sentence-transformers</span><span class="tag tv">LangGraph</span>
+          <span class="tag tv">langchain-ollama</span><span class="tag tv">llama3.1:8b</span>
+          <span class="tag tc">BM25 + RRF</span><span class="tag tc">cross-encoder</span>
+          <span class="tag tp">FastAPI</span><span class="tag tp">Streamlit</span>
+          <span class="tag tam">Python 3.14</span>
+        </div>
+      </div>
+
+      <div class="foot">
+        <span>NeuralDoc &mdash; Production RAG System</span>
+        <span>Ollama &middot; ChromaDB &middot; LangGraph &middot; FastAPI</span>
+      </div>
     </div>
-    """)
-
-    # Pillars grid
-    pillars = [
-        ("01","Ingestion","Smart PDF Parsing","Multi-column layouts, tables, complex structures.",
-         "pdfplumber",GREEN_C,f"rgba(16,185,129,0.2)","rgba(16,185,129,0.08)"),
-        ("02","Chunking","Semantic Chunking","Header-aware 500-800 token chunks with metadata.",
-         "tiktoken",ACC,PILL_BD,PILL_BG),
-        ("03","Retrieval","Hybrid Search","BM25 + dense vector via Reciprocal Rank Fusion.",
-         "RRF Fusion",CYAN_C,"rgba(6,182,212,0.3)","rgba(6,182,212,0.08)"),
-        ("04","Reranking","Cross-Encoder","Top 20 re-scored — best 5 reach generation.",
-         "ms-marco",YELLOW_C,f"rgba(245,158,11,0.3)","rgba(245,158,11,0.08)"),
-        ("05","Generation","Attributed Answers","Every claim has [Source, p.X] citation.",
-         "LangGraph",ACC,PILL_BD,PILL_BG),
-        ("06","Safety","Hard Refusal Gate","Below threshold = fixed refusal. No hallucination.",
-         "Threshold Gate",PINK_C,"rgba(236,72,153,0.3)","rgba(236,72,153,0.08)"),
-    ]
-    cards = "".join([
-        f'<div style="background:{CARD};border:1px solid {BORDER};border-radius:14px;'
-        f'padding:22px;backdrop-filter:blur(8px);'
-        f'transition:transform 0.2s,box-shadow 0.2s,border-color 0.2s;"'
-        f'onmouseover="this.style.transform=\'translateY(-4px)\';'
-        f'this.style.boxShadow=\'0 8px 32px {tc}33\';'
-        f'this.style.borderColor=\'{tc}55\'"'
-        f'onmouseout="this.style.transform=\'\';'
-        f'this.style.boxShadow=\'\';this.style.borderColor=\'{BORDER}\'">'
-        f'<div style="font-size:10px;font-weight:700;color:{T3};letter-spacing:0.1em;'
-        f'text-transform:uppercase;margin-bottom:6px;">{num} — {cat}</div>'
-        f'<div style="font-size:14px;font-weight:700;color:{T1};margin-bottom:5px;">{t}</div>'
-        f'<div style="font-size:12px;color:{T2};line-height:1.7;">{b}</div>'
-        f'<span style="display:inline-block;margin-top:10px;font-size:10px;font-weight:700;'
-        f'padding:2px 9px;border-radius:9999px;color:{tc};'
-        f'background:{tbg};border:1px solid {tbd};">{tag_text}</span></div>'
-        for num,cat,t,b,tag_text,tc,tbd,tbg in pillars
-    ])
-
-    steps = [("Parse","pdfplumber"),("Chunk","tiktoken"),("Embed","miniLM"),
-             ("BM25","keyword"),("Fuse","RRF"),("Rerank","cross-enc"),
-             ("Generate","llama3.1"),("Cite","attributed")]
-    pipe = ""
-    for i,(s,sub) in enumerate(steps):
-        pipe += (f'<div style="display:flex;flex-direction:column;align-items:center;'
-                 f'gap:4px;flex:1;padding:7px 3px;border-radius:8px;transition:all 0.16s;cursor:default;"'
-                 f'onmouseover="this.style.background=\'{PILL_BG}\'"'
-                 f'onmouseout="this.style.background=\'\'">'
-                 f'<div style="font-size:11px;font-weight:700;color:{T1};">{s}</div>'
-                 f'<div style="font-size:10px;color:{T3};">{sub}</div></div>')
-        if i<7:
-            pipe += f'<div style="color:{BORDER_A};font-size:12px;flex-shrink:0;">&rarr;</div>'
-
-    mdiv(f"""
-    <div style="position:relative;z-index:1;max-width:1100px;margin:80px auto 0;padding:0 48px;">
-      <div style="font-size:10px;font-weight:700;color:{ACC};letter-spacing:0.12em;
-        text-transform:uppercase;margin-bottom:8px;">Capabilities</div>
-      <div style="font-family:'Instrument Serif',serif;font-size:30px;color:{T1};
-        margin-bottom:24px;font-weight:400;">
-        Six <em style="font-style:italic;color:{ACC};">pillars</em> of precision</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">{cards}</div>
-    </div>
-    <div style="position:relative;z-index:1;max-width:1100px;margin:64px auto 0;padding:0 48px;">
-      <div style="font-size:10px;font-weight:700;color:{ACC};letter-spacing:0.12em;
-        text-transform:uppercase;margin-bottom:8px;">Architecture</div>
-      <div style="font-family:'Instrument Serif',serif;font-size:30px;color:{T1};
-        margin-bottom:22px;font-weight:400;">
-        The <em style="font-style:italic;color:{ACC};">pipeline</em></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;
-        background:{CARD};border:1px solid {BORDER};border-radius:14px;
-        padding:22px 24px;backdrop-filter:blur(8px);">{pipe}</div>
-    </div>
-    <div style="max-width:1100px;margin:60px auto 0;padding:20px 48px 64px;
-      border-top:1px solid {BORDER};
-      display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-      <span style="font-size:12px;color:{T3};">NeuralDoc — Production RAG System</span>
-      <span style="font-size:12px;color:{T3};">Ollama · ChromaDB · LangGraph · FastAPI</span>
-    </div>
-    """)
+    </div>""")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# CHAT / ANALYTICS APP
-# ══════════════════════════════════════════════════════════════════════════════
-elif st.session_state.page == "chat":
+# ══════════════════════════════════════════════════════════════
+# CHAT / APP PAGE — premium animated redesign
+# ══════════════════════════════════════════════════════════════
+else:
+    st.html("""<style>
+    [data-testid="stAppViewContainer"]{
+      background:var(--bg)!important;
+      /* subtle animated mesh */
+    }
+    [data-testid="stAppViewContainer"]::before{
+      content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+      background:
+        radial-gradient(ellipse 55% 45% at 10% 5%,  rgba(167,139,250,0.14),transparent 55%),
+        radial-gradient(ellipse 40% 40% at 90% 90%,  rgba(6,182,212,0.08),transparent 50%),
+        radial-gradient(ellipse 30% 30% at 50% 50%,  rgba(236,72,153,0.05),transparent 50%);
+      animation:meshMove 20s ease-in-out infinite alternate;
+    }
+    @keyframes meshMove{
+      0%{background-position:0% 0%,100% 100%,50% 50%;}
+      100%{background-position:10% 5%,90% 85%,55% 45%;}
+    }
+    [data-testid="stMain"],[data-testid="stMainBlockContainer"],.block-container{
+      padding:0!important;background:transparent!important;max-width:100%!important;}
+
+    /* ── Input ── */
+    .stTextInput input{
+      background:var(--s)!important;border:1.5px solid var(--bd)!important;
+      border-radius:var(--r)!important;color:var(--t1)!important;
+      font-family:'Plus Jakarta Sans',sans-serif!important;font-size:14px!important;
+      padding:13px 18px!important;box-shadow:var(--sh)!important;
+      transition:all 0.2s cubic-bezier(0.4,0,0.2,1)!important;
+    }
+    .stTextInput input:focus{
+      border-color:var(--v)!important;
+      box-shadow:0 0 0 3px rgba(124,58,237,0.12),var(--sh)!important;
+      outline:none!important;transform:translateY(-1px)!important;
+    }
+    .stTextInput input::placeholder{color:var(--t3)!important;}
+    .stTextInput label,.stFileUploader label{display:none!important;}
+
+    /* ── Buttons — animated gradient ── */
+    .stButton>button{
+      background:linear-gradient(135deg,var(--v),var(--v3))!important;
+      color:#fff!important;border:none!important;border-radius:var(--r)!important;
+      font-family:'Plus Jakarta Sans',sans-serif!important;font-weight:600!important;
+      font-size:13px!important;padding:12px 0!important;
+      box-shadow:0 2px 10px rgba(124,58,237,0.25)!important;
+      transition:all 0.2s cubic-bezier(0.4,0,0.2,1)!important;
+      position:relative!important;overflow:hidden!important;
+    }
+    .stButton>button::after{
+      content:'';position:absolute;inset:0;
+      background:linear-gradient(135deg,transparent,rgba(255,255,255,0.15),transparent);
+      transform:translateX(-100%);transition:transform 0.4s ease!important;
+    }
+    .stButton>button:hover{
+      background:linear-gradient(135deg,var(--v2),var(--v))!important;
+      transform:translateY(-2px)!important;
+      box-shadow:0 6px 20px rgba(124,58,237,0.35)!important;
+    }
+    .stButton>button:active{transform:scale(0.97)!important;}
+
+    /* ── File uploader ── */
+    [data-testid="stFileUploaderDropzone"]{
+      background:var(--s)!important;border:2px dashed var(--vpb)!important;
+      border-radius:var(--r2)!important;
+      transition:all 0.2s cubic-bezier(0.4,0,0.2,1)!important;
+    }
+    [data-testid="stFileUploaderDropzone"]:hover{
+      border-color:var(--v)!important;background:var(--vp)!important;
+      transform:scale(1.01)!important;
+    }
+    [data-testid="stFileUploaderDropzone"] *{color:var(--t2)!important;}
+
+    /* ── Download button ── */
+    [data-testid="stDownloadButton"]>button{
+      background:var(--s)!important;color:var(--v)!important;
+      border:1.5px solid var(--vpb)!important;border-radius:var(--r)!important;
+      font-weight:600!important;font-size:13px!important;box-shadow:none!important;
+      transition:all 0.18s!important;
+    }
+    [data-testid="stDownloadButton"]>button:hover{
+      background:var(--vp)!important;transform:translateY(-1px)!important;
+      box-shadow:var(--sh)!important;
+    }
+    hr{border-color:var(--bd2)!important;}
+
+    /* ── Card entrance animations ── */
+    @keyframes slideUp{
+      from{opacity:0;transform:translateY(16px);}
+      to{opacity:1;transform:translateY(0);}
+    }
+    @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+    @keyframes shimmer{
+      0%{background-position:-200% 0;}
+      100%{background-position:200% 0;}
+    }
+    @keyframes pulse{
+      0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,0.15);}
+      50%{box-shadow:0 0 0 6px rgba(124,58,237,0);}
+    }
+    @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+    @keyframes counterUp{from{opacity:0;transform:scale(0.8);}to{opacity:1;transform:scale(1);}}
+    @keyframes borderGlow{
+      0%,100%{border-color:rgba(124,58,237,0.12);}
+      50%{border-color:rgba(124,58,237,0.35);}
+    }
+    </style>""")
 
     def get_health():
         try:
             r = requests.get(f"{API_BASE}/health", timeout=3).json()
-            r["_ok"] = True; return r
+            r["_reachable"] = True
+            return r
         except Exception:
-            return {"pipeline_ready":False,"total_chunks":0,"indexed_files":[],"_ok":False}
+            return {"pipeline_ready":False,"total_chunks":0,"indexed_files":[],"_reachable":False}
 
-    h      = get_health()
-    api_ok = h.get("_ok", False)
+    h = get_health()
+    api_ok = h.get("_reachable", False)
     ready  = h.get("pipeline_ready", False)
     chunks = h.get("total_chunks", 0)
     files  = h.get("indexed_files", [])
 
-    # Status pill values (plain Python strings — no HTML injection risk)
-    if ready:
-        _sc = GREEN_C; _sb = GREEN_B; _sd = GREEN_C
-        _st = f"Ready · {chunks} chunks"
-    elif api_ok:
-        _sc = YELLOW_C; _sb = YELLOW_B; _sd = YELLOW_C
-        _st = "API online · No docs"
+    # Apply dark mode class to body
+    if st.session_state.dark_mode:
+        st.html("""<script>
+        document.body.classList.add('dark');
+        document.documentElement.classList.add('dark');
+        </script>
+        <style>
+        body,html,[data-testid="stAppViewContainer"]{
+          --bg:#0F0D1A!important;--s:#1A1730!important;--s2:#221E3A!important;
+          --s3:#2A2550!important;--vp:#2D2060!important;--vpb:#4C3A9E!important;
+          --t1:#F0EEFF!important;--t2:#A89EC9!important;--t3:#6B6490!important;
+          --bd:rgba(167,139,250,0.18)!important;--bd2:rgba(255,255,255,0.07)!important;
+          --sh:0 1px 3px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.2)!important;
+          --sh2:0 8px 40px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2)!important;
+          background:var(--bg)!important;
+        }
+        [data-testid="stAppViewContainer"]::before{
+          background:
+            radial-gradient(ellipse 55% 45% at 10% 5%,  rgba(107,26,255,0.22),transparent 55%),
+            radial-gradient(ellipse 40% 40% at 90% 90%,  rgba(0,255,208,0.07),transparent 50%),
+            radial-gradient(ellipse 30% 30% at 50% 50%,  rgba(236,72,153,0.05),transparent 50%)!important;
+        }
+        .stTextInput input{background:#1A1730!important;color:#F0EEFF!important;
+          border-color:rgba(167,139,250,0.25)!important;}
+        .stTextInput input::placeholder{color:#6B6490!important;}
+        [data-testid="stFileUploaderDropzone"]{background:#1A1730!important;
+          border-color:#4C3A9E!important;}
+        [data-testid="stFileUploaderDropzone"] *{color:#A89EC9!important;}
+        [data-testid="stDownloadButton"]>button{background:#1A1730!important;
+          border-color:#4C3A9E!important;}
+        </style>""")
     else:
-        _sc = RED_C; _sb = RED_B; _sd = RED_C
-        _st = "API offline"
+        st.html('<script>document.body.classList.remove("dark");</script>')
 
-    tab = st.session_state.tab
-    tab_chat_s = (f"background:{ACC};color:#fff;"
-                  f"box-shadow:0 2px 10px {ACC}55;" if tab=="chat"
-                  else f"color:{T2};background:transparent;")
-    tab_anlyt_s = (f"background:{ACC};color:#fff;"
-                   f"box-shadow:0 2px 10px {ACC}55;" if tab=="analytics"
-                   else f"color:{T2};background:transparent;")
+    if ready:
+        bs = "color:#059669;background:rgba(5,150,105,0.08);border:1.5px solid rgba(5,150,105,0.3);"
+        bd = "#059669"; bt = f"Ready &middot; {chunks} chunks"
+    elif api_ok:
+        bs = "color:#D97706;background:rgba(217,119,6,0.08);border:1.5px solid rgba(217,119,6,0.3);"
+        bd = "#D97706"; bt = "API online &mdash; No docs indexed"
+    else:
+        bs = "color:#DC2626;background:rgba(220,38,38,0.08);border:1.5px solid rgba(220,38,38,0.3);"
+        bd = "#DC2626"; bt = "API offline"
 
-    uname = st.session_state.username or "User"
-    initial = uname[0].upper()
-
-    # ── NAVBAR — logo+home | tab pill | dark+user ────────────────────────────
-    mdiv(f"""
-    <nav style="position:sticky;top:0;z-index:200;height:52px;
-      background:{NAV_BG};backdrop-filter:blur(16px);
-      border-bottom:1px solid {BORDER};
+    # ── TOPBAR ────────────────────────────────────────────────────────────────
+    st.html(f"""
+    <div style="
       display:flex;align-items:center;justify-content:space-between;
-      padding:0 32px;animation:fadeIn 0.4s ease both;">
-
-      <!-- LEFT: Logo + Home button placeholder -->
-      <div style="display:flex;align-items:center;gap:10px;min-width:160px;">
-        <div style="width:26px;height:26px;border-radius:7px;
-          background:linear-gradient(135deg,{ACC},{CYAN_C});
-          display:flex;align-items:center;justify-content:center;
-          font-family:'Instrument Serif',serif;font-size:13px;color:#fff;">N</div>
-        <span style="font-family:'Instrument Serif',serif;font-size:16px;
-          color:{T1};">NeuralDoc</span>
+      height:62px;padding:0 52px;
+      background:rgba(255,255,255,0.88);backdrop-filter:blur(16px);
+      border-bottom:1px solid rgba(124,58,237,0.1);
+      position:sticky;top:0;z-index:200;
+      animation:fadeIn 0.4s ease both;
+    ">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:9px;height:9px;border-radius:50%;background:var(--v);
+          animation:pulse 2.5s ease-in-out infinite;"></div>
+        <span style="font-family:'Instrument Serif',serif;font-size:19px;color:var(--t1);
+          letter-spacing:-0.3px;">NeuralDoc</span>
       </div>
 
-      <!-- CENTER: Tab pill -->
-      <div style="display:flex;gap:2px;background:{CARD_S};
-        border:1px solid {BORDER};border-radius:9px;padding:3px;">
-        <div style="padding:5px 20px;border-radius:7px;font-size:13px;
-          font-weight:600;{tab_chat_s}transition:all 0.18s;cursor:default;">Chat</div>
-        <div style="padding:5px 20px;border-radius:7px;font-size:13px;
-          font-weight:600;{tab_anlyt_s}transition:all 0.18s;cursor:default;">Analytics</div>
+      <!-- Tab switcher in topbar -->
+      <div style="display:flex;gap:4px;background:var(--bg);border:1px solid var(--bd2);
+        border-radius:var(--r);padding:4px;">
+        <div id="tab-chat" style="padding:6px 18px;border-radius:7px;font-size:13px;
+          font-weight:600;cursor:pointer;
+          {'background:var(--v);color:#fff;box-shadow:0 2px 8px rgba(124,58,237,0.25);' if st.session_state.active_tab == 'chat' else 'color:var(--t2);'}
+          transition:all 0.18s;">Chat</div>
+        <div id="tab-analytics" style="padding:6px 18px;border-radius:7px;font-size:13px;
+          font-weight:600;cursor:pointer;
+          {'background:var(--v);color:#fff;box-shadow:0 2px 8px rgba(124,58,237,0.25);' if st.session_state.active_tab == 'analytics' else 'color:var(--t2);'}
+          transition:all 0.18s;">Analytics</div>
       </div>
 
-      <!-- RIGHT: status + dark toggle + avatar -->
-      <div style="display:flex;align-items:center;gap:10px;min-width:160px;
-        justify-content:flex-end;">
-        <div style="display:inline-flex;align-items:center;gap:5px;font-size:12px;
-          font-weight:600;padding:4px 12px;border-radius:9999px;
-          color:{_sc};background:{_sb};border:1px solid {_sc}44;">
-          <div style="width:5px;height:5px;border-radius:50%;background:{_sd};
+      <!-- Dark mode toggle -->
+      <div style="display:flex;align-items:center;gap:12px;">
+        <form method="get" action="" style="margin:0;">
+          <input type="hidden" name="darkmode" value="{'off' if st.session_state.dark_mode else 'on'}">
+          <button type="submit" style="
+            display:flex;align-items:center;gap:7px;
+            height:36px;padding:0 14px;
+            background:{'#2D2060' if st.session_state.dark_mode else 'var(--vp)'};
+            border:1.5px solid {'#4C3A9E' if st.session_state.dark_mode else 'var(--vpb)'};
+            border-radius:var(--rf);cursor:pointer;
+            font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;
+            color:{'#C4B5FD' if st.session_state.dark_mode else 'var(--v)'};
+            transition:all 0.2s;
+          ">
+            {'☀' if st.session_state.dark_mode else '☽'}&nbsp;
+            {'Light Mode' if st.session_state.dark_mode else 'Dark Mode'}
+          </button>
+        </form>
+        <div style="display:inline-flex;align-items:center;gap:6px;
+          font-size:12px;font-weight:600;padding:6px 14px;border-radius:var(--rf);{bs}">
+          <div style="width:6px;height:6px;border-radius:50%;background:{bd};
             {'animation:pulse 1.5s ease-in-out infinite;' if ready else ''}"></div>
-          {_st}
+          {bt}
         </div>
-        <div style="width:28px;height:28px;border-radius:50%;
-          background:linear-gradient(135deg,{ACC},{PINK_C});
-          display:flex;align-items:center;justify-content:center;
-          font-size:12px;font-weight:700;color:#fff;
-          box-shadow:0 2px 8px {ACC}44;">{initial}</div>
       </div>
-    </nav>
-    """)
+    </div>""")
 
-    # ── Toolbar — minimal, one row ────────────────────────────────────────────
-    mdiv(f'<div style="padding:10px 32px;display:flex;align-items:center;gap:8px;">')
-    _cols = st.columns([1, 1, 1, 1, 1, 0.8, 0.5, 6])
+    # ── TAB SWITCHER buttons (hidden) ────────────────────────────────────────
+    with st.container():
+        st.html('<style>[data-testid="stVerticalBlock"] > div:has(> [data-testid="stHorizontalBlock"]) + div:empty { display:none; }</style>')
+        _t1, _t2, _gap = st.columns([1, 1, 10])
+        with _t1:
+            if st.button("__chat__", key="tab_chat"):
+                st.session_state.active_tab = "chat"
+                st.rerun()
+        with _t2:
+            if st.button("__analytics__", key="tab_analytics"):
+                st.session_state.active_tab = "analytics"
+                st.rerun()
+    st.html("""<style>
+    /* Hide the tab trigger buttons container - zero height, invisible */
+    [data-testid="stExpander"], .tab-triggers-hidden { display:none!important; }
+    </style>""")
 
-    with _cols[0]:
-        if st.button("⌂ Home", key="home_btn", use_container_width=True):
+    # ── ACTION ROW ────────────────────────────────────────────────────────────
+    st.html('<div style="padding:20px 52px 0;display:flex;gap:12px;align-items:center;'
+            'animation:slideUp 0.5s ease .1s both;position:relative;z-index:10;">')
+    a1, a2, a3, a4, _ = st.columns([1, 1, 1, 1, 6])
+    with a1:
+        if st.button("← Home", key="home_btn", use_container_width=True):
             if st.session_state.messages:
                 save_conversation(st.session_state.messages)
             st.session_state.page = "landing"
             st.rerun()
-    with _cols[1]:
-        if st.button("Clear", key="clr_btn", use_container_width=True):
+    with a2:
+        if st.button("Clear Chat", key="clr_btn", use_container_width=True):
             if st.session_state.messages:
                 save_conversation(st.session_state.messages)
             st.session_state.messages = []
             st.rerun()
-    with _cols[2]:
-        chat_label = "Analytics →" if tab == "chat" else "← Chat"
-        if st.button(chat_label, key="tab_switch", use_container_width=True):
-            st.session_state.tab = "analytics" if tab=="chat" else "chat"
-            st.rerun()
-    with _cols[3]:
-        if st.button("☀" if D else "☽ Dark", key="dm_chat", use_container_width=True):
-            st.session_state.dark = not D
-            st.rerun()
-    with _cols[4]:
-        if st.button("Sign Out", key="logout_btn", use_container_width=True):
-            st.session_state.authed = False
-            st.session_state.username = ""
-            st.session_state.messages = []
-            st.session_state.page = "auth"
-            st.rerun()
-    with _cols[5]:
+    with a3:
         if st.session_state.messages:
             md = export_as_markdown(st.session_state.messages, "NeuralDoc Chat")
-            st.download_button("Export", data=md,
-                file_name=f"chat_{datetime.now().strftime('%Y%m%d_%H%M')}.md",
+            st.download_button("Export .md", data=md,
+                file_name=f"neuraldoc_{datetime.now().strftime('%Y%m%d_%H%M')}.md",
                 mime="text/markdown", use_container_width=True, key="exp_md")
+        else:
+            st.html('<div style="height:44px;"></div>')
+    with a4:
+        # Switch to analytics tab
+        label = "Chat View" if st.session_state.active_tab == "analytics" else "Analytics"
+        if st.button(label, key="switch_tab", use_container_width=True):
+            st.session_state.active_tab = (
+                "chat" if st.session_state.active_tab == "analytics" else "analytics"
+            )
+            st.rerun()
+    st.html('</div><div style="height:20px;"></div>')
 
-    mdiv('</div>')
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # ANALYTICS TAB
-    # ══════════════════════════════════════════════════════════════════════════
-    if tab == "analytics":
+    # ══════════════════════════════════════════════════════════
+    # ANALYTICS TAB — dedicated full page
+    # ══════════════════════════════════════════════════════════
+    if st.session_state.active_tab == "analytics":
         stats = get_stats()
 
-        # KPI cards
-        ans_pct = round((stats["answered"]/stats["total_queries"]*100) if stats["total_queries"] else 0)
-        ref_pct = round((stats["refused"]/stats["total_queries"]*100)  if stats["total_queries"] else 0)
-
-        kpis = [
-            ("⬡","Total Queries",   str(stats["total_queries"]),  ACC,    f"rgba(139,140,245,0.12)", ""),
-            ("✓","Answered",        str(stats["answered"]),        GREEN_C, GREEN_B,
-             f'<div style="height:3px;background:{GREEN_C}22;border-radius:2px;overflow:hidden;margin-top:8px;"><div style="height:100%;width:{ans_pct}%;background:{GREEN_C};border-radius:2px;transition:width 1s;"></div></div>'),
-            ("✕","Refused",         str(stats["refused"]),         RED_C,   RED_B,
-             f'<div style="height:3px;background:{RED_C}22;border-radius:2px;overflow:hidden;margin-top:8px;"><div style="height:100%;width:{ref_pct}%;background:{RED_C};border-radius:2px;"></div></div>'),
-            ("◎","Refusal Rate",    f"{stats['refusal_rate']}%",   YELLOW_C,YELLOW_B,
-             f'<div style="font-size:10px;color:{T3};margin-top:6px;">{"Good" if stats["refusal_rate"]<20 else "High — review threshold"}</div>'),
-            ("⚡","Avg Latency",     f"{int(stats['avg_latency_ms'])}ms", CYAN_C, f"rgba(6,182,212,0.12)",
-             f'<div style="font-size:10px;color:{T3};margin-top:6px;">{"Fast" if stats["avg_latency_ms"]<3000 else "Consider GPU"}</div>'),
-        ]
-
-        kpi_html = ""
-        for icon, lbl, val, col, bg, extra in kpis:
-            kpi_html += f"""
-            <div style="background:{bg};border:1px solid {col}33;border-radius:16px;
-              padding:22px 18px;text-align:center;backdrop-filter:blur(8px);
-              transition:transform 0.2s,box-shadow 0.2s,border-color 0.2s;
-              animation:fadeUp 0.4s ease both;"
-              onmouseover="this.style.transform='translateY(-5px)';
-                this.style.boxShadow='0 8px 32px {col}33';
-                this.style.borderColor='{col}55'"
-              onmouseout="this.style.transform='';
-                this.style.boxShadow='';this.style.borderColor='{col}33'">
-              <div style="font-size:18px;color:{col};margin-bottom:6px;">{icon}</div>
-              <div style="font-family:'Instrument Serif',serif;font-size:36px;
-                color:{col};line-height:1;margin-bottom:5px;">{val}</div>
-              <div style="font-size:10px;font-weight:700;color:{T3};
-                letter-spacing:0.1em;text-transform:uppercase;">{lbl}</div>
-              {extra}
-            </div>"""
-
-        # Recent queries
-        rows_html = ""
+        # Build recent rows without backslash in f-string
+        recent_rows = ""
         for q in stats["recent"]:
-            ic = RED_C if q["refused"] else GREEN_C
-            symbol = "✕" if q["refused"] else "✓"
-            rows_html += f"""
-            <div style="display:flex;align-items:center;gap:10px;
-              padding:10px 14px;border-radius:8px;margin-bottom:4px;
-              background:{CARD_S};border:1px solid {BORDER};
-              transition:all 0.15s;"
-              onmouseover="this.style.borderColor='{BORDER_A}';
-                this.style.transform='translateX(2px)'"
-              onmouseout="this.style.borderColor='{BORDER}';
-                this.style.transform=''">
-              <div style="width:20px;height:20px;border-radius:50%;flex-shrink:0;
-                background:{ic}20;border:1.5px solid {ic}55;
-                display:flex;align-items:center;justify-content:center;
-                font-size:9px;font-weight:700;color:{ic};">{symbol}</div>
-              <span style="flex:1;font-size:13px;color:{T1};
-                overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                {q["query"][:80]}</span>
-              <code style="font-family:'JetBrains Mono',monospace;font-size:11px;
-                color:{T3};background:{PILL_BG};padding:2px 8px;
-                border-radius:6px;">{q["latency_ms"]}ms</code>
-            </div>"""
+            icon = "✕" if q["refused"] else "✓"
+            icon_color = "#DC2626" if q["refused"] else "#059669"
+            q_text = q["query"][:80]
+            lat = q["latency_ms"]
+            recent_rows += (
+                f'<div style="display:flex;align-items:center;gap:12px;'
+                f'padding:12px 16px;border-radius:var(--r);margin-bottom:6px;'
+                f'background:var(--bg);border:1px solid var(--bd2);'
+                f'transition:border-color 0.15s,transform 0.15s;'
+                f'animation:slideUp 0.4s ease both;"'
+                f'onmouseover="this.style.borderColor=\'rgba(124,58,237,0.25)\';this.style.transform=\'translateX(3px)\'"'
+                f'onmouseout="this.style.borderColor=\'var(--bd2)\';this.style.transform=\'\'">'
+                f'<div style="width:20px;height:20px;border-radius:50%;flex-shrink:0;'
+                f'background:{icon_color}20;border:1.5px solid {icon_color}40;'
+                f'display:flex;align-items:center;justify-content:center;'
+                f'font-size:10px;font-weight:700;color:{icon_color};">{icon}</div>'
+                f'<span style="flex:1;font-size:13px;color:var(--t1);">{q_text}</span>'
+                f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;'
+                f'color:var(--t3);background:var(--vp);padding:2px 8px;'
+                f'border-radius:var(--rf);">{lat}ms</span>'
+                f'</div>'
+            )
 
-        empty_q = f"""
-        <div style="display:flex;flex-direction:column;align-items:center;
-          justify-content:center;padding:48px 24px;
-          border:2px dashed {BORDER};border-radius:12px;
-          background:linear-gradient(135deg,{PILL_BG},transparent);">
-          <div style="font-size:36px;margin-bottom:12px;opacity:0.4;">◎</div>
-          <div style="font-size:14px;font-weight:600;color:{T2};margin-bottom:4px;">
-            No queries yet</div>
-          <div style="font-size:12px;color:{T3};text-align:center;max-width:220px;">
-            Send a message in the Chat tab to start tracking performance.</div>
-        </div>"""
+        st.html(f"""
+        <div style="padding:0 52px 52px;position:relative;z-index:10;">
 
-        # System status rows
-        sys_items = [
-            ("⬡ FastAPI",     "Online" if api_ok else "Offline",
-             GREEN_C if api_ok else RED_C, GREEN_B if api_ok else RED_B),
-            ("⬡ RAG Pipeline", "Ready" if ready else "No docs",
-             GREEN_C if ready else (YELLOW_C if api_ok else RED_C),
-             GREEN_B if ready else (YELLOW_B if api_ok else RED_B)),
-            ("⬡ Chunks Indexed", str(chunks), ACC, PILL_BG),
-            ("⬡ Files Indexed",  str(len(files)), ACC, PILL_BG),
-        ]
-        sys_html = ""
-        for label, val, col, bg in sys_items:
-            sys_html += f"""
-            <div style="display:flex;align-items:center;
-              justify-content:space-between;padding:8px 0;
-              border-bottom:1px solid {BORDER};">
-              <span style="font-size:13px;color:{T2};">{label}</span>
-              <span style="font-size:11px;font-weight:700;padding:2px 10px;
-                border-radius:9999px;color:{col};background:{bg};
-                border:1px solid {col}44;">{val}</span>
-            </div>"""
-
-        mdiv(f"""
-        <div style="padding:0 32px 48px;">
           <!-- Header -->
-          <div style="margin-bottom:20px;animation:fadeUp 0.4s ease both;">
-            <div style="font-size:10px;font-weight:700;color:{ACC};
-              letter-spacing:0.12em;text-transform:uppercase;margin-bottom:5px;">
+          <div style="margin-bottom:28px;animation:slideUp 0.4s ease both;">
+            <div style="font-size:11px;font-weight:700;color:var(--v);
+              letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">
               Live Observability</div>
-            <div style="font-family:'Instrument Serif',serif;font-size:28px;color:{T1};">
-              Query <em style="font-style:italic;color:{ACC};">Analytics</em></div>
+            <div style="font-family:'Instrument Serif',serif;font-size:32px;color:var(--t1);">
+              Query <em style="font-style:italic;color:var(--v);">Analytics</em>
+            </div>
           </div>
 
-          <!-- KPI row -->
-          <div style="display:grid;grid-template-columns:repeat(5,1fr);
-            gap:12px;margin-bottom:16px;">
-            {kpi_html}
-          </div>
+          <!-- KPI Cards row -->
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px;">
 
-          <!-- Bottom: Recent + Status + Notes -->
-          <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;">
+            <div style="background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
+              padding:22px 18px;box-shadow:var(--sh);text-align:center;
+              animation:slideUp 0.4s ease .05s both;
+              transition:transform 0.2s,box-shadow 0.2s,border-color 0.2s;"
+              onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='var(--sh2)';this.style.borderColor='var(--vpb)'"
+              onmouseout="this.style.transform='';this.style.boxShadow='var(--sh)';this.style.borderColor='var(--bd2)'">
+              <div style="font-family:'Instrument Serif',serif;font-size:36px;color:var(--v);
+                line-height:1;margin-bottom:6px;animation:counterUp 0.6s ease .3s both;">
+                {stats['total_queries']}</div>
+              <div style="font-size:10px;font-weight:700;color:var(--t3);
+                letter-spacing:0.1em;text-transform:uppercase;">Total Queries</div>
+            </div>
 
-            <!-- Recent queries -->
-            <div style="background:{CARD};border:1px solid {BORDER};
-              border-radius:16px;padding:22px;
-              backdrop-filter:blur(8px);">
-              <div style="display:flex;align-items:center;
-                justify-content:space-between;margin-bottom:14px;">
-                <div style="font-size:13px;font-weight:700;color:{T1};">
-                  Recent Queries</div>
-                <span style="font-size:11px;color:{T3};background:{PILL_BG};
-                  padding:3px 10px;border-radius:9999px;border:1px solid {PILL_BD};">
-                  {len(stats["recent"])} of {stats["total_queries"]}</span>
-              </div>
-              <div style="max-height:340px;overflow-y:auto;
-                scrollbar-width:thin;scrollbar-color:{PILL_BD} transparent;">
-                {"".join([rows_html]) if stats["recent"] else empty_q}
+            <div style="background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
+              padding:22px 18px;box-shadow:var(--sh);text-align:center;
+              animation:slideUp 0.4s ease .1s both;
+              transition:transform 0.2s,box-shadow 0.2s,border-color 0.2s;"
+              onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='var(--sh2)';this.style.borderColor='rgba(5,150,105,0.3)'"
+              onmouseout="this.style.transform='';this.style.boxShadow='var(--sh)';this.style.borderColor='var(--bd2)'">
+              <div style="font-family:'Instrument Serif',serif;font-size:36px;color:#059669;
+                line-height:1;margin-bottom:6px;animation:counterUp 0.6s ease .35s both;">
+                {stats['answered']}</div>
+              <div style="font-size:10px;font-weight:700;color:var(--t3);
+                letter-spacing:0.1em;text-transform:uppercase;">Answered</div>
+              <div style="margin-top:8px;height:3px;border-radius:4px;background:#ECFDF5;overflow:hidden;">
+                <div style="height:100%;background:#059669;border-radius:4px;
+                  width:{round((stats['answered']/stats['total_queries']*100) if stats['total_queries'] else 0)}%;
+                  transition:width 1s ease;"></div>
               </div>
             </div>
 
-            <!-- Right column: status + notes -->
-            <div style="display:flex;flex-direction:column;gap:12px;">
-
-              <!-- System Status -->
-              <div style="background:{CARD};border:1px solid {BORDER};
-                border-radius:16px;padding:20px;backdrop-filter:blur(8px);">
-                <div style="font-size:10px;font-weight:700;color:{T3};
-                  letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">
-                  System Status</div>
-                {sys_html}
+            <div style="background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
+              padding:22px 18px;box-shadow:var(--sh);text-align:center;
+              animation:slideUp 0.4s ease .15s both;
+              transition:transform 0.2s,box-shadow 0.2s,border-color 0.2s;"
+              onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='var(--sh2)';this.style.borderColor='rgba(220,38,38,0.3)'"
+              onmouseout="this.style.transform='';this.style.boxShadow='var(--sh)';this.style.borderColor='var(--bd2)'">
+              <div style="font-family:'Instrument Serif',serif;font-size:36px;color:#DC2626;
+                line-height:1;margin-bottom:6px;animation:counterUp 0.6s ease .4s both;">
+                {stats['refused']}</div>
+              <div style="font-size:10px;font-weight:700;color:var(--t3);
+                letter-spacing:0.1em;text-transform:uppercase;">Refused</div>
+              <div style="margin-top:8px;height:3px;border-radius:4px;background:#FEE2E2;overflow:hidden;">
+                <div style="height:100%;background:#DC2626;border-radius:4px;
+                  width:{round((stats['refused']/stats['total_queries']*100) if stats['total_queries'] else 0)}%;
+                  transition:width 1s ease;"></div>
               </div>
+            </div>
 
-              <!-- MLOps Notes — styled as info alert -->
-              <div style="background:linear-gradient(135deg,{PILL_BG},{CARD});
-                border:1px solid {BORDER_A};border-radius:16px;padding:20px;
-                flex:1;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-                  <div style="width:24px;height:24px;border-radius:6px;
-                    background:{ACC};display:flex;align-items:center;
-                    justify-content:center;font-size:12px;color:#fff;">ℹ</div>
-                  <div style="font-size:12px;font-weight:700;color:{ACC};">
-                    MLOps Notes</div>
+            <div style="background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
+              padding:22px 18px;box-shadow:var(--sh);text-align:center;
+              animation:slideUp 0.4s ease .2s both;
+              transition:transform 0.2s,box-shadow 0.2s,border-color 0.2s;"
+              onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='var(--sh2)';this.style.borderColor='rgba(217,119,6,0.3)'"
+              onmouseout="this.style.transform='';this.style.boxShadow='var(--sh)';this.style.borderColor='var(--bd2)'">
+              <div style="font-family:'Instrument Serif',serif;font-size:36px;color:#D97706;
+                line-height:1;margin-bottom:6px;animation:counterUp 0.6s ease .45s both;">
+                {stats['refusal_rate']}%</div>
+              <div style="font-size:10px;font-weight:700;color:var(--t3);
+                letter-spacing:0.1em;text-transform:uppercase;">Refusal Rate</div>
+              <div style="margin-top:8px;font-size:11px;color:var(--t3);">
+                {'Good' if stats['refusal_rate'] < 20 else 'High — check threshold'}</div>
+            </div>
+
+            <div style="background:linear-gradient(135deg,var(--vp),var(--s));
+              border:1px solid var(--vpb);border-radius:var(--r2);
+              padding:22px 18px;box-shadow:var(--sh);text-align:center;
+              animation:slideUp 0.4s ease .25s both;
+              animation:borderGlow 3s ease-in-out infinite;
+              transition:transform 0.2s,box-shadow 0.2s;"
+              onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='var(--sh2)'"
+              onmouseout="this.style.transform='';this.style.boxShadow='var(--sh)'">
+              <div style="font-family:'Instrument Serif',serif;font-size:36px;color:var(--cyan);
+                line-height:1;margin-bottom:6px;animation:counterUp 0.6s ease .5s both;">
+                {int(stats['avg_latency_ms'])}ms</div>
+              <div style="font-size:10px;font-weight:700;color:var(--t3);
+                letter-spacing:0.1em;text-transform:uppercase;">Avg Latency</div>
+              <div style="margin-top:8px;font-size:11px;color:var(--t3);">
+                {'Fast' if stats['avg_latency_ms'] < 3000 else 'Consider GPU'}</div>
+            </div>
+
+          </div>
+
+          <!-- Recent queries table -->
+          <div style="background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
+            padding:24px 28px;box-shadow:var(--sh);animation:slideUp 0.4s ease .3s both;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+              <div style="font-size:13px;font-weight:700;color:var(--t1);">Recent Queries</div>
+              <div style="font-size:11px;color:var(--t3);background:var(--vp);
+                padding:3px 10px;border-radius:var(--rf);border:1px solid var(--vpb);">
+                Last {len(stats['recent'])} of {stats['total_queries']} total</div>
+            </div>
+
+            {'<div style="text-align:center;padding:32px;color:var(--t3);font-size:13px;">' +
+             'No queries recorded yet. Send a message to start tracking.' +
+             '</div>' if not stats['recent'] else recent_rows}
+          </div>
+
+          <!-- System health -->
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px;">
+            <div style="background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
+              padding:20px 24px;box-shadow:var(--sh);animation:slideUp 0.4s ease .35s both;">
+              <div style="font-size:11px;font-weight:700;color:var(--t3);
+                letter-spacing:0.08em;text-transform:uppercase;margin-bottom:14px;">System Status</div>
+              <div style="display:flex;gap:10px;flex-direction:column;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-size:13px;color:var(--t2);">FastAPI Backend</span>
+                  <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--rf);
+                    {'color:#059669;background:#ECFDF5;border:1px solid #A7F3D0;' if api_ok else 'color:#DC2626;background:#FEE2E2;border:1px solid #FECACA;'}">
+                    {'Online' if api_ok else 'Offline'}</span>
                 </div>
-                <div style="font-size:12px;color:{T2};line-height:1.85;">
-                  Refusal &gt;25%: threshold too strict.<br>
-                  Latency &gt;5s: try GPU or GPT-4o-mini.<br>
-                  Rolling window: last 200 queries.
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-size:13px;color:var(--t2);">RAG Pipeline</span>
+                  <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--rf);
+                    {'color:#059669;background:#ECFDF5;border:1px solid #A7F3D0;' if ready else 'color:#D97706;background:#FEF3C7;border:1px solid #FDE68A;'}">
+                    {'Ready' if ready else 'No docs'}</span>
                 </div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;">
-                  <code style="font-size:10px;color:{ACC};background:{PILL_BG};
-                    padding:2px 8px;border-radius:6px;border:1px solid {PILL_BD};">
-                    analytics.json</code>
-                  <code style="font-size:10px;color:{CYAN_C};
-                    background:rgba(6,182,212,0.08);padding:2px 8px;border-radius:6px;
-                    border:1px solid rgba(6,182,212,0.25);">200 query window</code>
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-size:13px;color:var(--t2);">Indexed Chunks</span>
+                  <span style="font-size:11px;font-weight:700;color:var(--v);
+                    background:var(--vp);padding:3px 10px;border-radius:var(--rf);
+                    border:1px solid var(--vpb);">{chunks}</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-size:13px;color:var(--t2);">Indexed Files</span>
+                  <span style="font-size:11px;font-weight:700;color:var(--v);
+                    background:var(--vp);padding:3px 10px;border-radius:var(--rf);
+                    border:1px solid var(--vpb);">{len(files)}</span>
                 </div>
               </div>
+            </div>
 
+            <div style="background:linear-gradient(135deg,var(--vp),var(--s2));
+              border:1px solid var(--vpb);border-radius:var(--r2);
+              padding:20px 24px;box-shadow:var(--sh);animation:slideUp 0.4s ease .4s both;">
+              <div style="font-size:11px;font-weight:700;color:var(--v);
+                letter-spacing:0.08em;text-transform:uppercase;margin-bottom:14px;">MLOps Notes</div>
+              <div style="font-size:13px;color:var(--t2);line-height:1.8;">
+                This observability layer tracks refusal rate and latency — the two key RAG quality KPIs.
+                Refusal rate above 25% may indicate your threshold is too strict.
+                Avg latency above 5s suggests a GPU upgrade or model swap to llama3.3:70b.
+              </div>
+              <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+                <span style="font-size:10px;font-weight:700;color:var(--v);
+                  background:var(--s);padding:3px 10px;border-radius:var(--rf);
+                  border:1px solid var(--vpb);">analytics.json</span>
+                <span style="font-size:10px;font-weight:700;color:var(--cyan);
+                  background:rgba(6,182,212,0.08);padding:3px 10px;border-radius:var(--rf);
+                  border:1px solid rgba(6,182,212,0.25);">200 query rolling window</span>
+              </div>
             </div>
           </div>
-        </div>
-        """)
 
-    # ══════════════════════════════════════════════════════════════════════════
+        </div>""")
+
+    # ══════════════════════════════════════════════════════════
     # CHAT TAB
-    # ══════════════════════════════════════════════════════════════════════════
+    # ══════════════════════════════════════════════════════════
     else:
-        mdiv(f'<div style="padding:0 32px 48px;">')
+        st.html('<div style="padding:0 52px 52px;position:relative;z-index:10;">')
         col_chat, col_right = st.columns([3, 2], gap="large")
 
-        # ── RIGHT: Upload ───────────────────────────────────────────────────────
+        # ── RIGHT COLUMN ─────────────────────────────────────────────────────
         with col_right:
-            mdiv(f"""
-            <div style="background:{CARD};border:1px solid {BORDER};
-              border-radius:16px;padding:24px;backdrop-filter:blur(8px);
-              margin-bottom:14px;animation:fadeUp 0.5s ease 0.1s both;
+            # Upload card
+            st.html("""<div style="
+              background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
+              padding:28px;box-shadow:var(--sh);margin-bottom:16px;
+              animation:slideUp 0.5s ease .1s both;
               transition:box-shadow 0.2s,border-color 0.2s;"
-              onmouseover="this.style.boxShadow='{SH2}';
-                this.style.borderColor='{BORDER_A}'"
-              onmouseout="this.style.boxShadow='';
-                this.style.borderColor='{BORDER}'">
-            """)
-
+              onmouseover="this.style.boxShadow='var(--sh2)';this.style.borderColor='var(--vpb)'"
+              onmouseout="this.style.boxShadow='var(--sh)';this.style.borderColor='var(--bd2)'">""")
             uh1, uh2 = st.columns([3, 1])
             with uh1:
-                mdiv(f"""<div style="margin-bottom:14px;">
-                  {sec_label("Knowledge Base")}
-                  <div style="font-family:'Instrument Serif',serif;
-                    font-size:20px;color:{T1};">Upload
-                    <em style="font-style:italic;color:{ACC};">documents</em></div>
+                st.html("""<div style="margin-bottom:16px;">
+                  <div style="font-size:10px;font-weight:700;color:var(--v);
+                    letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Knowledge Base</div>
+                  <div style="font-family:'Instrument Serif',serif;font-size:22px;color:var(--t1);">
+                    Upload <em style="font-style:italic;color:var(--v);">documents</em></div>
                 </div>""")
             with uh2:
-                mdiv('<div style="height:24px;"></div>')
-                if st.button("Clear KB", key="clear_idx", use_container_width=True):
+                st.html('<div style="height:26px;"></div>')
+                if st.button("Clear", key="clear_idx", use_container_width=True):
                     try:
                         r = requests.delete(f"{API_BASE}/index", timeout=15)
                         if r.status_code == 200:
                             st.success("Index cleared.")
                             st.rerun()
                         else:
-                            st.error(f"Error {r.status_code}")
+                            st.error(f"Error: {r.text}")
                     except Exception:
                         st.error("API offline.")
 
-            mdiv(f"""
-            <div style="background:{PILL_BG};border:2px dashed {PILL_BD};
-              border-radius:12px;padding:16px;margin-bottom:10px;text-align:center;
-              transition:all 0.18s;"
-              onmouseover="this.style.borderColor='{ACC}';
-                this.style.background='{ACC_S}';this.style.transform='scale(1.01)'"
-              onmouseout="this.style.borderColor='{PILL_BD}';
-                this.style.background='{PILL_BG}';this.style.transform=''">
-              <div style="font-size:24px;margin-bottom:6px;opacity:0.6;">⬆</div>
-              <div style="font-size:13px;font-weight:500;color:{T1};margin-bottom:3px;">
+            st.html("""<div style="background:var(--vp);border:2px dashed var(--vpb);
+              border-radius:var(--r2);padding:18px;margin-bottom:12px;text-align:center;
+              transition:all 0.2s cubic-bezier(0.4,0,0.2,1);"
+              onmouseover="this.style.borderColor='var(--v)';this.style.background='var(--s3)';this.style.transform='scale(1.01)'"
+              onmouseout="this.style.borderColor='var(--vpb)';this.style.background='var(--vp)';this.style.transform=''">
+              <div style="font-size:13px;font-weight:500;color:var(--t1);margin-bottom:4px;">
                 Drop your PDF below</div>
-              <div style="font-size:11px;color:{T3};">
-                Parsed → Chunked → Embedded → Indexed</div>
-            </div>
-            """)
+              <div style="font-size:11px;color:var(--t3);">
+                Parsed &#8594; Chunked &#8594; Embedded &#8594; Indexed</div>
+            </div>""")
 
-            uploaded = st.file_uploader("PDF", type=["pdf"], label_visibility="hidden")
+            uploaded = st.file_uploader("Upload PDF", type=["pdf"], label_visibility="hidden")
             if uploaded:
-                mdiv(f"""
-                <div style="background:{GREEN_B};border:1px solid {GREEN_C}44;
-                  border-radius:8px;padding:9px 13px;margin-bottom:9px;">
-                  <div style="font-size:13px;font-weight:600;color:{T1};">
-                    {uploaded.name}</div>
-                  <div style="font-size:11px;color:{GREEN_C};margin-top:1px;">
-                    {uploaded.size//1024} KB · Ready to index</div>
+                st.html(f"""<div style="background:rgba(5,150,105,0.07);
+                  border:1px solid rgba(5,150,105,0.25);border-radius:var(--r);
+                  padding:10px 14px;margin-bottom:10px;
+                  animation:slideUp 0.3s ease both;">
+                  <div style="font-size:13px;font-weight:600;color:var(--t1);">{uploaded.name}</div>
+                  <div style="font-size:11px;color:#059669;margin-top:2px;">{uploaded.size//1024} KB ready</div>
                 </div>""")
                 if st.button("Index Document", use_container_width=True, key="idx_btn"):
                     with st.spinner("Processing PDF..."):
                         try:
-                            resp = requests.post(
-                                f"{API_BASE}/ingest",
+                            resp = requests.post(f"{API_BASE}/ingest",
                                 files={"file":(uploaded.name,uploaded,"application/pdf")},
                                 timeout=120)
                             if resp.status_code == 200:
                                 d = resp.json()
-                                st.success(f"Indexed {d['chunks_indexed']} chunks")
+                                st.success(f"Indexed {d['chunks_indexed']} chunks from {d['filename']}")
                                 st.rerun()
                             else:
                                 st.error(f"Error: {resp.text}")
                         except requests.exceptions.ConnectionError:
-                            st.error("API offline — run: uv run uvicorn api:app --reload --port 8000")
+                            st.error("API offline. Run: uv run uvicorn api:app --reload --port 8000")
                         except Exception as e:
                             st.error(str(e))
 
             if files:
-                mdiv(f'<div style="font-size:10px;font-weight:700;color:{T3};'
-                     f'letter-spacing:0.08em;text-transform:uppercase;margin:10px 0 6px;">'
-                     f'Indexed files</div>')
+                st.html("""<div style="font-size:10px;font-weight:700;color:var(--t3);
+                  letter-spacing:0.08em;text-transform:uppercase;margin:12px 0 7px;">
+                  Indexed files</div>""")
                 for f in files:
                     fname = f.replace("\\","/").split("/")[-1]
-                    mdiv(f"""
-                    <div style="background:{CARD_S};border:1px solid {BORDER};
-                      border-radius:8px;padding:7px 12px;margin-bottom:4px;
-                      display:flex;align-items:center;transition:all 0.15s;"
-                      onmouseover="this.style.borderColor='{BORDER_A}';
-                        this.style.transform='translateX(2px)'"
-                      onmouseout="this.style.borderColor='{BORDER}';
-                        this.style.transform=''">
-                      <span style="font-size:12px;color:{T1};flex:1;">{fname}</span>
+                    st.html(f"""<div style="background:var(--bg);border:1px solid var(--bd2);
+                      border-radius:var(--r);padding:8px 13px;margin-bottom:5px;
+                      display:flex;align-items:center;
+                      transition:border-color 0.15s,transform 0.15s;"
+                      onmouseover="this.style.borderColor='var(--vpb)';this.style.transform='translateX(2px)'"
+                      onmouseout="this.style.borderColor='var(--bd2)';this.style.transform=''">
+                      <span style="font-size:12px;font-weight:500;color:var(--t1);flex:1;">{fname}</span>
                       <span style="font-size:10px;font-weight:700;padding:2px 8px;
-                        border-radius:9999px;color:{GREEN_C};background:{GREEN_B};
-                        border:1px solid {GREEN_C}44;">indexed</span>
+                        border-radius:var(--rf);color:#059669;background:#ECFDF5;
+                        border:1px solid #A7F3D0;">indexed</span>
                     </div>""")
 
-            mdiv(f"""
-            <div style="margin-top:12px;background:{CARD_S};border:1px solid {BORDER};
-              border-radius:10px;padding:13px 14px;">
-              <div style="font-size:10px;font-weight:700;color:{T3};
-                letter-spacing:0.08em;text-transform:uppercase;margin-bottom:7px;">Tips</div>
-              <div style="font-size:12px;color:{T2};line-height:1.9;">
-                Click <strong style="color:{ACC};">Clear KB</strong> before switching documents.<br>
+            st.html("""<div style="margin-top:14px;background:var(--bg);border:1px solid var(--bd2);
+              border-radius:var(--r);padding:14px 16px;">
+              <div style="font-size:10px;font-weight:700;color:var(--t3);
+                letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Tips</div>
+              <div style="font-size:12px;color:var(--t2);line-height:1.9;">
+                Click <b style="color:var(--v);">Clear</b> before switching documents.<br>
                 Ask precise questions for best citation accuracy.<br>
                 Every answer includes inline source references.<br>
                 Unanswerable queries return a refusal, not a guess.
-              </div>
-            </div>
-            """)
-            mdiv('</div>')  # close upload card
+              </div></div>""")
+            st.html('</div>')
 
             # Chat History
             convs = load_all_conversations()
             if convs:
-                mdiv(f"""
-                <div style="background:{CARD};border:1px solid {BORDER};
-                  border-radius:16px;padding:18px 20px 12px;
-                  backdrop-filter:blur(8px);animation:fadeUp 0.5s ease 0.2s both;">
-                  <div style="font-size:10px;font-weight:700;color:{ACC};
-                    letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">
-                    Chat History</div>
-                """)
+                st.html("""<div style="background:var(--s);border:1px solid var(--bd2);
+                  border-radius:var(--r2);padding:22px 22px 14px;box-shadow:var(--sh);
+                  animation:slideUp 0.5s ease .2s both;">
+                  <div style="font-size:10px;font-weight:700;color:var(--v);
+                    letter-spacing:0.1em;text-transform:uppercase;margin-bottom:14px;">
+                    Chat History</div>""")
                 for i, conv in enumerate(convs[:5]):
-                    ts  = conv["timestamp"][:10]
-                    ttl = conv["title"][:32] + ("…" if len(conv["title"])>32 else "")
-                    n   = len([m for m in conv["messages"] if m["role"]=="user"])
+                    ts = conv["timestamp"][:10]
+                    title = conv["title"][:34] + ("…" if len(conv["title"]) > 34 else "")
+                    n = len([m for m in conv["messages"] if m["role"]=="user"])
                     hc1, hc2 = st.columns([4, 1])
                     with hc1:
-                        mdiv(f"""
-                        <div style="padding:7px 10px;border-radius:8px;
-                          border:1px solid {BORDER};margin-bottom:4px;
-                          transition:all 0.15s;cursor:default;"
-                          onmouseover="this.style.borderColor='{BORDER_A}';
-                            this.style.background='{PILL_BG}'"
-                          onmouseout="this.style.borderColor='{BORDER}';
-                            this.style.background=''">
-                          <div style="font-size:12px;font-weight:500;color:{T1};">
-                            {ttl}</div>
-                          <div style="font-size:10px;color:{T3};margin-top:1px;">
-                            {ts} · {n} quer{'y' if n==1 else 'ies'}</div>
+                        st.html(f"""<div style="padding:8px 10px;border-radius:var(--r);
+                          border:1px solid var(--bd2);margin-bottom:5px;cursor:pointer;
+                          transition:all 0.15s;"
+                          onmouseover="this.style.borderColor='var(--vpb)';this.style.background='var(--vp)';this.style.transform='translateX(2px)'"
+                          onmouseout="this.style.borderColor='var(--bd2)';this.style.background='';this.style.transform=''">
+                          <div style="font-size:12px;font-weight:500;color:var(--t1);">{title}</div>
+                          <div style="font-size:10px;color:var(--t3);margin-top:2px;">
+                            {ts} &middot; {n} {'query' if n==1 else 'queries'}</div>
                         </div>""")
                     with hc2:
-                        if st.button("Load", key=f"ld_{conv['id']}_{i}",
-                                     use_container_width=True):
+                        if st.button("Load", key=f"ld_{conv['id']}_{i}", use_container_width=True):
                             st.session_state.messages = load_conversation(conv["id"])
                             st.rerun()
-                mdiv('</div>')
+                st.html('</div>')
 
-        # ── LEFT: Chat ──────────────────────────────────────────────────────────
+        # ── LEFT: Chat ────────────────────────────────────────────────────────
         with col_chat:
-            mdiv(f"""
-            <div style="background:{CARD};border:1px solid {BORDER};
-              border-radius:16px;padding:22px 24px 20px;
-              backdrop-filter:blur(8px);animation:fadeUp 0.5s ease both;">
-              <div style="display:flex;align-items:flex-start;
-                justify-content:space-between;margin-bottom:18px;">
-                <div>
-                  {sec_label("Document QA")}
-                  <div style="font-family:'Instrument Serif',serif;
-                    font-size:24px;color:{T1};">
-                    Ask your
-                    <em style="font-style:italic;color:{ACC};">documents</em>
-                  </div>
-                </div>
-                <div style="display:flex;gap:6px;padding-top:14px;flex-shrink:0;">
-                  <span style="font-size:11px;font-weight:600;color:{ACC};
-                    background:{PILL_BG};border:1px solid {PILL_BD};
-                    padding:3px 10px;border-radius:9999px;">{chunks} chunks</span>
-                  <span style="font-size:11px;font-weight:700;padding:3px 10px;
-                    border-radius:9999px;border:1px solid;
-                    {'color:'+GREEN_C+';background:'+GREEN_B+';border-color:'+GREEN_C+'44;' if ready
-                     else 'color:'+RED_C+';background:'+RED_B+';border-color:'+RED_C+'44;'}">
-                    {'Ready' if ready else 'Not ready'}
-                  </span>
-                </div>
-              </div>
-            """)
+            st.html("""<div style="
+              background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
+              padding:28px 28px 22px;box-shadow:var(--sh);
+              animation:slideUp 0.5s ease both;
+              transition:box-shadow 0.2s;">""")
 
-            # Messages
+            st.html(f"""<div style="display:flex;align-items:flex-start;
+              justify-content:space-between;margin-bottom:22px;">
+              <div>
+                <div style="font-size:10px;font-weight:700;color:var(--v);
+                  letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Document QA</div>
+                <div style="font-family:'Instrument Serif',serif;font-size:28px;
+                  color:var(--t1);line-height:1.1;">
+                  Ask your <em style="font-style:italic;color:var(--v);">documents</em></div>
+              </div>
+              <div style="display:flex;gap:7px;align-items:center;padding-top:16px;flex-shrink:0;">
+                <span style="font-size:12px;font-weight:600;color:var(--v);
+                  background:var(--vp);border:1px solid var(--vpb);
+                  padding:4px 12px;border-radius:var(--rf);">{chunks} chunks</span>
+                <span style="font-size:12px;font-weight:700;padding:4px 12px;
+                  border-radius:var(--rf);border:1.5px solid;
+                  {'color:#059669;background:#ECFDF5;border-color:rgba(5,150,105,0.3);' if ready else 'color:#DC2626;background:#FEE2E2;border-color:rgba(220,38,38,0.3);'}">
+                  {'Ready' if ready else 'Not ready'}</span>
+              </div>
+            </div>""")
+
             if st.session_state.messages:
-                msgs_html = ""
+                html = ""
                 for idx, m in enumerate(st.session_state.messages):
-                    delay = min(idx * 0.04, 0.24)
+                    delay = f"{idx * 0.05:.2f}s"
                     if m["role"] == "user":
-                        msgs_html += f"""
-                        <div style="display:flex;justify-content:flex-end;
-                          margin-bottom:12px;animation:fadeUp 0.3s ease {delay:.2f}s both;">
-                          <div style="max-width:74%;padding:12px 16px;
-                            background:linear-gradient(135deg,{ACC},{ACC2});
-                            color:#fff;border-radius:14px 3px 14px 14px;
-                            font-size:14px;line-height:1.6;
-                            box-shadow:0 2px 12px {ACC}44;">
-                            {m['content']}</div>
-                        </div>"""
+                        html += f"""
+                        <div style="display:flex;justify-content:flex-end;margin-bottom:14px;
+                          animation:slideUp 0.3s ease {delay} both;">
+                          <div style="max-width:74%;padding:13px 17px;
+                            background:linear-gradient(135deg,var(--v),var(--v3));
+                            color:#fff;border-radius:16px 3px 16px 16px;
+                            font-size:14px;line-height:1.65;
+                            font-family:'Plus Jakarta Sans',sans-serif;
+                            box-shadow:0 3px 12px rgba(124,58,237,0.25);">
+                            {m['content']}</div></div>"""
                     else:
                         refs = ""
                         if m.get("references"):
-                            refs = '<div style="margin-top:9px;display:flex;flex-wrap:wrap;gap:4px;">'
+                            refs = '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;">'
                             for ref in m["references"]:
-                                refs += (f'<code style="font-family:JetBrains Mono,monospace;'
-                                         f'font-size:10px;padding:2px 8px;border-radius:6px;'
-                                         f'color:{CYAN_C};background:rgba(6,182,212,0.08);'
-                                         f'border:1px solid rgba(6,182,212,0.2);">{ref}</code>')
+                                refs += (
+                                    f'<span style="font-family:\'JetBrains Mono\',monospace;'
+                                    f'font-size:10px;padding:2px 9px;border-radius:var(--rf);'
+                                    f'color:var(--cyan);background:rgba(6,182,212,0.08);'
+                                    f'border:1px solid rgba(6,182,212,0.25);">{ref}</span>'
+                                )
                             refs += "</div>"
                         rfsd = ""
                         if m.get("refused"):
-                            rfsd = (f'<div style="margin-top:7px;font-size:12px;font-weight:600;'
-                                    f'color:{RED_C};background:{RED_B};'
-                                    f'border:1px solid {RED_C}44;padding:5px 11px;'
-                                    f'border-radius:8px;display:inline-block;">'
-                                    f'Insufficient evidence — refusal triggered</div>')
+                            rfsd = (
+                                '<div style="margin-top:8px;font-size:12px;font-weight:600;'
+                                'color:#DC2626;background:#FEE2E2;border:1px solid #FECACA;'
+                                'padding:5px 12px;border-radius:var(--r);display:inline-block;">'
+                                'Insufficient evidence — refusal triggered</div>'
+                            )
                         lat = ""
                         if m.get("latency_ms"):
-                            lat = (f'<div style="margin-top:4px;font-family:JetBrains Mono,'
-                                   f'monospace;font-size:10px;color:{T3};">'
-                                   f'{m["latency_ms"]} ms</div>')
-                        msgs_html += f"""
-                        <div style="display:flex;margin-bottom:12px;gap:9px;
-                          align-items:flex-start;
-                          animation:fadeUp 0.3s ease {delay:.2f}s both;">
-                          <div style="width:26px;height:26px;border-radius:8px;
-                            flex-shrink:0;margin-top:2px;
-                            background:linear-gradient(135deg,{PILL_BG},{CARD_S});
+                            lat = (
+                                f'<div style="margin-top:5px;font-family:\'JetBrains Mono\','
+                                f'monospace;font-size:10px;color:var(--t3);">'
+                                f'{m["latency_ms"]} ms</div>'
+                            )
+                        html += f"""
+                        <div style="display:flex;margin-bottom:14px;gap:10px;align-items:flex-start;
+                          animation:slideUp 0.3s ease {delay} both;">
+                          <div style="width:28px;height:28px;border-radius:8px;flex-shrink:0;
+                            margin-top:2px;background:linear-gradient(135deg,var(--vp),var(--s2));
                             display:flex;align-items:center;justify-content:center;
-                            font-family:'Instrument Serif',serif;font-size:12px;
-                            color:{ACC};border:1px solid {PILL_BD};
-                            animation:float 4s ease-in-out {delay:.2f}s infinite;">N</div>
-                          <div style="max-width:86%;padding:12px 16px;
-                            background:{CARD_S};border:1px solid {BORDER};
-                            border-radius:3px 14px 14px 14px;
-                            font-size:14px;color:{T1};line-height:1.75;
+                            font-family:'Instrument Serif',serif;font-size:13px;
+                            color:var(--v);border:1px solid var(--vpb);">N</div>
+                          <div style="max-width:86%;padding:13px 17px;
+                            background:var(--bg);border:1px solid var(--bd2);
+                            border-radius:3px 16px 16px 16px;
+                            font-size:14px;color:var(--t1);line-height:1.75;
+                            font-family:'Plus Jakarta Sans',sans-serif;
+                            box-shadow:var(--sh);
                             transition:border-color 0.15s;"
-                            onmouseover="this.style.borderColor='{BORDER_A}'"
-                            onmouseout="this.style.borderColor='{BORDER}'">
-                            {m['content']}{refs}{rfsd}{lat}
-                          </div>
-                        </div>"""
-
-                mdiv(f"""
-                <div style="max-height:50vh;overflow-y:auto;margin-bottom:14px;
+                            onmouseover="this.style.borderColor='var(--vpb)'"
+                            onmouseout="this.style.borderColor='var(--bd2)'">
+                            {m['content']}{refs}{rfsd}{lat}</div></div>"""
+                st.html(f"""<div style="max-height:50vh;overflow-y:auto;margin-bottom:16px;
                   padding:2px;scrollbar-width:thin;
-                  scrollbar-color:{BORDER_A} transparent;">
-                  {msgs_html}
-                </div>""")
-
+                  scrollbar-color:var(--vpb) transparent;">{html}</div>""")
             else:
-                # Empty state
-                mdiv(f"""
-                <div style="text-align:center;padding:44px 20px 36px;
-                  background:{CARD_S};border:2px dashed {BORDER};
-                  border-radius:14px;margin-bottom:14px;
-                  animation:fadeUp 0.4s ease both;">
-                  <div style="width:42px;height:42px;border-radius:12px;
-                    background:linear-gradient(135deg,{PILL_BG},{CARD_S});
-                    border:1px solid {PILL_BD};
+                st.html("""
+                <div style="text-align:center;padding:52px 24px 42px;
+                  background:var(--bg);border:1px solid var(--bd2);
+                  border-radius:var(--r2);margin-bottom:16px;
+                  animation:fadeIn 0.5s ease both;">
+                  <div style="width:44px;height:44px;border-radius:12px;
+                    background:linear-gradient(135deg,var(--vp),var(--s2));
+                    border:1px solid var(--vpb);
                     display:flex;align-items:center;justify-content:center;
-                    margin:0 auto 13px;font-family:'Instrument Serif',serif;
-                    font-size:16px;color:{ACC};
-                    animation:float 4s ease-in-out infinite;">N</div>
-                  <div style="font-family:'Instrument Serif',serif;font-size:20px;
-                    color:{T1};margin-bottom:7px;">Ask anything</div>
-                  <div style="font-size:13px;color:{T3};max-width:280px;
-                    margin:0 auto 18px;line-height:1.7;">
-                    Upload a PDF on the right, then ask questions.
+                    margin:0 auto 14px;
+                    font-family:'Instrument Serif',serif;font-size:18px;color:var(--v);
+                    box-shadow:var(--sh);">N</div>
+                  <div style="font-family:'Instrument Serif',serif;font-size:22px;
+                    color:var(--t1);margin-bottom:8px;">Ask anything</div>
+                  <div style="font-size:13px;color:var(--t3);
+                    max-width:280px;margin:0 auto 22px;line-height:1.7;">
+                    Upload a PDF on the right, then ask questions here.
                     Every answer is cited.</div>
-                  <div style="display:flex;flex-wrap:wrap;gap:7px;justify-content:center;">
-                    {"".join([
-                        f'<span style="font-size:12px;font-weight:500;color:{ACC};'
-                        f'background:{PILL_BG};border:1px solid {PILL_BD};'
-                        f'padding:5px 13px;border-radius:9999px;cursor:default;'
-                        f'transition:all 0.15s;"'
-                        f'onmouseover="this.style.transform=\'translateY(-2px)\';'
-                        f'this.style.boxShadow=\'0 4px 12px {ACC}33\'"'
-                        f'onmouseout="this.style.transform=\'\';'
-                        f'this.style.boxShadow=\'\'">{q}</span>'
-                        for q in ["What is the main finding?",
-                                  "Summarise section 3",
-                                  "What are the key risks?"]
-                    ])}
+                  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+                    <span style="font-size:12px;font-weight:500;color:var(--v);
+                      background:var(--vp);border:1px solid var(--vpb);
+                      padding:6px 14px;border-radius:var(--rf);cursor:default;
+                      transition:all 0.15s;"
+                      onmouseover="this.style.background='var(--s3)';this.style.transform='translateY(-1px)'"
+                      onmouseout="this.style.background='var(--vp)';this.style.transform=''">
+                      What is the main finding?</span>
+                    <span style="font-size:12px;font-weight:500;color:var(--v);
+                      background:var(--vp);border:1px solid var(--vpb);
+                      padding:6px 14px;border-radius:var(--rf);cursor:default;
+                      transition:all 0.15s;"
+                      onmouseover="this.style.background='var(--s3)';this.style.transform='translateY(-1px)'"
+                      onmouseout="this.style.background='var(--vp)';this.style.transform=''">
+                      Summarise section 3</span>
+                    <span style="font-size:12px;font-weight:500;color:var(--v);
+                      background:var(--vp);border:1px solid var(--vpb);
+                      padding:6px 14px;border-radius:var(--rf);cursor:default;
+                      transition:all 0.15s;"
+                      onmouseover="this.style.background='var(--s3)';this.style.transform='translateY(-1px)'"
+                      onmouseout="this.style.background='var(--vp)';this.style.transform=''">
+                      What are the key risks?</span>
                   </div>
                 </div>""")
 
-            # Input row
+            # Input bar
             qc, bc = st.columns([6, 1])
             with qc:
-                query = st.text_input("Q",
+                query = st.text_input("Question",
                     placeholder="Ask anything about your documents...",
                     label_visibility="hidden", key="q_in")
             with bc:
-                ask = st.button("Send", use_container_width=True)
-
-            mdiv('</div>')  # close chat card
+                ask = st.button("Send →", use_container_width=True)
 
             if ask and query:
                 if not ready:
@@ -1095,23 +1109,22 @@ elif st.session_state.page == "chat":
                 else:
                     with st.spinner("Thinking..."):
                         try:
-                            resp = requests.post(
-                                f"{API_BASE}/query", json={"query":query}, timeout=120)
+                            resp = requests.post(f"{API_BASE}/query",
+                                json={"query":query}, timeout=120)
                             if resp.status_code == 200:
                                 d = resp.json()
                                 st.session_state.messages.extend([
                                     {"role":"user","content":query},
                                     {"role":"assistant","content":d["answer"],
                                      "references":d["references"],"refused":d["refused"],
-                                     "latency_ms":d["latency_ms"]},
-                                ])
-                                record_query(query=query,latency_ms=d["latency_ms"],
+                                     "latency_ms":d["latency_ms"]}])
+                                record_query(query=query, latency_ms=d["latency_ms"],
                                              refused=d["refused"])
                                 st.rerun()
                             else:
                                 st.error(f"API error: {resp.json().get('detail',resp.text)}")
                         except requests.exceptions.ConnectionError:
-                            st.error("Cannot reach API. Run: "
-                                     "uv run uvicorn api:app --reload --port 8000")
+                            st.error("Cannot reach API. Run: uv run uvicorn api:app --reload --port 8000")
 
-        mdiv('</div>')  # close padding wrapper
+            st.html('</div>')
+        st.html('</div>')
