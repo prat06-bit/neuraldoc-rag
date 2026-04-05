@@ -1,5 +1,3 @@
-
-
 """NeuralDoc RAG — Premium animated chat page."""
 import requests
 import streamlit as st
@@ -32,7 +30,7 @@ API_BASE = "http://localhost:8000"
 
 if st.query_params.get("launch") == "1":
     st.query_params.clear()
-    st.session_state.page = "chat"
+    st.session_state.page = "app"
     st.session_state.active_tab = "chat"
     st.rerun()
 
@@ -44,71 +42,271 @@ if st.query_params.get("darkmode") == "off":
     st.query_params.clear()
     st.session_state.dark_mode = False
 
-st.html("""<style>
+# ── Theme CSS vars ──
+def css_vars():
+    if st.session_state.dark_mode:
+        return """
+          --bg:#0F0D1A;--s:#1A1730;--s2:#221E3A;--s3:#2A2550;
+          --v:#7C3AED;--v2:#6D28D9;--v3:#8B5CF6;
+          --v-10:rgba(124,58,237,0.10);--v-15:rgba(124,58,237,0.15);
+          --v-20:rgba(124,58,237,0.20);--vp:#2D2060;--vpb:#4C3A9E;
+          --cyan:#06B6D4;--pink:#EC4899;--green:#10B981;--amber:#F59E0B;
+          --t1:#F0EEFF;--t2:#A89EC9;--t3:#6B6490;
+          --bd:rgba(167,139,250,0.18);--bd2:rgba(255,255,255,0.07);
+          --sh:0 1px 3px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.2);
+          --sh2:0 8px 40px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2);
+          --r:10px;--r2:18px;--r3:24px;--rf:9999px;
+          --navbar-bg:rgba(15,13,26,0.88);--navbar-bd:rgba(167,139,250,0.12);
+        """
+    return """
+      --bg:#F6F5FF;--s:#FFFFFF;--s2:#F0EEFF;--s3:#EAE7FF;
+      --v:#7C3AED;--v2:#6D28D9;--v3:#8B5CF6;
+      --v-10:rgba(124,58,237,0.10);--v-15:rgba(124,58,237,0.15);
+      --v-20:rgba(124,58,237,0.20);--vp:#EDE9FE;--vpb:#DDD6FE;
+      --cyan:#06B6D4;--pink:#EC4899;--green:#10B981;--amber:#F59E0B;
+      --t1:#1E1B4B;--t2:#4C4888;--t3:#9CA3AF;
+      --bd:rgba(124,58,237,0.12);--bd2:rgba(0,0,0,0.06);
+      --sh:0 1px 3px rgba(124,58,237,0.08),0 4px 16px rgba(124,58,237,0.06);
+      --sh2:0 8px 40px rgba(124,58,237,0.14),0 2px 8px rgba(0,0,0,0.04);
+      --r:10px;--r2:18px;--r3:24px;--rf:9999px;
+      --navbar-bg:rgba(255,255,255,0.88);--navbar-bd:rgba(124,58,237,0.1);
+    """
+
+# ══════════════════════════════════════════════════════════════
+# GLOBAL CSS
+# ══════════════════════════════════════════════════════════════
+st.html(f"""<style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Instrument+Serif:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
-:root{
-  --bg:#F6F5FF; --s:#FFFFFF; --s2:#F0EEFF; --s3:#EAE7FF;
-  --v:#7C3AED; --v2:#6D28D9; --v3:#8B5CF6;
-  --v-10:rgba(124,58,237,0.10); --v-15:rgba(124,58,237,0.15);
-  --v-20:rgba(124,58,237,0.20); --vp:#EDE9FE; --vpb:#DDD6FE;
-  --cyan:#06B6D4; --pink:#EC4899; --green:#10B981; --amber:#F59E0B;
-  --t1:#1E1B4B; --t2:#4C4888; --t3:#9CA3AF;
-  --bd:rgba(124,58,237,0.12); --bd2:rgba(0,0,0,0.06);
-  --sh:0 1px 3px rgba(124,58,237,0.08),0 4px 16px rgba(124,58,237,0.06);
-  --sh2:0 8px 40px rgba(124,58,237,0.14),0 2px 8px rgba(0,0,0,0.04);
-  --r:10px; --r2:18px; --r3:24px; --rf:9999px;
-}
-/* ── Dark mode overrides ── */
-.dark{
-  --bg:#0F0D1A; --s:#1A1730; --s2:#221E3A; --s3:#2A2550;
-  --vp:#2D2060; --vpb:#4C3A9E;
-  --t1:#F0EEFF; --t2:#A89EC9; --t3:#6B6490;
-  --bd:rgba(167,139,250,0.18); --bd2:rgba(255,255,255,0.07);
-  --sh:0 1px 3px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.2);
-  --sh2:0 8px 40px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2);
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-html,body{font-family:'Plus Jakarta Sans',sans-serif!important;
-  background:var(--bg)!important;color:var(--t1)!important;}
+html,body,[data-testid="stAppViewContainer"]{{{css_vars()}}}
+*{{box-sizing:border-box;margin:0;padding:0;}}
+html,body{{font-family:'Plus Jakarta Sans',sans-serif!important;
+  background:var(--bg)!important;color:var(--t1)!important;}}
 [data-testid="stHeader"],[data-testid="stToolbar"],[data-testid="stDecoration"],
 [data-testid="stStatusWidget"],[data-testid="collapsedControl"],
-section[data-testid="stSidebar"],#MainMenu,footer{display:none!important;height:0!important;}
+section[data-testid="stSidebar"],#MainMenu,footer{{display:none!important;height:0!important;}}
 [data-testid="stAppViewContainer"],[data-testid="stMain"],
-[data-testid="stMainBlockContainer"],.block-container{
+[data-testid="stMainBlockContainer"],.block-container{{
   background:transparent!important;padding:0!important;
-  margin:0!important;max-width:100%!important;border:none!important;}
-[data-testid="stVerticalBlock"]{gap:0!important;}
-[data-testid="stVerticalBlock"]>div{margin:0!important;padding:0!important;}
+  margin:0!important;max-width:100%!important;border:none!important;}}
+[data-testid="stVerticalBlock"]{{gap:0!important;}}
+[data-testid="stVerticalBlock"]>div{{margin:0!important;padding:0!important;}}
+/* ── Inputs ── */
+.stTextInput input{{
+  background:var(--s)!important;border:1.5px solid var(--bd)!important;
+  border-radius:var(--r)!important;color:var(--t1)!important;
+  font-family:'Plus Jakarta Sans',sans-serif!important;font-size:14px!important;
+  padding:13px 18px!important;box-shadow:var(--sh)!important;
+  transition:all 0.2s cubic-bezier(0.4,0,0.2,1)!important;}}
+.stTextInput input:focus{{
+  border-color:var(--v)!important;
+  box-shadow:0 0 0 3px rgba(124,58,237,0.12),var(--sh)!important;
+  outline:none!important;transform:translateY(-1px)!important;}}
+.stTextInput input::placeholder{{color:var(--t3)!important;}}
+.stTextInput label,.stFileUploader label{{display:none!important;}}
+/* ── Buttons ── */
+.stButton>button{{
+  background:linear-gradient(135deg,var(--v),var(--v3))!important;
+  color:#fff!important;border:none!important;border-radius:var(--r)!important;
+  font-family:'Plus Jakarta Sans',sans-serif!important;font-weight:600!important;
+  font-size:13px!important;padding:12px 0!important;
+  box-shadow:0 2px 10px rgba(124,58,237,0.25)!important;
+  transition:all 0.2s cubic-bezier(0.4,0,0.2,1)!important;
+  position:relative!important;overflow:hidden!important;}}
+.stButton>button:hover{{
+  background:linear-gradient(135deg,var(--v2),var(--v))!important;
+  transform:translateY(-2px)!important;
+  box-shadow:0 6px 20px rgba(124,58,237,0.35)!important;}}
+.stButton>button:active{{transform:scale(0.97)!important;}}
+/* ── File uploader ── */
+[data-testid="stFileUploaderDropzone"]{{
+  background:var(--s)!important;border:2px dashed var(--vpb)!important;
+  border-radius:var(--r2)!important;
+  transition:all 0.2s cubic-bezier(0.4,0,0.2,1)!important;}}
+[data-testid="stFileUploaderDropzone"]:hover{{
+  border-color:var(--v)!important;background:var(--vp)!important;
+  transform:scale(1.01)!important;}}
+[data-testid="stFileUploaderDropzone"] *{{color:var(--t2)!important;}}
+[data-testid="stDownloadButton"]>button{{
+  background:var(--s)!important;color:var(--v)!important;
+  border:1.5px solid var(--vpb)!important;border-radius:var(--r)!important;
+  font-weight:600!important;font-size:13px!important;box-shadow:none!important;
+  transition:all 0.18s!important;}}
+[data-testid="stDownloadButton"]>button:hover{{
+  background:var(--vp)!important;transform:translateY(-1px)!important;
+  box-shadow:var(--sh)!important;}}
+hr{{border-color:var(--bd2)!important;}}
+/* ── Animations ── */
+@keyframes slideUp{{from{{opacity:0;transform:translateY(16px);}}to{{opacity:1;transform:translateY(0);}}}}
+@keyframes fadeIn{{from{{opacity:0;}}to{{opacity:1;}}}}
+@keyframes fD{{from{{opacity:0;transform:translateY(-12px);filter:blur(4px);}}to{{opacity:1;transform:translateY(0);filter:blur(0);}}}}
+@keyframes fU{{from{{opacity:0;transform:translateY(22px);filter:blur(4px);}}to{{opacity:1;transform:translateY(0);filter:blur(0);}}}}
+@keyframes pulse{{0%,100%{{box-shadow:0 0 0 0 rgba(124,58,237,0.15);}}50%{{box-shadow:0 0 0 6px rgba(124,58,237,0);}}}}
+@keyframes counterUp{{from{{opacity:0;transform:scale(0.8);}}to{{opacity:1;transform:scale(1);}}}}
+@keyframes dp{{0%,100%{{opacity:1;}}50%{{opacity:0.2;}}}}
+@keyframes borderGlow{{0%,100%{{border-color:rgba(124,58,237,0.12);}}50%{{border-color:rgba(124,58,237,0.35);}}}}
+@keyframes aP{{0%,100%{{color:var(--vpb);}}50%{{color:var(--v);}}}}
+@keyframes meshMove{{
+  0%{{background-position:0% 0%,100% 100%,50% 50%;}}
+  100%{{background-position:10% 5%,90% 85%,55% 45%;}}}}
 </style>""")
 
 
 # ══════════════════════════════════════════════════════════════
-# LANDING
+# HEALTH CHECK (top-level — needed for navbar badge + all pages)
+# ══════════════════════════════════════════════════════════════
+def get_health():
+    try:
+        r = requests.get(f"{API_BASE}/health", timeout=3).json()
+        r["_reachable"] = True
+        return r
+    except Exception:
+        return {"pipeline_ready":False,"total_chunks":0,"indexed_files":[],"_reachable":False}
+
+h = get_health()
+api_ok = h.get("_reachable", False)
+ready  = h.get("pipeline_ready", False)
+chunks = h.get("total_chunks", 0)
+files  = h.get("indexed_files", [])
+
+if ready:
+    _bs = "color:#059669;background:rgba(5,150,105,0.08);border:1.5px solid rgba(5,150,105,0.3);"
+    _bd = "#059669"; _bt = f"Ready &middot; {chunks} chunks"
+elif api_ok:
+    _bs = "color:#D97706;background:rgba(217,119,6,0.08);border:1.5px solid rgba(217,119,6,0.3);"
+    _bd = "#D97706"; _bt = "API online &mdash; No docs indexed"
+else:
+    _bs = "color:#DC2626;background:rgba(220,38,38,0.08);border:1.5px solid rgba(220,38,38,0.3);"
+    _bd = "#DC2626"; _bt = "API offline"
+
+
+# ══════════════════════════════════════════════════════════════
+# NAVBAR (all pages) — native Streamlit buttons, CSS styled
+# ══════════════════════════════════════════════════════════════
+dm = st.session_state.dark_mode
+dm_icon = "☀" if dm else "☽"
+dm_label = f"{dm_icon} {'Light' if dm else 'Dark'}"
+
+st.html(f"""<style>
+/* ── Navbar row styling ── */
+div[data-testid="stHorizontalBlock"]:first-of-type {{
+  position:sticky!important;top:0!important;z-index:200!important;
+  background:var(--navbar-bg)!important;backdrop-filter:blur(16px)!important;
+  border-bottom:1px solid var(--navbar-bd)!important;
+  padding:8px max(24px, calc((100vw - 1150px)/2 + 24px))!important;
+  align-items:center!important;gap:8px!important;
+  animation:fD 0.5s ease both;
+}}
+/* Logo column */
+div[data-testid="stHorizontalBlock"]:first-of-type > div:first-child {{
+  display:flex!important;align-items:center!important;
+}}
+/* Nav buttons pill style */
+div[data-testid="stHorizontalBlock"]:first-of-type .stButton > button {{
+  background:transparent!important;color:var(--t2)!important;
+  border:none!important;border-radius:7px!important;
+  font-size:12px!important;font-weight:600!important;
+  padding:5px 16px!important;height:32px!important;min-height:0!important;
+  box-shadow:none!important;transition:all 0.2s!important;
+  font-family:'Plus Jakarta Sans',sans-serif!important;
+  white-space:nowrap!important;line-height:1!important;
+}}
+div[data-testid="stHorizontalBlock"]:first-of-type .stButton > button:hover {{
+  background:var(--vp)!important;color:var(--v)!important;
+  transform:none!important;box-shadow:none!important;
+}}
+/* Dark mode toggle button */
+div[data-testid="stHorizontalBlock"]:first-of-type .dm-toggle-col .stButton > button {{
+  background:var(--vp)!important;color:var(--v)!important;
+  border:1.5px solid var(--vpb)!important;border-radius:9999px!important;
+  font-size:12px!important;font-weight:600!important;
+  padding:5px 13px!important;height:32px!important;
+  box-shadow:none!important;
+}}
+div[data-testid="stHorizontalBlock"]:first-of-type .dm-toggle-col .stButton > button:hover {{
+  background:var(--v-15)!important;transform:none!important;
+  box-shadow:none!important;
+}}
+</style>""")
+
+# Navbar row
+_logo, _home, _chat, _anl, _spacer, _dm_col, _status = st.columns([2, 0.8, 0.8, 1.1, 3, 1, 1.3])
+
+with _logo:
+    st.html("""<div style="display:flex;align-items:center;gap:9px;padding:4px 0;">
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--v);
+        animation:pulse 2.5s ease-in-out infinite;"></div>
+      <span style="font-family:'Instrument Serif',serif;font-size:19px;color:var(--t1);
+        letter-spacing:-0.3px;white-space:nowrap;">NeuralDoc</span>
+    </div>""")
+
+with _home:
+    if st.button("Home", key="_nav_home", use_container_width=True):
+        st.session_state.page = "landing"; st.rerun()
+
+with _chat:
+    if st.button("Chat", key="_nav_chat", use_container_width=True):
+        st.session_state.page = "app"
+        st.session_state.active_tab = "chat"; st.rerun()
+
+with _anl:
+    if st.button("Analytics", key="_nav_analytics", use_container_width=True):
+        st.session_state.page = "app"
+        st.session_state.active_tab = "analytics"; st.rerun()
+
+with _dm_col:
+    if st.button(dm_label, key="_nav_dark", use_container_width=True):
+        st.session_state.dark_mode = not st.session_state.dark_mode; st.rerun()
+
+with _status:
+    st.html(f"""<div style="display:inline-flex;align-items:center;gap:5px;
+      font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--rf);{_bs};white-space:nowrap;">
+      <div style="width:5px;height:5px;border-radius:50%;background:{_bd};
+        {'animation:pulse 1.5s ease-in-out infinite;' if ready else ''}"></div>
+      {_bt}</div>""")
+
+# Highlight active nav button via JS
+if st.session_state.page == "landing":
+    _active_label = "Home"
+elif st.session_state.get("active_tab") == "analytics":
+    _active_label = "Analytics"
+else:
+    _active_label = "Chat"
+
+st.html(f"""<script>
+(function(){{
+  var doc = window.parent ? window.parent.document : document;
+  var btns = doc.querySelectorAll('button');
+  for(var i=0;i<btns.length;i++){{
+    var t = btns[i].innerText.trim();
+    if(t==='{_active_label}'){{
+      btns[i].style.background='var(--v)';
+      btns[i].style.color='#fff';
+      btns[i].style.boxShadow='0 2px 8px rgba(124,58,237,0.25)';
+    }}
+  }}
+}})();
+</script>""")
+
+
+# ══════════════════════════════════════════════════════════════
+# LANDING PAGE
 # ══════════════════════════════════════════════════════════════
 if st.session_state.page == "landing":
-    # Apply dark mode to landing if enabled
-    if st.session_state.dark_mode:
-        st.html("""<style>
-        [data-testid="stAppViewContainer"]{background:#0F0D1A!important;}
-        body,html{
-          --bg:#0F0D1A!important;--s:#1A1730!important;--s2:#221E3A!important;
-          --s3:#2A2550!important;--vp:#2D2060!important;--vpb:#4C3A9E!important;
-          --t1:#F0EEFF!important;--t2:#A89EC9!important;--t3:#6B6490!important;
-          --bd:rgba(167,139,250,0.18)!important;--bd2:rgba(255,255,255,0.07)!important;
-          --sh:0 1px 3px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.2)!important;
-          --sh2:0 8px 40px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2)!important;
-        }
-        </style>""")
     st.html("""<style>
     [data-testid="stAppViewContainer"]{background:var(--bg)!important;}
+    [data-testid="stAppViewContainer"]::before{
+      content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+      background:
+        radial-gradient(ellipse 55% 50% at 15% 10%,rgba(167,139,250,0.18),transparent 60%),
+        radial-gradient(ellipse 45% 45% at 85% 85%,rgba(6,182,212,0.10),transparent 55%),
+        radial-gradient(ellipse 35% 35% at 50% 50%,rgba(236,72,153,0.06),transparent 55%);}
     [data-testid="stButton"]>button{
       background:var(--v)!important;color:#fff!important;border:none!important;
       border-radius:var(--rf)!important;font-family:'Plus Jakarta Sans',sans-serif!important;
       font-size:16px!important;font-weight:600!important;
       height:52px!important;padding:0!important;width:100%!important;
       box-shadow:0 4px 20px rgba(124,58,237,0.32)!important;
-      transition:background 0.18s,transform 0.15s,box-shadow 0.18s!important;
-    }
+      transition:background 0.18s,transform 0.15s,box-shadow 0.18s!important;}
     [data-testid="stButton"]>button:hover{
       background:var(--v2)!important;transform:translateY(-2px)!important;
       box-shadow:0 8px 28px rgba(124,58,237,0.42)!important;}
@@ -117,24 +315,9 @@ if st.session_state.page == "landing":
 
     st.html("""
     <style>
-    .land{min-height:100vh;background:var(--bg);position:relative;overflow:hidden;}
-    .land::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-      background:
-        radial-gradient(ellipse 55% 50% at 15% 10%,rgba(167,139,250,0.18),transparent 60%),
-        radial-gradient(ellipse 45% 45% at 85% 85%,rgba(6,182,212,0.10),transparent 55%),
-        radial-gradient(ellipse 35% 35% at 50% 50%,rgba(236,72,153,0.06),transparent 55%);}
-    nav{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;
-      max-width:1200px;margin:0 auto;padding:28px 56px 0;animation:fD .6s cubic-bezier(0.16,1,0.3,1) both;}
-    @keyframes fD{from{opacity:0;transform:translateY(-12px);filter:blur(4px);}to{opacity:1;transform:translateY(0);filter:blur(0);}}
-    .logo{font-family:'Instrument Serif',serif;font-size:22px;color:var(--t1);
-      display:flex;align-items:center;gap:8px;}
-    .logo-dot{width:9px;height:9px;border-radius:50%;background:var(--v);}
-    .nav-pill{font-size:12px;font-weight:600;color:var(--v);text-transform:uppercase;
-      letter-spacing:0.08em;border:1px solid var(--vpb);background:var(--vp);
-      padding:6px 16px;border-radius:var(--rf);}
+    .land{min-height:calc(100vh - 56px);background:var(--bg);position:relative;overflow:hidden;}
     .hero{position:relative;z-index:10;max-width:820px;margin:0 auto;
       padding:80px 56px 0;text-align:center;animation:fU .8s cubic-bezier(0.16,1,0.3,1) .15s both;}
-    @keyframes fU{from{opacity:0;transform:translateY(22px);filter:blur(4px);}to{opacity:1;transform:translateY(0);filter:blur(0);}}
     .h-eyebrow{animation:fU .6s cubic-bezier(0.16,1,0.3,1) .25s both;}
     .h1{animation:fU .8s cubic-bezier(0.16,1,0.3,1) .4s both;}
     .h-sub{animation:fU .7s cubic-bezier(0.16,1,0.3,1) .55s both;}
@@ -145,27 +328,15 @@ if st.session_state.page == "landing":
       padding:5px 16px;border-radius:var(--rf);margin-bottom:28px;letter-spacing:0.04em;}
     .h-dot{width:5px;height:5px;border-radius:50%;background:var(--v);
       animation:dp 1.8s ease-in-out infinite;}
-    @keyframes dp{0%,100%{opacity:1;}50%{opacity:0.2;}}
     .h1{font-family:'Instrument Serif',serif;font-size:clamp(44px,6vw,68px);font-weight:400;
       color:var(--t1);line-height:1.06;letter-spacing:-1px;margin-bottom:8px;}
     .h1 em{font-style:italic;color:var(--v);}
     .h-sub{font-size:17px;color:var(--t2);line-height:1.8;max-width:560px;
       margin:0 auto 44px;font-weight:400;}
     .h-sub b{color:var(--t1);font-weight:600;}
-    .cta-form{display:flex;justify-content:center;margin-bottom:0;}
-    .btn-lnd{display:inline-flex;align-items:center;justify-content:center;gap:8px;
-      height:52px;padding:0 48px;background:var(--v);color:#fff;border:none;
-      border-radius:var(--rf);font-family:'Plus Jakarta Sans',sans-serif;
-      font-size:16px;font-weight:600;cursor:pointer;
-      box-shadow:0 4px 20px rgba(124,58,237,0.32);
-      transition:background 0.18s,transform 0.15s,box-shadow 0.18s;}
-    .btn-lnd:hover{background:var(--v2);transform:translateY(-2px);
-      box-shadow:0 8px 28px rgba(124,58,237,0.42);}
-    .btn-lnd:active{transform:scale(0.97);}
     .stats{position:relative;z-index:10;display:flex;max-width:780px;
       margin:52px auto 0;background:var(--s);border:1px solid var(--bd2);
-      border-radius:var(--r3);overflow:hidden;box-shadow:var(--sh);
-      animation:fU .7s ease .3s both;}
+      border-radius:var(--r3);overflow:hidden;box-shadow:var(--sh);}
     .stat{flex:1;padding:26px 12px;text-align:center;border-right:1px solid var(--bd2);
       transition:background 0.18s;}
     .stat:last-child{border-right:none;}.stat:hover{background:var(--vp);}
@@ -214,7 +385,6 @@ if st.session_state.page == "landing":
     .p-sub{font-size:10px;color:var(--t3);}
     .p-arr{color:var(--vpb);font-size:14px;flex-shrink:0;
       animation:aP 2.5s ease-in-out infinite;}
-    @keyframes aP{0%,100%{color:var(--vpb);}50%{color:var(--v);}}
     .tags{display:flex;flex-wrap:wrap;gap:9px;}
     .tag{padding:6px 14px;font-size:11px;font-weight:600;border-radius:var(--rf);
       border:1px solid;transition:transform 0.15s;cursor:default;}
@@ -225,30 +395,9 @@ if st.session_state.page == "landing":
     .foot span{font-size:12px;color:var(--t3);}
     </style>""")
 
-    dm_val = "off" if st.session_state.dark_mode else "on"
-    dm_icon = "☀" if st.session_state.dark_mode else "☽"
-    dm_label = "Light Mode" if st.session_state.dark_mode else "Dark Mode"
-    st.html(f"""
+    st.html("""
     <div class="land">
     <div style="position:relative;z-index:1;">
-      <nav>
-        <div class="logo"><div class="logo-dot"></div>NeuralDoc</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <form method="get" action="" style="margin:0;">
-            <input type="hidden" name="darkmode" value="{dm_val}">
-            <button type="submit" style="
-              display:flex;align-items:center;gap:6px;
-              height:34px;padding:0 14px;
-              background:var(--vp);border:1px solid var(--vpb);
-              border-radius:var(--rf);cursor:pointer;
-              font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;
-              color:var(--v);transition:all 0.2s;">
-              {dm_icon}&nbsp;{dm_label}
-            </button>
-          </form>
-          <div class="nav-pill">Production RAG v1.0</div>
-        </div>
-      </nav>
 
       <section class="hero">
         <div class="h-eyebrow"><span class="h-dot"></span>Zero hallucination tolerance</div>
@@ -257,12 +406,17 @@ if st.session_state.page == "landing":
           A <b>production-grade</b> RAG system with <b>inline citations</b>,
           persistent chat history, live analytics, and a hard refusal trigger — no guessing, ever.
         </p>
-        <form class="cta-form" method="get" action="">
-          <input type="hidden" name="launch" value="1">
-          <button type="submit" class="btn-lnd">Open App &nbsp;&#8594;</button>
-        </form>
-      </section>
+      </section>""")
 
+    # CTA button (Streamlit button navigates to app)
+    _lc1, _lc2, _lc3 = st.columns([1, 1, 1])
+    with _lc2:
+        if st.button("Open App  →", key="cta_open", use_container_width=True):
+            st.session_state.page = "app"
+            st.session_state.active_tab = "chat"
+            st.rerun()
+
+    st.html("""
       <div class="stats">
         <div class="stat"><div class="sv">0%</div><div class="sl">Hallucination Rate</div></div>
         <div class="stat"><div class="sv">3&times;</div><div class="sl">Retrieval Methods</div></div>
@@ -353,10 +507,7 @@ if st.session_state.page == "landing":
 # ══════════════════════════════════════════════════════════════
 else:
     st.html("""<style>
-    [data-testid="stAppViewContainer"]{
-      background:var(--bg)!important;
-      /* subtle animated mesh */
-    }
+    [data-testid="stAppViewContainer"]{background:var(--bg)!important;}
     [data-testid="stAppViewContainer"]::before{
       content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
       background:
@@ -365,247 +516,26 @@ else:
         radial-gradient(ellipse 30% 30% at 50% 50%,  rgba(236,72,153,0.05),transparent 50%);
       animation:meshMove 20s ease-in-out infinite alternate;
     }
-    @keyframes meshMove{
-      0%{background-position:0% 0%,100% 100%,50% 50%;}
-      100%{background-position:10% 5%,90% 85%,55% 45%;}
-    }
     [data-testid="stMain"],[data-testid="stMainBlockContainer"],.block-container{
       padding:0!important;background:transparent!important;max-width:100%!important;}
-
-    /* ── Input ── */
-    .stTextInput input{
-      background:var(--s)!important;border:1.5px solid var(--bd)!important;
-      border-radius:var(--r)!important;color:var(--t1)!important;
-      font-family:'Plus Jakarta Sans',sans-serif!important;font-size:14px!important;
-      padding:13px 18px!important;box-shadow:var(--sh)!important;
-      transition:all 0.2s cubic-bezier(0.4,0,0.2,1)!important;
-    }
-    .stTextInput input:focus{
-      border-color:var(--v)!important;
-      box-shadow:0 0 0 3px rgba(124,58,237,0.12),var(--sh)!important;
-      outline:none!important;transform:translateY(-1px)!important;
-    }
-    .stTextInput input::placeholder{color:var(--t3)!important;}
-    .stTextInput label,.stFileUploader label{display:none!important;}
-
-    /* ── Buttons — animated gradient ── */
-    .stButton>button{
-      background:linear-gradient(135deg,var(--v),var(--v3))!important;
-      color:#fff!important;border:none!important;border-radius:var(--r)!important;
-      font-family:'Plus Jakarta Sans',sans-serif!important;font-weight:600!important;
-      font-size:13px!important;padding:12px 0!important;
-      box-shadow:0 2px 10px rgba(124,58,237,0.25)!important;
-      transition:all 0.2s cubic-bezier(0.4,0,0.2,1)!important;
-      position:relative!important;overflow:hidden!important;
-    }
-    .stButton>button::after{
-      content:'';position:absolute;inset:0;
-      background:linear-gradient(135deg,transparent,rgba(255,255,255,0.15),transparent);
-      transform:translateX(-100%);transition:transform 0.4s ease!important;
-    }
-    .stButton>button:hover{
-      background:linear-gradient(135deg,var(--v2),var(--v))!important;
-      transform:translateY(-2px)!important;
-      box-shadow:0 6px 20px rgba(124,58,237,0.35)!important;
-    }
-    .stButton>button:active{transform:scale(0.97)!important;}
-
-    /* ── File uploader ── */
-    [data-testid="stFileUploaderDropzone"]{
-      background:var(--s)!important;border:2px dashed var(--vpb)!important;
-      border-radius:var(--r2)!important;
-      transition:all 0.2s cubic-bezier(0.4,0,0.2,1)!important;
-    }
-    [data-testid="stFileUploaderDropzone"]:hover{
-      border-color:var(--v)!important;background:var(--vp)!important;
-      transform:scale(1.01)!important;
-    }
-    [data-testid="stFileUploaderDropzone"] *{color:var(--t2)!important;}
-
-    /* ── Download button ── */
-    [data-testid="stDownloadButton"]>button{
-      background:var(--s)!important;color:var(--v)!important;
-      border:1.5px solid var(--vpb)!important;border-radius:var(--r)!important;
-      font-weight:600!important;font-size:13px!important;box-shadow:none!important;
-      transition:all 0.18s!important;
-    }
-    [data-testid="stDownloadButton"]>button:hover{
-      background:var(--vp)!important;transform:translateY(-1px)!important;
-      box-shadow:var(--sh)!important;
-    }
-    hr{border-color:var(--bd2)!important;}
-
-    /* ── Card entrance animations ── */
-    @keyframes slideUp{
-      from{opacity:0;transform:translateY(16px);}
-      to{opacity:1;transform:translateY(0);}
-    }
+    @keyframes slideUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
     @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
-    @keyframes shimmer{
-      0%{background-position:-200% 0;}
-      100%{background-position:200% 0;}
-    }
-    @keyframes pulse{
-      0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,0.15);}
-      50%{box-shadow:0 0 0 6px rgba(124,58,237,0);}
-    }
-    @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,0.15);}50%{box-shadow:0 0 0 6px rgba(124,58,237,0);}}
     @keyframes counterUp{from{opacity:0;transform:scale(0.8);}to{opacity:1;transform:scale(1);}}
-    @keyframes borderGlow{
-      0%,100%{border-color:rgba(124,58,237,0.12);}
-      50%{border-color:rgba(124,58,237,0.35);}
-    }
-    </style>""")
-
-    def get_health():
-        try:
-            r = requests.get(f"{API_BASE}/health", timeout=3).json()
-            r["_reachable"] = True
-            return r
-        except Exception:
-            return {"pipeline_ready":False,"total_chunks":0,"indexed_files":[],"_reachable":False}
-
-    h = get_health()
-    api_ok = h.get("_reachable", False)
-    ready  = h.get("pipeline_ready", False)
-    chunks = h.get("total_chunks", 0)
-    files  = h.get("indexed_files", [])
-
-    # Apply dark mode class to body
-    if st.session_state.dark_mode:
-        st.html("""<script>
-        document.body.classList.add('dark');
-        document.documentElement.classList.add('dark');
-        </script>
-        <style>
-        body,html,[data-testid="stAppViewContainer"]{
-          --bg:#0F0D1A!important;--s:#1A1730!important;--s2:#221E3A!important;
-          --s3:#2A2550!important;--vp:#2D2060!important;--vpb:#4C3A9E!important;
-          --t1:#F0EEFF!important;--t2:#A89EC9!important;--t3:#6B6490!important;
-          --bd:rgba(167,139,250,0.18)!important;--bd2:rgba(255,255,255,0.07)!important;
-          --sh:0 1px 3px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.2)!important;
-          --sh2:0 8px 40px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2)!important;
-          background:var(--bg)!important;
-        }
-        [data-testid="stAppViewContainer"]::before{
-          background:
-            radial-gradient(ellipse 55% 45% at 10% 5%,  rgba(107,26,255,0.22),transparent 55%),
-            radial-gradient(ellipse 40% 40% at 90% 90%,  rgba(0,255,208,0.07),transparent 50%),
-            radial-gradient(ellipse 30% 30% at 50% 50%,  rgba(236,72,153,0.05),transparent 50%)!important;
-        }
-        .stTextInput input{background:#1A1730!important;color:#F0EEFF!important;
-          border-color:rgba(167,139,250,0.25)!important;}
-        .stTextInput input::placeholder{color:#6B6490!important;}
-        [data-testid="stFileUploaderDropzone"]{background:#1A1730!important;
-          border-color:#4C3A9E!important;}
-        [data-testid="stFileUploaderDropzone"] *{color:#A89EC9!important;}
-        [data-testid="stDownloadButton"]>button{background:#1A1730!important;
-          border-color:#4C3A9E!important;}
-        </style>""")
-    else:
-        st.html('<script>document.body.classList.remove("dark");</script>')
-
-    if ready:
-        bs = "color:#059669;background:rgba(5,150,105,0.08);border:1.5px solid rgba(5,150,105,0.3);"
-        bd = "#059669"; bt = f"Ready &middot; {chunks} chunks"
-    elif api_ok:
-        bs = "color:#D97706;background:rgba(217,119,6,0.08);border:1.5px solid rgba(217,119,6,0.3);"
-        bd = "#D97706"; bt = "API online &mdash; No docs indexed"
-    else:
-        bs = "color:#DC2626;background:rgba(220,38,38,0.08);border:1.5px solid rgba(220,38,38,0.3);"
-        bd = "#DC2626"; bt = "API offline"
-
-    # ── TOPBAR ────────────────────────────────────────────────────────────────
-    st.html(f"""
-    <div style="
-      display:flex;align-items:center;justify-content:space-between;
-      height:62px;padding:0 52px;
-      background:rgba(255,255,255,0.88);backdrop-filter:blur(16px);
-      border-bottom:1px solid rgba(124,58,237,0.1);
-      position:sticky;top:0;z-index:200;
-      animation:fadeIn 0.4s ease both;
-    ">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:9px;height:9px;border-radius:50%;background:var(--v);
-          animation:pulse 2.5s ease-in-out infinite;"></div>
-        <span style="font-family:'Instrument Serif',serif;font-size:19px;color:var(--t1);
-          letter-spacing:-0.3px;">NeuralDoc</span>
-      </div>
-
-      <!-- Tab switcher in topbar -->
-      <div style="display:flex;gap:4px;background:var(--bg);border:1px solid var(--bd2);
-        border-radius:var(--r);padding:4px;">
-        <div id="tab-chat" style="padding:6px 18px;border-radius:7px;font-size:13px;
-          font-weight:600;cursor:pointer;
-          {'background:var(--v);color:#fff;box-shadow:0 2px 8px rgba(124,58,237,0.25);' if st.session_state.active_tab == 'chat' else 'color:var(--t2);'}
-          transition:all 0.18s;">Chat</div>
-        <div id="tab-analytics" style="padding:6px 18px;border-radius:7px;font-size:13px;
-          font-weight:600;cursor:pointer;
-          {'background:var(--v);color:#fff;box-shadow:0 2px 8px rgba(124,58,237,0.25);' if st.session_state.active_tab == 'analytics' else 'color:var(--t2);'}
-          transition:all 0.18s;">Analytics</div>
-      </div>
-
-      <!-- Dark mode toggle -->
-      <div style="display:flex;align-items:center;gap:12px;">
-        <form method="get" action="" style="margin:0;">
-          <input type="hidden" name="darkmode" value="{'off' if st.session_state.dark_mode else 'on'}">
-          <button type="submit" style="
-            display:flex;align-items:center;gap:7px;
-            height:36px;padding:0 14px;
-            background:{'#2D2060' if st.session_state.dark_mode else 'var(--vp)'};
-            border:1.5px solid {'#4C3A9E' if st.session_state.dark_mode else 'var(--vpb)'};
-            border-radius:var(--rf);cursor:pointer;
-            font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;
-            color:{'#C4B5FD' if st.session_state.dark_mode else 'var(--v)'};
-            transition:all 0.2s;
-          ">
-            {'☀' if st.session_state.dark_mode else '☽'}&nbsp;
-            {'Light Mode' if st.session_state.dark_mode else 'Dark Mode'}
-          </button>
-        </form>
-        <div style="display:inline-flex;align-items:center;gap:6px;
-          font-size:12px;font-weight:600;padding:6px 14px;border-radius:var(--rf);{bs}">
-          <div style="width:6px;height:6px;border-radius:50%;background:{bd};
-            {'animation:pulse 1.5s ease-in-out infinite;' if ready else ''}"></div>
-          {bt}
-        </div>
-      </div>
-    </div>""")
-
-    # ── TAB SWITCHER buttons (hidden) ────────────────────────────────────────
-    with st.container():
-        st.html('<style>[data-testid="stVerticalBlock"] > div:has(> [data-testid="stHorizontalBlock"]) + div:empty { display:none; }</style>')
-        _t1, _t2, _gap = st.columns([1, 1, 10])
-        with _t1:
-            if st.button("__chat__", key="tab_chat"):
-                st.session_state.active_tab = "chat"
-                st.rerun()
-        with _t2:
-            if st.button("__analytics__", key="tab_analytics"):
-                st.session_state.active_tab = "analytics"
-                st.rerun()
-    st.html("""<style>
-    /* Hide the tab trigger buttons container - zero height, invisible */
-    [data-testid="stExpander"], .tab-triggers-hidden { display:none!important; }
+    @keyframes borderGlow{0%,100%{border-color:rgba(124,58,237,0.12);}50%{border-color:rgba(124,58,237,0.35);}}
     </style>""")
 
     # ── ACTION ROW ────────────────────────────────────────────────────────────
     st.html('<div style="padding:20px 52px 0;display:flex;gap:12px;align-items:center;'
             'animation:slideUp 0.5s ease .1s both;position:relative;z-index:10;">')
-    a1, a2, a3, a4, _ = st.columns([1, 1, 1, 1, 6])
+    a1, a2, _ = st.columns([1, 1, 8])
     with a1:
-        if st.button("← Home", key="home_btn", use_container_width=True):
-            if st.session_state.messages:
-                save_conversation(st.session_state.messages)
-            st.session_state.page = "landing"
-            st.rerun()
-    with a2:
         if st.button("Clear Chat", key="clr_btn", use_container_width=True):
             if st.session_state.messages:
                 save_conversation(st.session_state.messages)
             st.session_state.messages = []
             st.rerun()
-    with a3:
+    with a2:
         if st.session_state.messages:
             md = export_as_markdown(st.session_state.messages, "NeuralDoc Chat")
             st.download_button("Export .md", data=md,
@@ -613,23 +543,14 @@ else:
                 mime="text/markdown", use_container_width=True, key="exp_md")
         else:
             st.html('<div style="height:44px;"></div>')
-    with a4:
-        # Switch to analytics tab
-        label = "Chat View" if st.session_state.active_tab == "analytics" else "Analytics"
-        if st.button(label, key="switch_tab", use_container_width=True):
-            st.session_state.active_tab = (
-                "chat" if st.session_state.active_tab == "analytics" else "analytics"
-            )
-            st.rerun()
     st.html('</div><div style="height:20px;"></div>')
 
     # ══════════════════════════════════════════════════════════
-    # ANALYTICS TAB — dedicated full page
+    # ANALYTICS TAB
     # ══════════════════════════════════════════════════════════
     if st.session_state.active_tab == "analytics":
         stats = get_stats()
 
-        # Build recent rows without backslash in f-string
         recent_rows = ""
         for q in stats["recent"]:
             icon = "✕" if q["refused"] else "✓"
@@ -643,7 +564,7 @@ else:
                 f'transition:border-color 0.15s,transform 0.15s;'
                 f'animation:slideUp 0.4s ease both;"'
                 f'onmouseover="this.style.borderColor=\'rgba(124,58,237,0.25)\';this.style.transform=\'translateX(3px)\'"'
-                f'onmouseout="this.style.borderColor=\'var(--bd2)\';this.style.transform=\'\'">'
+                f'onmouseout="this.style.borderColor=\'var(--bd2)\';this.style.transform=\'\'">',
                 f'<div style="width:20px;height:20px;border-radius:50%;flex-shrink:0;'
                 f'background:{icon_color}20;border:1.5px solid {icon_color}40;'
                 f'display:flex;align-items:center;justify-content:center;'
@@ -654,23 +575,72 @@ else:
                 f'border-radius:var(--rf);">{lat}ms</span>'
                 f'</div>'
             )
+        # join tuple parts
+        recent_rows = "".join(
+            "".join(x) if isinstance(x, tuple) else x
+            for x in [
+                (
+                    f'<div style="display:flex;align-items:center;gap:12px;'
+                    f'padding:12px 16px;border-radius:var(--r);margin-bottom:6px;'
+                    f'background:var(--bg);border:1px solid var(--bd2);'
+                    f'transition:border-color 0.15s,transform 0.15s;'
+                    f'animation:slideUp 0.4s ease both;"'
+                    f'onmouseover="this.style.borderColor=\'rgba(124,58,237,0.25)\';this.style.transform=\'translateX(3px)\'"'
+                    f'onmouseout="this.style.borderColor=\'var(--bd2)\';this.style.transform=\'\'">',
+                    f'<div style="width:20px;height:20px;border-radius:50%;flex-shrink:0;'
+                    f'background:{q["refused"] and "#DC2626" or "#059669"}20;'
+                    f'border:1.5px solid {q["refused"] and "#DC2626" or "#059669"}40;'
+                    f'display:flex;align-items:center;justify-content:center;'
+                    f'font-size:10px;font-weight:700;'
+                    f'color:{q["refused"] and "#DC2626" or "#059669"};">'
+                    f'{"✕" if q["refused"] else "✓"}</div>'
+                    f'<span style="flex:1;font-size:13px;color:var(--t1);">{q["query"][:80]}</span>'
+                    f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;'
+                    f'color:var(--t3);background:var(--vp);padding:2px 8px;'
+                    f'border-radius:var(--rf);">{q["latency_ms"]}ms</span>'
+                    f'</div>'
+                )
+                for q in stats["recent"]
+            ]
+        ) if stats["recent"] else ""
+
+        # rebuild properly
+        recent_rows = ""
+        for q in stats["recent"]:
+            icon = "✕" if q["refused"] else "✓"
+            ic = "#DC2626" if q["refused"] else "#059669"
+            recent_rows += (
+                f'<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;'
+                f'border-radius:var(--r);margin-bottom:6px;background:var(--bg);'
+                f'border:1px solid var(--bd2);transition:border-color 0.15s,transform 0.15s;'
+                f'animation:slideUp 0.4s ease both;"'
+                f' onmouseover="this.style.borderColor=\'rgba(124,58,237,0.25)\';this.style.transform=\'translateX(3px)\'"'
+                f' onmouseout="this.style.borderColor=\'var(--bd2)\';this.style.transform=\'\'">'
+                f'<div style="width:20px;height:20px;border-radius:50%;flex-shrink:0;'
+                f'background:{ic}20;border:1.5px solid {ic}40;'
+                f'display:flex;align-items:center;justify-content:center;'
+                f'font-size:10px;font-weight:700;color:{ic};">{icon}</div>'
+                f'<span style="flex:1;font-size:13px;color:var(--t1);">{q["query"][:80]}</span>'
+                f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;'
+                f'color:var(--t3);background:var(--vp);padding:2px 8px;'
+                f'border-radius:var(--rf);">{q["latency_ms"]}ms</span>'
+                f'</div>'
+            )
+
+        ans_pct = round((stats['answered']/stats['total_queries']*100) if stats['total_queries'] else 0)
+        ref_pct = round((stats['refused']/stats['total_queries']*100) if stats['total_queries'] else 0)
 
         st.html(f"""
         <div style="padding:0 52px 52px;position:relative;z-index:10;">
 
-          <!-- Header -->
           <div style="margin-bottom:28px;animation:slideUp 0.4s ease both;">
             <div style="font-size:11px;font-weight:700;color:var(--v);
-              letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">
-              Live Observability</div>
+              letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Live Observability</div>
             <div style="font-family:'Instrument Serif',serif;font-size:32px;color:var(--t1);">
-              Query <em style="font-style:italic;color:var(--v);">Analytics</em>
-            </div>
+              Query <em style="font-style:italic;color:var(--v);">Analytics</em></div>
           </div>
 
-          <!-- KPI Cards row -->
           <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px;">
-
             <div style="background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
               padding:22px 18px;box-shadow:var(--sh);text-align:center;
               animation:slideUp 0.4s ease .05s both;
@@ -683,7 +653,6 @@ else:
               <div style="font-size:10px;font-weight:700;color:var(--t3);
                 letter-spacing:0.1em;text-transform:uppercase;">Total Queries</div>
             </div>
-
             <div style="background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
               padding:22px 18px;box-shadow:var(--sh);text-align:center;
               animation:slideUp 0.4s ease .1s both;
@@ -695,13 +664,10 @@ else:
                 {stats['answered']}</div>
               <div style="font-size:10px;font-weight:700;color:var(--t3);
                 letter-spacing:0.1em;text-transform:uppercase;">Answered</div>
-              <div style="margin-top:8px;height:3px;border-radius:4px;background:#ECFDF5;overflow:hidden;">
-                <div style="height:100%;background:#059669;border-radius:4px;
-                  width:{round((stats['answered']/stats['total_queries']*100) if stats['total_queries'] else 0)}%;
-                  transition:width 1s ease;"></div>
-              </div>
+              <div style="margin-top:8px;height:3px;border-radius:4px;background:var(--s2);overflow:hidden;">
+                <div style="height:100%;background:#059669;border-radius:4px;width:{ans_pct}%;
+                  transition:width 1s ease;"></div></div>
             </div>
-
             <div style="background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
               padding:22px 18px;box-shadow:var(--sh);text-align:center;
               animation:slideUp 0.4s ease .15s both;
@@ -713,13 +679,10 @@ else:
                 {stats['refused']}</div>
               <div style="font-size:10px;font-weight:700;color:var(--t3);
                 letter-spacing:0.1em;text-transform:uppercase;">Refused</div>
-              <div style="margin-top:8px;height:3px;border-radius:4px;background:#FEE2E2;overflow:hidden;">
-                <div style="height:100%;background:#DC2626;border-radius:4px;
-                  width:{round((stats['refused']/stats['total_queries']*100) if stats['total_queries'] else 0)}%;
-                  transition:width 1s ease;"></div>
-              </div>
+              <div style="margin-top:8px;height:3px;border-radius:4px;background:var(--s2);overflow:hidden;">
+                <div style="height:100%;background:#DC2626;border-radius:4px;width:{ref_pct}%;
+                  transition:width 1s ease;"></div></div>
             </div>
-
             <div style="background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
               padding:22px 18px;box-shadow:var(--sh);text-align:center;
               animation:slideUp 0.4s ease .2s both;
@@ -734,11 +697,9 @@ else:
               <div style="margin-top:8px;font-size:11px;color:var(--t3);">
                 {'Good' if stats['refusal_rate'] < 20 else 'High — check threshold'}</div>
             </div>
-
             <div style="background:linear-gradient(135deg,var(--vp),var(--s));
               border:1px solid var(--vpb);border-radius:var(--r2);
               padding:22px 18px;box-shadow:var(--sh);text-align:center;
-              animation:slideUp 0.4s ease .25s both;
               animation:borderGlow 3s ease-in-out infinite;
               transition:transform 0.2s,box-shadow 0.2s;"
               onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='var(--sh2)'"
@@ -751,10 +712,8 @@ else:
               <div style="margin-top:8px;font-size:11px;color:var(--t3);">
                 {'Fast' if stats['avg_latency_ms'] < 3000 else 'Consider GPU'}</div>
             </div>
-
           </div>
 
-          <!-- Recent queries table -->
           <div style="background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
             padding:24px 28px;box-shadow:var(--sh);animation:slideUp 0.4s ease .3s both;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
@@ -763,13 +722,9 @@ else:
                 padding:3px 10px;border-radius:var(--rf);border:1px solid var(--vpb);">
                 Last {len(stats['recent'])} of {stats['total_queries']} total</div>
             </div>
-
-            {'<div style="text-align:center;padding:32px;color:var(--t3);font-size:13px;">' +
-             'No queries recorded yet. Send a message to start tracking.' +
-             '</div>' if not stats['recent'] else recent_rows}
+            {'<div style="text-align:center;padding:32px;color:var(--t3);font-size:13px;">No queries recorded yet. Send a message to start tracking.</div>' if not stats['recent'] else recent_rows}
           </div>
 
-          <!-- System health -->
           <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px;">
             <div style="background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
               padding:20px 24px;box-shadow:var(--sh);animation:slideUp 0.4s ease .35s both;">
@@ -779,13 +734,13 @@ else:
                 <div style="display:flex;align-items:center;justify-content:space-between;">
                   <span style="font-size:13px;color:var(--t2);">FastAPI Backend</span>
                   <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--rf);
-                    {'color:#059669;background:#ECFDF5;border:1px solid #A7F3D0;' if api_ok else 'color:#DC2626;background:#FEE2E2;border:1px solid #FECACA;'}">
+                    {'color:#059669;background:rgba(5,150,105,0.08);border:1px solid rgba(5,150,105,0.3);' if api_ok else 'color:#DC2626;background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.3);'}">
                     {'Online' if api_ok else 'Offline'}</span>
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;">
                   <span style="font-size:13px;color:var(--t2);">RAG Pipeline</span>
                   <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--rf);
-                    {'color:#059669;background:#ECFDF5;border:1px solid #A7F3D0;' if ready else 'color:#D97706;background:#FEF3C7;border:1px solid #FDE68A;'}">
+                    {'color:#059669;background:rgba(5,150,105,0.08);border:1px solid rgba(5,150,105,0.3);' if ready else 'color:#D97706;background:rgba(217,119,6,0.08);border:1px solid rgba(217,119,6,0.3);'}">
                     {'Ready' if ready else 'No docs'}</span>
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -802,7 +757,6 @@ else:
                 </div>
               </div>
             </div>
-
             <div style="background:linear-gradient(135deg,var(--vp),var(--s2));
               border:1px solid var(--vpb);border-radius:var(--r2);
               padding:20px 24px;box-shadow:var(--sh);animation:slideUp 0.4s ease .4s both;">
@@ -835,7 +789,6 @@ else:
 
         # ── RIGHT COLUMN ─────────────────────────────────────────────────────
         with col_right:
-            # Upload card
             st.html("""<div style="
               background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
               padding:28px;box-shadow:var(--sh);margin-bottom:16px;
@@ -915,8 +868,8 @@ else:
                       onmouseout="this.style.borderColor='var(--bd2)';this.style.transform=''">
                       <span style="font-size:12px;font-weight:500;color:var(--t1);flex:1;">{fname}</span>
                       <span style="font-size:10px;font-weight:700;padding:2px 8px;
-                        border-radius:var(--rf);color:#059669;background:#ECFDF5;
-                        border:1px solid #A7F3D0;">indexed</span>
+                        border-radius:var(--rf);color:#059669;background:rgba(5,150,105,0.08);
+                        border:1px solid rgba(5,150,105,0.3);">indexed</span>
                     </div>""")
 
             st.html("""<div style="margin-top:14px;background:var(--bg);border:1px solid var(--bd2);
@@ -984,7 +937,7 @@ else:
                   padding:4px 12px;border-radius:var(--rf);">{chunks} chunks</span>
                 <span style="font-size:12px;font-weight:700;padding:4px 12px;
                   border-radius:var(--rf);border:1.5px solid;
-                  {'color:#059669;background:#ECFDF5;border-color:rgba(5,150,105,0.3);' if ready else 'color:#DC2626;background:#FEE2E2;border-color:rgba(220,38,38,0.3);'}">
+                  {'color:#059669;background:rgba(5,150,105,0.08);border-color:rgba(5,150,105,0.3);' if ready else 'color:#DC2626;background:rgba(220,38,38,0.08);border-color:rgba(220,38,38,0.3);'}">
                   {'Ready' if ready else 'Not ready'}</span>
               </div>
             </div>""")
@@ -1020,7 +973,7 @@ else:
                         if m.get("refused"):
                             rfsd = (
                                 '<div style="margin-top:8px;font-size:12px;font-weight:600;'
-                                'color:#DC2626;background:#FEE2E2;border:1px solid #FECACA;'
+                                'color:#DC2626;background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.3);'
                                 'padding:5px 12px;border-radius:var(--r);display:inline-block;">'
                                 'Insufficient evidence — refusal triggered</div>'
                             )
