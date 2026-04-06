@@ -292,51 +292,48 @@ st.html(f"""<script>
 # LANDING PAGE
 # ══════════════════════════════════════════════════════════════
 if st.session_state.page == "landing":
-    st.html("""<style>
-    [data-testid="stAppViewContainer"]{background:var(--bg)!important;}
-    [data-testid="stAppViewContainer"]::before{
-      content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    # ── Single st.html block: styles + full page content + HTML form CTA ──
+    # Using HTML <form> with ?launch=1 avoids breaking the layout with Streamlit
+    # widget containers (which create white strips and blank gaps).
+    st.html("""
+    <style>
+    .land{min-height:calc(100vh - 56px);background:var(--bg);position:relative;overflow:hidden;}
+    .land::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
       background:
         radial-gradient(ellipse 55% 50% at 15% 10%,rgba(167,139,250,0.18),transparent 60%),
         radial-gradient(ellipse 45% 45% at 85% 85%,rgba(6,182,212,0.10),transparent 55%),
         radial-gradient(ellipse 35% 35% at 50% 50%,rgba(236,72,153,0.06),transparent 55%);}
-    [data-testid="stButton"]>button{
-      background:var(--v)!important;color:#fff!important;border:none!important;
-      border-radius:var(--rf)!important;font-family:'Plus Jakarta Sans',sans-serif!important;
-      font-size:16px!important;font-weight:600!important;
-      height:52px!important;padding:0!important;width:100%!important;
-      box-shadow:0 4px 20px rgba(124,58,237,0.32)!important;
-      transition:background 0.18s,transform 0.15s,box-shadow 0.18s!important;}
-    [data-testid="stButton"]>button:hover{
-      background:var(--v2)!important;transform:translateY(-2px)!important;
-      box-shadow:0 8px 28px rgba(124,58,237,0.42)!important;}
-    [data-testid="stButton"]>button:active{transform:scale(0.97)!important;}
-    </style>""")
-
-    st.html("""
-    <style>
-    .land{min-height:calc(100vh - 56px);background:var(--bg);position:relative;overflow:hidden;}
     .hero{position:relative;z-index:10;max-width:820px;margin:0 auto;
-      padding:80px 56px 0;text-align:center;animation:fU .8s cubic-bezier(0.16,1,0.3,1) .15s both;}
-    .h-eyebrow{animation:fU .6s cubic-bezier(0.16,1,0.3,1) .25s both;}
-    .h1{animation:fU .8s cubic-bezier(0.16,1,0.3,1) .4s both;}
-    .h-sub{animation:fU .7s cubic-bezier(0.16,1,0.3,1) .55s both;}
-    .cta-form{animation:fU .6s cubic-bezier(0.16,1,0.3,1) .7s both;}
-    .stats{animation:fU .7s cubic-bezier(0.16,1,0.3,1) .85s both;}
+      padding:48px 56px 0;text-align:center;animation:fU .8s cubic-bezier(0.16,1,0.3,1) .15s both;}
     .h-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
       color:var(--v);border:1px solid var(--vpb);background:var(--vp);
-      padding:5px 16px;border-radius:var(--rf);margin-bottom:28px;letter-spacing:0.04em;}
+      padding:5px 16px;border-radius:var(--rf);margin-bottom:28px;letter-spacing:0.04em;
+      animation:fU .6s cubic-bezier(0.16,1,0.3,1) .25s both;}
     .h-dot{width:5px;height:5px;border-radius:50%;background:var(--v);
       animation:dp 1.8s ease-in-out infinite;}
     .h1{font-family:'Instrument Serif',serif;font-size:clamp(44px,6vw,68px);font-weight:400;
-      color:var(--t1);line-height:1.06;letter-spacing:-1px;margin-bottom:8px;}
+      color:var(--t1);line-height:1.06;letter-spacing:-1px;margin-bottom:8px;
+      animation:fU .8s cubic-bezier(0.16,1,0.3,1) .4s both;}
     .h1 em{font-style:italic;color:var(--v);}
     .h-sub{font-size:17px;color:var(--t2);line-height:1.8;max-width:560px;
-      margin:0 auto 44px;font-weight:400;}
+      margin:0 auto 44px;font-weight:400;
+      animation:fU .7s cubic-bezier(0.16,1,0.3,1) .55s both;}
     .h-sub b{color:var(--t1);font-weight:600;}
+    .cta-wrap{display:flex;justify-content:center;margin-bottom:0;
+      animation:fU .6s cubic-bezier(0.16,1,0.3,1) .7s both;}
+    .btn-lnd{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      height:52px;padding:0 48px;background:var(--v);color:#fff;border:none;
+      border-radius:var(--rf);font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:16px;font-weight:600;cursor:pointer;
+      box-shadow:0 4px 20px rgba(124,58,237,0.32);
+      transition:background 0.18s,transform 0.15s,box-shadow 0.18s;}
+    .btn-lnd:hover{background:var(--v2);transform:translateY(-2px);
+      box-shadow:0 8px 28px rgba(124,58,237,0.42);}
+    .btn-lnd:active{transform:scale(0.97);}
     .stats{position:relative;z-index:10;display:flex;max-width:780px;
       margin:52px auto 0;background:var(--s);border:1px solid var(--bd2);
-      border-radius:var(--r3);overflow:hidden;box-shadow:var(--sh);}
+      border-radius:var(--r3);overflow:hidden;box-shadow:var(--sh);
+      animation:fU .7s ease .85s both;}
     .stat{flex:1;padding:26px 12px;text-align:center;border-right:1px solid var(--bd2);
       transition:background 0.18s;}
     .stat:last-child{border-right:none;}.stat:hover{background:var(--vp);}
@@ -393,9 +390,8 @@ if st.session_state.page == "landing":
       padding:22px 56px 64px;border-top:1px solid var(--bd2);
       display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
     .foot span{font-size:12px;color:var(--t3);}
-    </style>""")
+    </style>
 
-    st.html("""
     <div class="land">
     <div style="position:relative;z-index:1;">
 
@@ -406,17 +402,14 @@ if st.session_state.page == "landing":
           A <b>production-grade</b> RAG system with <b>inline citations</b>,
           persistent chat history, live analytics, and a hard refusal trigger — no guessing, ever.
         </p>
-      </section>""")
+        <div class="cta-wrap">
+          <form method="get" action="" style="margin:0;">
+            <input type="hidden" name="launch" value="1">
+            <button type="submit" class="btn-lnd">Open App &nbsp;&#8594;</button>
+          </form>
+        </div>
+      </section>
 
-    # CTA button (Streamlit button navigates to app)
-    _lc1, _lc2, _lc3 = st.columns([1, 1, 1])
-    with _lc2:
-        if st.button("Open App  →", key="cta_open", use_container_width=True):
-            st.session_state.page = "app"
-            st.session_state.active_tab = "chat"
-            st.rerun()
-
-    st.html("""
       <div class="stats">
         <div class="stat"><div class="sv">0%</div><div class="sl">Hallucination Rate</div></div>
         <div class="stat"><div class="sv">3&times;</div><div class="sl">Retrieval Methods</div></div>
