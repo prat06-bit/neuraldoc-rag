@@ -519,7 +519,7 @@ else:
     </style>""")
 
     # ── ACTION ROW ────────────────────────────────────────────────────────────
-    st.html('<div style="padding:20px 52px 0;display:flex;gap:12px;align-items:center;'
+    st.html('<div style="padding:10px 52px 0;display:flex;gap:12px;align-items:center;'
             'animation:slideUp 0.5s ease .1s both;position:relative;z-index:10;">')
     a1, a2, _ = st.columns([1, 1, 8])
     with a1:
@@ -536,7 +536,7 @@ else:
                 mime="text/markdown", use_container_width=True, key="exp_md")
         else:
             st.html('<div style="height:44px;"></div>')
-    st.html('</div><div style="height:20px;"></div>')
+    st.html('</div>')
 
     # ══════════════════════════════════════════════════════════
     # ANALYTICS TAB
@@ -624,12 +624,12 @@ else:
         ref_pct = round((stats['refused']/stats['total_queries']*100) if stats['total_queries'] else 0)
 
         st.html(f"""
-        <div style="padding:0 52px 52px;position:relative;z-index:10;">
+        <div style="padding:16px 52px 48px;position:relative;z-index:10;">
 
-          <div style="margin-bottom:28px;animation:slideUp 0.4s ease both;">
+          <div style="margin-bottom:20px;animation:slideUp 0.4s ease both;">
             <div style="font-size:11px;font-weight:700;color:var(--v);
-              letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Live Observability</div>
-            <div style="font-family:'Instrument Serif',serif;font-size:32px;color:var(--t1);">
+              letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Live Observability</div>
+            <div style="font-family:'Instrument Serif',serif;font-size:30px;color:var(--t1);">
               Query <em style="font-style:italic;color:var(--v);">Analytics</em></div>
           </div>
 
@@ -777,28 +777,29 @@ else:
     # CHAT TAB
     # ══════════════════════════════════════════════════════════
     else:
-        st.html('<div style="padding:0 52px 52px;position:relative;z-index:10;">')
+        st.html('<div style="padding:10px 52px 48px;position:relative;z-index:10;">')
         col_chat, col_right = st.columns([3, 2], gap="large")
 
         # ── RIGHT COLUMN ─────────────────────────────────────────────────────
         with col_right:
-            st.html("""<div style="
-              background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
-              padding:28px;box-shadow:var(--sh);margin-bottom:16px;
-              animation:slideUp 0.5s ease .1s both;
-              transition:box-shadow 0.2s,border-color 0.2s;"
-              onmouseover="this.style.boxShadow='var(--sh2)';this.style.borderColor='var(--vpb)'"
-              onmouseout="this.style.boxShadow='var(--sh)';this.style.borderColor='var(--bd2)'">""")
+            # Card header — self-contained st.html (no open/close pattern = no empty box)
+            st.html("""<div style="background:var(--s);border:1px solid var(--bd2);
+              border-radius:var(--r2) var(--r2) 0 0;padding:18px 20px 12px;
+              box-shadow:var(--sh);animation:slideUp 0.5s ease .1s both;">
+              <div style="font-size:10px;font-weight:700;color:var(--v);
+                letter-spacing:0.1em;text-transform:uppercase;margin-bottom:5px;">Knowledge Base</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="font-family:'Instrument Serif',serif;font-size:20px;color:var(--t1);">
+                  Upload <em style="font-style:italic;color:var(--v);">documents</em></div>
+              </div>
+            </div>""")
+            # Clear button row — part of card (border-top:none continues the card)
+            st.html('<div style="background:var(--s);border:1px solid var(--bd2);border-top:none;padding:8px 20px 0;">')
             uh1, uh2 = st.columns([3, 1])
             with uh1:
-                st.html("""<div style="margin-bottom:16px;">
-                  <div style="font-size:10px;font-weight:700;color:var(--v);
-                    letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Knowledge Base</div>
-                  <div style="font-family:'Instrument Serif',serif;font-size:22px;color:var(--t1);">
-                    Upload <em style="font-style:italic;color:var(--v);">documents</em></div>
-                </div>""")
+                st.html('<div style="height:6px;"></div>')
             with uh2:
-                st.html('<div style="height:26px;"></div>')
+                st.html('<div style="height:2px;"></div>')
                 if st.button("Clear", key="clear_idx", use_container_width=True):
                     try:
                         r = requests.delete(f"{API_BASE}/index", timeout=15)
@@ -810,8 +811,10 @@ else:
                     except Exception:
                         st.error("API offline.")
 
+            # Close the clear-button partial div, open full card body
+            st.html('</div><div style="background:var(--s);border:1px solid var(--bd2);border-top:none;border-radius:0 0 var(--r2) var(--r2);padding:12px 20px 20px;box-shadow:var(--sh);margin-bottom:14px;">')
             st.html("""<div style="background:var(--vp);border:2px dashed var(--vpb);
-              border-radius:var(--r2);padding:18px;margin-bottom:12px;text-align:center;
+              border-radius:var(--r2);padding:14px;margin-bottom:10px;text-align:center;
               transition:all 0.2s cubic-bezier(0.4,0,0.2,1);"
               onmouseover="this.style.borderColor='var(--v)';this.style.background='var(--s3)';this.style.transform='scale(1.01)'"
               onmouseout="this.style.borderColor='var(--vpb)';this.style.background='var(--vp)';this.style.transform=''">
@@ -865,17 +868,17 @@ else:
                         border:1px solid rgba(5,150,105,0.3);">indexed</span>
                     </div>""")
 
-            st.html("""<div style="margin-top:14px;background:var(--bg);border:1px solid var(--bd2);
-              border-radius:var(--r);padding:14px 16px;">
+            st.html("""<div style="margin-top:12px;background:var(--bg);border:1px solid var(--bd2);
+              border-radius:var(--r);padding:12px 14px;">
               <div style="font-size:10px;font-weight:700;color:var(--t3);
-                letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Tips</div>
-              <div style="font-size:12px;color:var(--t2);line-height:1.9;">
+                letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">Tips</div>
+              <div style="font-size:12px;color:var(--t2);line-height:1.8;">
                 Click <b style="color:var(--v);">Clear</b> before switching documents.<br>
                 Ask precise questions for best citation accuracy.<br>
                 Every answer includes inline source references.<br>
                 Unanswerable queries return a refusal, not a guess.
               </div></div>""")
-            st.html('</div>')
+            st.html('</div>')  # close card body
 
             # Chat History
             convs = load_all_conversations()
@@ -911,7 +914,7 @@ else:
         with col_chat:
             st.html("""<div style="
               background:var(--s);border:1px solid var(--bd2);border-radius:var(--r2);
-              padding:28px 28px 22px;box-shadow:var(--sh);
+              padding:20px 22px 18px;box-shadow:var(--sh);
               animation:slideUp 0.5s ease both;
               transition:box-shadow 0.2s;">""")
 
