@@ -523,9 +523,7 @@ else:
             st.html('<div style="height:44px;"></div>')
     st.html('</div>')
 
-    # ══════════════════════════════════════════════════════════
     # ANALYTICS TAB
-    # ══════════════════════════════════════════════════════════
     if st.session_state.active_tab == "analytics":
         stats = get_stats()
 
