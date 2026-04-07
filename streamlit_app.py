@@ -87,6 +87,7 @@ section[data-testid="stSidebar"],#MainMenu,footer{{display:none!important;height
   margin:0!important;max-width:100%!important;border:none!important;}}
 [data-testid="stVerticalBlock"]{{gap:0!important;}}
 [data-testid="stVerticalBlock"]>div{{margin:0!important;padding:0!important;}}
+
 /*  Inputs */
 .stTextInput input{{
   background:var(--s)!important;border:1.5px solid var(--bd)!important;
@@ -100,6 +101,7 @@ section[data-testid="stSidebar"],#MainMenu,footer{{display:none!important;height
   outline:none!important;transform:translateY(-1px)!important;}}
 .stTextInput input::placeholder{{color:var(--t3)!important;}}
 .stTextInput label,.stFileUploader label{{display:none!important;}}
+
 /*  Buttons  */
 .stButton>button{{
   background:linear-gradient(135deg,var(--v),var(--v3))!important;
@@ -114,7 +116,8 @@ section[data-testid="stSidebar"],#MainMenu,footer{{display:none!important;height
   transform:translateY(-2px)!important;
   box-shadow:0 6px 20px rgba(124,58,237,0.35)!important;}}
 .stButton>button:active{{transform:scale(0.97)!important;}}
-/* ── File uploader ── */
+
+/* File uploader  */
 [data-testid="stFileUploaderDropzone"]{{
   background:var(--s)!important;border:2px dashed var(--vpb)!important;
   border-radius:var(--r2)!important;
