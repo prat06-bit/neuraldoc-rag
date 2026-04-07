@@ -579,8 +579,6 @@ else:
                 for q in stats["recent"]
             ]
         ) if stats["recent"] else ""
-
-        # rebuild properly
         recent_rows = ""
         for q in stats["recent"]:
             icon = "✕" if q["refused"] else "✓"
