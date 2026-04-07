@@ -795,7 +795,7 @@ else:
           box-shadow: var(--sh);
           animation: slideUp 0.5s ease .2s both;
         }
-        /* Suppress Streamlit's own column gap rendering artifacts */
+        /* Suppress Streamlit's own column gap rendering artifact */
         [data-testid="stHorizontalBlock"] { gap: 0 !important; }
         </style>""")
 
