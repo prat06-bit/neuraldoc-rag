@@ -176,10 +176,7 @@ else:
     _bs = "color:#DC2626;background:rgba(220,38,38,0.08);border:1.5px solid rgba(220,38,38,0.3);"
     _bd = "#DC2626"; _bt = "API offline"
 
-
-# ══════════════════════════════════════════════════════════════
-# NAVBAR (all pages) — native Streamlit buttons, CSS styled
-# ══════════════════════════════════════════════════════════════
+# NAVBAR
 dm = st.session_state.dark_mode
 dm_icon = "☀" if dm else "☽"
 dm_label = f"{dm_icon} {'Light' if dm else 'Dark'}"
