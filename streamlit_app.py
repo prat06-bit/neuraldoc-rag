@@ -281,14 +281,8 @@ st.html(f"""<script>
 }})();
 </script>""")
 
-
-# ══════════════════════════════════════════════════════════════
 # LANDING PAGE
-# ══════════════════════════════════════════════════════════════
 if st.session_state.page == "landing":
-    # ── Single st.html block: styles + full page content + HTML form CTA ──
-    # Using HTML <form> with ?launch=1 avoids breaking the layout with Streamlit
-    # widget containers (which create white strips and blank gaps).
     st.html("""
     <style>
     .land{min-height:calc(100vh - 56px);background:var(--bg);position:relative;overflow:hidden;}
