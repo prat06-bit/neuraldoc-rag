@@ -503,7 +503,7 @@ else:
     @keyframes borderGlow{0%,100%{border-color:rgba(124,58,237,0.12);}50%{border-color:rgba(124,58,237,0.35);}}
     </style>""")
 
-    # ── ACTION ROW ────────────────────────────────────────────────────────────
+    # ACTION ROW
     st.html('<div style="padding:10px 52px 0;display:flex;gap:12px;align-items:center;'
             'animation:slideUp 0.5s ease .1s both;position:relative;z-index:10;">')
     a1, a2, _ = st.columns([1, 1, 8])
@@ -754,11 +754,8 @@ else:
 
         </div>""")
 
-    # ══════════════════════════════════════════════════════════
     # CHAT TAB
-    # ══════════════════════════════════════════════════════════
     else:
-        # ── CSS-only layout: no open/close wrapper divs (each st.html is isolated) ──
         st.html("""<style>
         /* Page padding via CSS — not a wrapper div */
         [data-testid="stMainBlockContainer"] .block-container {
@@ -768,7 +765,7 @@ else:
         [data-testid="stColumn"] > [data-testid="stVerticalBlock"] {
           background: transparent !important;
         }
-        /* ── RIGHT column — upload card ── */
+        /* RIGHT column  */
         .upload-card {
           background: var(--s);
           border: 1px solid var(--bd2);
@@ -780,7 +777,7 @@ else:
           transition: box-shadow 0.2s, border-color 0.2s;
         }
         .upload-card:hover { box-shadow: var(--sh2); border-color: var(--vpb); }
-        /* ── LEFT column — chat card ── */
+        /*  LEFT column */
         .chat-card {
           background: var(--s);
           border: 1px solid var(--bd2);
@@ -789,7 +786,7 @@ else:
           box-shadow: var(--sh);
           animation: slideUp 0.5s ease both;
         }
-        /* ── History card ── */
+        /*  History card  */
         .history-card {
           background: var(--s);
           border: 1px solid var(--bd2);
@@ -833,7 +830,6 @@ else:
               </div>
             </div>""")
 
-            # Widgets sit OUTSIDE the decorative div — that's fine; they get card bg via CSS
             if st.button("Clear Index", key="clear_idx", use_container_width=False):
                 try:
                     r = requests.delete(f"{API_BASE}/index", timeout=15)
