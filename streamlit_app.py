@@ -1,4 +1,3 @@
-"""NeuralDoc RAG — Premium animated chat page."""
 import requests
 import streamlit as st
 from datetime import datetime
