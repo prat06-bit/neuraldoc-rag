@@ -482,10 +482,7 @@ if st.session_state.page == "landing":
     </div>
     </div>""")
 
-
-# ══════════════════════════════════════════════════════════════
-# CHAT / APP PAGE — premium animated redesign
-# ══════════════════════════════════════════════════════════════
+# CHAT PAGE 
 else:
     st.html("""<style>
     [data-testid="stAppViewContainer"]{background:var(--bg)!important;}
