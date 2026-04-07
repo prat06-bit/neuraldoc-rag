@@ -71,9 +71,7 @@ def css_vars():
       --navbar-bg:rgba(255,255,255,0.88);--navbar-bd:rgba(124,58,237,0.1);
     """
 
-# ══════════════════════════════════════════════════════════════
 # GLOBAL CSS
-# ══════════════════════════════════════════════════════════════
 st.html(f"""<style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Instrument+Serif:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
 html,body,[data-testid="stAppViewContainer"]{{{css_vars()}}}
