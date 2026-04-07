@@ -41,7 +41,7 @@ if st.query_params.get("darkmode") == "off":
     st.query_params.clear()
     st.session_state.dark_mode = False
 
-# ── Theme CSS vars ──
+# Theme CSS 
 def css_vars():
     if st.session_state.dark_mode:
         return """
