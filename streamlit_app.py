@@ -135,7 +135,8 @@ section[data-testid="stSidebar"],#MainMenu,footer{{display:none!important;height
   background:var(--vp)!important;transform:translateY(-1px)!important;
   box-shadow:var(--sh)!important;}}
 hr{{border-color:var(--bd2)!important;}}
-/* ── Animations ── */
+
+/* Animations  */
 @keyframes slideUp{{from{{opacity:0;transform:translateY(16px);}}to{{opacity:1;transform:translateY(0);}}}}
 @keyframes fadeIn{{from{{opacity:0;}}to{{opacity:1;}}}}
 @keyframes fD{{from{{opacity:0;transform:translateY(-12px);filter:blur(4px);}}to{{opacity:1;transform:translateY(0);filter:blur(0);}}}}
