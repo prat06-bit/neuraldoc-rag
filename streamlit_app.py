@@ -182,7 +182,7 @@ dm_icon = "☀" if dm else "☽"
 dm_label = f"{dm_icon} {'Light' if dm else 'Dark'}"
 
 st.html(f"""<style>
-/* ── Navbar row styling ── */
+/*  Navbar row styling  */
 div[data-testid="stHorizontalBlock"]:first-of-type {{
   position:sticky!important;top:0!important;z-index:200!important;
   background:var(--navbar-bg)!important;backdrop-filter:blur(16px)!important;
@@ -259,7 +259,6 @@ with _status:
         {'animation:pulse 1.5s ease-in-out infinite;' if ready else ''}"></div>
       {_bt}</div>""")
 
-# Highlight active nav button via JS
 if st.session_state.page == "landing":
     _active_label = "Home"
 elif st.session_state.get("active_tab") == "analytics":
