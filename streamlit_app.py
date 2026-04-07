@@ -802,14 +802,14 @@ else:
         [data-testid="stHorizontalBlock"] { gap: 0 !important; }
         </style>""")
 
-        # ── Outer padding wrapper (pure visual spacer, no widgets inside) ──
+        # Outer padding wrapper 
         st.html('<div style="height:6px;"></div>')
 
         col_chat, col_right = st.columns([3, 2], gap="large")
 
-        # ── RIGHT COLUMN ─────────────────────────────────────────────────────
+        #  RIGHT COLUMN 
         with col_right:
-            # Upload card header (self-contained — no open/close)
+            # Upload card header
             st.html("""<div class="upload-card">
               <div style="display:flex;align-items:center;justify-content:space-between;
                 margin-bottom:14px;">
