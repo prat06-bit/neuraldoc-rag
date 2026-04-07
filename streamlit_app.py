@@ -151,10 +151,7 @@ hr{{border-color:var(--bd2)!important;}}
   100%{{background-position:10% 5%,90% 85%,55% 45%;}}}}
 </style>""")
 
-
-# ══════════════════════════════════════════════════════════════
-# HEALTH CHECK (top-level — needed for navbar badge + all pages)
-# ══════════════════════════════════════════════════════════════
+# HEALTH CHECK 
 def get_health():
     try:
         r = requests.get(f"{API_BASE}/health", timeout=3).json()
