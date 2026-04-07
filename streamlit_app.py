@@ -87,7 +87,7 @@ section[data-testid="stSidebar"],#MainMenu,footer{{display:none!important;height
   margin:0!important;max-width:100%!important;border:none!important;}}
 [data-testid="stVerticalBlock"]{{gap:0!important;}}
 [data-testid="stVerticalBlock"]>div{{margin:0!important;padding:0!important;}}
-/* ── Inputs ── */
+/*  Inputs */
 .stTextInput input{{
   background:var(--s)!important;border:1.5px solid var(--bd)!important;
   border-radius:var(--r)!important;color:var(--t1)!important;
@@ -100,7 +100,7 @@ section[data-testid="stSidebar"],#MainMenu,footer{{display:none!important;height
   outline:none!important;transform:translateY(-1px)!important;}}
 .stTextInput input::placeholder{{color:var(--t3)!important;}}
 .stTextInput label,.stFileUploader label{{display:none!important;}}
-/* ── Buttons ── */
+/*  Buttons  */
 .stButton>button{{
   background:linear-gradient(135deg,var(--v),var(--v3))!important;
   color:#fff!important;border:none!important;border-radius:var(--r)!important;
