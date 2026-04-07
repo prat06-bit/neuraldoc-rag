@@ -925,9 +925,9 @@ else:
                             st.rerun()
                 st.html('</div>')
 
-        # ── LEFT COLUMN: Chat ─────────────────────────────────────────────────
+        #  LEFT COLUMN: Chat
         with col_chat:
-            # Chat card header + status (self-contained)
+            # Chat card header
             st.html(f"""<div class="chat-card">
               <div style="display:flex;align-items:flex-start;
                 justify-content:space-between;margin-bottom:18px;">
