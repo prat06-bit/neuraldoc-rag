@@ -223,7 +223,7 @@ div[data-testid="stHorizontalBlock"]:first-of-type .dm-toggle-col .stButton > bu
 }}
 </style>""")
 
-# Navbar row
+# Navbar Row
 _logo, _home, _chat, _anl, _spacer, _dm_col, _status = st.columns([2, 0.8, 0.8, 1.1, 3, 1, 1.3])
 
 with _logo:
