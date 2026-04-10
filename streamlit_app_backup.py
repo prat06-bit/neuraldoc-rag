@@ -582,7 +582,7 @@ else:
     [data-testid="stExpander"], .tab-triggers-hidden { display:none!important; }
     </style>""")
 
-    # ── ACTION ROW ────────────────────────────────────────────────────────────
+    #  ACTION ROW 
     st.html('<div style="padding:20px 52px 0;display:flex;gap:12px;align-items:center;'
             'animation:slideUp 0.5s ease .1s both;position:relative;z-index:10;">')
     a1, a2, a3, a4, _ = st.columns([1, 1, 1, 1, 6])
