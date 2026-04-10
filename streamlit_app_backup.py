@@ -1,4 +1,3 @@
-"""NeuralDoc RAG — Premium animated chat page."""
 import requests
 import streamlit as st
 from datetime import datetime
@@ -56,7 +55,7 @@ st.html("""<style>
   --sh2:0 8px 40px rgba(124,58,237,0.14),0 2px 8px rgba(0,0,0,0.04);
   --r:10px; --r2:18px; --r3:24px; --rf:9999px;
 }
-/* ── Dark mode overrides ── */
+/*  Dark mode overrides  */
 .dark{
   --bg:#0F0D1A; --s:#1A1730; --s2:#221E3A; --s3:#2A2550;
   --vp:#2D2060; --vpb:#4C3A9E;
