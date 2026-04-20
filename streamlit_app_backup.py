@@ -1,4 +1,3 @@
-"""NeuralDoc RAG — Premium animated chat page."""
 import requests
 import streamlit as st
 from datetime import datetime
@@ -56,7 +55,7 @@ st.html("""<style>
   --sh2:0 8px 40px rgba(124,58,237,0.14),0 2px 8px rgba(0,0,0,0.04);
   --r:10px; --r2:18px; --r3:24px; --rf:9999px;
 }
-/* ── Dark mode overrides ── */
+/*  Dark mode overrides  */
 .dark{
   --bg:#0F0D1A; --s:#1A1730; --s2:#221E3A; --s3:#2A2550;
   --vp:#2D2060; --vpb:#4C3A9E;
@@ -80,9 +79,7 @@ section[data-testid="stSidebar"],#MainMenu,footer{display:none!important;height:
 </style>""")
 
 
-# ══════════════════════════════════════════════════════════════
 # LANDING
-# ══════════════════════════════════════════════════════════════
 if st.session_state.page == "landing":
     # Apply dark mode to landing if enabled
     if st.session_state.dark_mode:
@@ -346,9 +343,7 @@ if st.session_state.page == "landing":
     </div>""")
 
 
-# ══════════════════════════════════════════════════════════════
 # CHAT / APP PAGE — premium animated redesign
-# ══════════════════════════════════════════════════════════════
 else:
     st.html("""<style>
     [data-testid="stAppViewContainer"]{
@@ -587,7 +582,7 @@ else:
     [data-testid="stExpander"], .tab-triggers-hidden { display:none!important; }
     </style>""")
 
-    # ── ACTION ROW ────────────────────────────────────────────────────────────
+    #  ACTION ROW 
     st.html('<div style="padding:20px 52px 0;display:flex;gap:12px;align-items:center;'
             'animation:slideUp 0.5s ease .1s both;position:relative;z-index:10;">')
     a1, a2, a3, a4, _ = st.columns([1, 1, 1, 1, 6])

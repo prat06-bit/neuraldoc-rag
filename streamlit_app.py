@@ -1,4 +1,3 @@
-"""NeuralDoc RAG — Premium animated chat page."""
 import requests
 import streamlit as st
 from datetime import datetime
@@ -42,7 +41,7 @@ if st.query_params.get("darkmode") == "off":
     st.query_params.clear()
     st.session_state.dark_mode = False
 
-# ── Theme CSS vars ──
+# Theme CSS 
 def css_vars():
     if st.session_state.dark_mode:
         return """
@@ -72,9 +71,7 @@ def css_vars():
       --navbar-bg:rgba(255,255,255,0.88);--navbar-bd:rgba(124,58,237,0.1);
     """
 
-# ══════════════════════════════════════════════════════════════
-# GLOBAL CSS
-# ══════════════════════════════════════════════════════════════
+# Global CSS
 st.html(f"""<style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Instrument+Serif:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
 html,body,[data-testid="stAppViewContainer"]{{{css_vars()}}}
@@ -90,7 +87,8 @@ section[data-testid="stSidebar"],#MainMenu,footer{{display:none!important;height
   margin:0!important;max-width:100%!important;border:none!important;}}
 [data-testid="stVerticalBlock"]{{gap:0!important;}}
 [data-testid="stVerticalBlock"]>div{{margin:0!important;padding:0!important;}}
-/* ── Inputs ── */
+
+/*  Inputs */
 .stTextInput input{{
   background:var(--s)!important;border:1.5px solid var(--bd)!important;
   border-radius:var(--r)!important;color:var(--t1)!important;
@@ -103,7 +101,8 @@ section[data-testid="stSidebar"],#MainMenu,footer{{display:none!important;height
   outline:none!important;transform:translateY(-1px)!important;}}
 .stTextInput input::placeholder{{color:var(--t3)!important;}}
 .stTextInput label,.stFileUploader label{{display:none!important;}}
-/* ── Buttons ── */
+
+/*  Buttons  */
 .stButton>button{{
   background:linear-gradient(135deg,var(--v),var(--v3))!important;
   color:#fff!important;border:none!important;border-radius:var(--r)!important;
@@ -117,7 +116,8 @@ section[data-testid="stSidebar"],#MainMenu,footer{{display:none!important;height
   transform:translateY(-2px)!important;
   box-shadow:0 6px 20px rgba(124,58,237,0.35)!important;}}
 .stButton>button:active{{transform:scale(0.97)!important;}}
-/* ── File uploader ── */
+
+/* File uploader  */
 [data-testid="stFileUploaderDropzone"]{{
   background:var(--s)!important;border:2px dashed var(--vpb)!important;
   border-radius:var(--r2)!important;
@@ -135,7 +135,8 @@ section[data-testid="stSidebar"],#MainMenu,footer{{display:none!important;height
   background:var(--vp)!important;transform:translateY(-1px)!important;
   box-shadow:var(--sh)!important;}}
 hr{{border-color:var(--bd2)!important;}}
-/* ── Animations ── */
+
+/* Animations  */
 @keyframes slideUp{{from{{opacity:0;transform:translateY(16px);}}to{{opacity:1;transform:translateY(0);}}}}
 @keyframes fadeIn{{from{{opacity:0;}}to{{opacity:1;}}}}
 @keyframes fD{{from{{opacity:0;transform:translateY(-12px);filter:blur(4px);}}to{{opacity:1;transform:translateY(0);filter:blur(0);}}}}
@@ -150,10 +151,7 @@ hr{{border-color:var(--bd2)!important;}}
   100%{{background-position:10% 5%,90% 85%,55% 45%;}}}}
 </style>""")
 
-
-# ══════════════════════════════════════════════════════════════
-# HEALTH CHECK (top-level — needed for navbar badge + all pages)
-# ══════════════════════════════════════════════════════════════
+# HEALTH CHECK 
 def get_health():
     try:
         r = requests.get(f"{API_BASE}/health", timeout=3).json()
@@ -178,16 +176,13 @@ else:
     _bs = "color:#DC2626;background:rgba(220,38,38,0.08);border:1.5px solid rgba(220,38,38,0.3);"
     _bd = "#DC2626"; _bt = "API offline"
 
-
-# ══════════════════════════════════════════════════════════════
-# NAVBAR (all pages) — native Streamlit buttons, CSS styled
-# ══════════════════════════════════════════════════════════════
+# NAVBAR
 dm = st.session_state.dark_mode
 dm_icon = "☀" if dm else "☽"
 dm_label = f"{dm_icon} {'Light' if dm else 'Dark'}"
 
 st.html(f"""<style>
-/* ── Navbar row styling ── */
+/*  Navbar row styling  */
 div[data-testid="stHorizontalBlock"]:first-of-type {{
   position:sticky!important;top:0!important;z-index:200!important;
   background:var(--navbar-bg)!important;backdrop-filter:blur(16px)!important;
@@ -228,7 +223,7 @@ div[data-testid="stHorizontalBlock"]:first-of-type .dm-toggle-col .stButton > bu
 }}
 </style>""")
 
-# Navbar row
+# Navbar Row
 _logo, _home, _chat, _anl, _spacer, _dm_col, _status = st.columns([2, 0.8, 0.8, 1.1, 3, 1, 1.3])
 
 with _logo:
@@ -264,7 +259,6 @@ with _status:
         {'animation:pulse 1.5s ease-in-out infinite;' if ready else ''}"></div>
       {_bt}</div>""")
 
-# Highlight active nav button via JS
 if st.session_state.page == "landing":
     _active_label = "Home"
 elif st.session_state.get("active_tab") == "analytics":
@@ -287,14 +281,8 @@ st.html(f"""<script>
 }})();
 </script>""")
 
-
-# ══════════════════════════════════════════════════════════════
 # LANDING PAGE
-# ══════════════════════════════════════════════════════════════
 if st.session_state.page == "landing":
-    # ── Single st.html block: styles + full page content + HTML form CTA ──
-    # Using HTML <form> with ?launch=1 avoids breaking the layout with Streamlit
-    # widget containers (which create white strips and blank gaps).
     st.html("""
     <style>
     .land{min-height:calc(100vh - 56px);background:var(--bg);position:relative;overflow:hidden;}
@@ -494,10 +482,7 @@ if st.session_state.page == "landing":
     </div>
     </div>""")
 
-
-# ══════════════════════════════════════════════════════════════
-# CHAT / APP PAGE — premium animated redesign
-# ══════════════════════════════════════════════════════════════
+# CHAT PAGE 
 else:
     st.html("""<style>
     [data-testid="stAppViewContainer"]{background:var(--bg)!important;}
@@ -518,7 +503,7 @@ else:
     @keyframes borderGlow{0%,100%{border-color:rgba(124,58,237,0.12);}50%{border-color:rgba(124,58,237,0.35);}}
     </style>""")
 
-    # ── ACTION ROW ────────────────────────────────────────────────────────────
+    # ACTION ROW
     st.html('<div style="padding:10px 52px 0;display:flex;gap:12px;align-items:center;'
             'animation:slideUp 0.5s ease .1s both;position:relative;z-index:10;">')
     a1, a2, _ = st.columns([1, 1, 8])
@@ -538,9 +523,7 @@ else:
             st.html('<div style="height:44px;"></div>')
     st.html('</div>')
 
-    # ══════════════════════════════════════════════════════════
     # ANALYTICS TAB
-    # ══════════════════════════════════════════════════════════
     if st.session_state.active_tab == "analytics":
         stats = get_stats()
 
@@ -596,8 +579,6 @@ else:
                 for q in stats["recent"]
             ]
         ) if stats["recent"] else ""
-
-        # rebuild properly
         recent_rows = ""
         for q in stats["recent"]:
             icon = "✕" if q["refused"] else "✓"
@@ -773,11 +754,8 @@ else:
 
         </div>""")
 
-    # ══════════════════════════════════════════════════════════
     # CHAT TAB
-    # ══════════════════════════════════════════════════════════
     else:
-        # ── CSS-only layout: no open/close wrapper divs (each st.html is isolated) ──
         st.html("""<style>
         /* Page padding via CSS — not a wrapper div */
         [data-testid="stMainBlockContainer"] .block-container {
@@ -787,7 +765,7 @@ else:
         [data-testid="stColumn"] > [data-testid="stVerticalBlock"] {
           background: transparent !important;
         }
-        /* ── RIGHT column — upload card ── */
+        /* RIGHT column  */
         .upload-card {
           background: var(--s);
           border: 1px solid var(--bd2);
@@ -799,7 +777,7 @@ else:
           transition: box-shadow 0.2s, border-color 0.2s;
         }
         .upload-card:hover { box-shadow: var(--sh2); border-color: var(--vpb); }
-        /* ── LEFT column — chat card ── */
+        /*  LEFT column */
         .chat-card {
           background: var(--s);
           border: 1px solid var(--bd2);
@@ -808,7 +786,7 @@ else:
           box-shadow: var(--sh);
           animation: slideUp 0.5s ease both;
         }
-        /* ── History card ── */
+        /*  History card  */
         .history-card {
           background: var(--s);
           border: 1px solid var(--bd2);
@@ -817,18 +795,18 @@ else:
           box-shadow: var(--sh);
           animation: slideUp 0.5s ease .2s both;
         }
-        /* Suppress Streamlit's own column gap rendering artifacts */
+        /* Suppress Streamlit's own column gap rendering artifact */
         [data-testid="stHorizontalBlock"] { gap: 0 !important; }
         </style>""")
 
-        # ── Outer padding wrapper (pure visual spacer, no widgets inside) ──
+        # Outer padding wrapper 
         st.html('<div style="height:6px;"></div>')
 
         col_chat, col_right = st.columns([3, 2], gap="large")
 
-        # ── RIGHT COLUMN ─────────────────────────────────────────────────────
+        #  RIGHT COLUMN 
         with col_right:
-            # Upload card header (self-contained — no open/close)
+            # Upload card header
             st.html("""<div class="upload-card">
               <div style="display:flex;align-items:center;justify-content:space-between;
                 margin-bottom:14px;">
@@ -852,7 +830,6 @@ else:
               </div>
             </div>""")
 
-            # Widgets sit OUTSIDE the decorative div — that's fine; they get card bg via CSS
             if st.button("Clear Index", key="clear_idx", use_container_width=False):
                 try:
                     r = requests.delete(f"{API_BASE}/index", timeout=15)
@@ -944,9 +921,8 @@ else:
                             st.rerun()
                 st.html('</div>')
 
-        # ── LEFT COLUMN: Chat ─────────────────────────────────────────────────
+        #  LEFT COLUMN: Chat
         with col_chat:
-            # Chat card header + status (self-contained)
             st.html(f"""<div class="chat-card">
               <div style="display:flex;align-items:flex-start;
                 justify-content:space-between;margin-bottom:18px;">
