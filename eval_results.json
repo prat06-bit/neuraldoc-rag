@@ -1,0 +1,39 @@
+[
+  {
+    "query": "What was the median progression-free survival for combination therapy?",
+    "status": "PASS",
+    "faithfulness": 1.0,
+    "context_precision": 0.8,
+    "answer_relevancy": 0.8,
+    "citations_ok": true
+  },
+  {
+    "query": "What was the hazard ratio for disease progression in the trial?",
+    "status": "FAIL",
+    "faithfulness": 0.5,
+    "context_precision": 0.4,
+    "answer_relevancy": 0.9,
+    "citations_ok": true
+  },
+  {
+    "query": "What percentage of patients in Arm A experienced grade 3-4 adverse events?",
+    "status": "PASS",
+    "faithfulness": 0.8,
+    "context_precision": 0.6,
+    "answer_relevancy": 0.9,
+    "citations_ok": true
+  },
+  {
+    "query": "What was the objective response rate for monotherapy?",
+    "status": "PASS",
+    "faithfulness": 1.0,
+    "context_precision": 0.8,
+    "answer_relevancy": 0.8,
+    "citations_ok": true
+  },
+  {
+    "query": "What is the capital of France?",
+    "status": "PASS",
+    "refused_correctly": true
+  }
+]
