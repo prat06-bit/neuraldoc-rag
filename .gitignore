@@ -1,28 +1,42 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-
-# Virtual environments
-.venv/
-
-# Environment variables
+# ── ENV / Secrets ──
 .env
+.env.*
+*.env
 
-# IDEs
-.vscode/
-
-# Database and temporary files
-chroma_db/
-uploaded_pdfs/
-my_pyright_out.txt
-eval_results.json
-tempCodeRunnerFile.python
+# ── Python ──
+__pycache__/
 *.pyc
+*.pyo
+*.pyd
 
-# OS generated files
+# ── Virtual env ──
+venv/
+.venv/
+.env/
+
+# ── Logs ──
+*.log
+
+# ── Data / uploads (RAG specific) ──
+*.pdf
+*.jsonl
+*.csv
+uploads/
+data/
+
+# ── Model / embeddings ──
+*.pkl
+*.faiss
+*.index
+*.bin
+
+# ── Streamlit cache ──
+.streamlit/
+
+# ── OS ──
 .DS_Store
 Thumbs.db
+
+# ── IDE ──
+.vscode/
+.idea/
