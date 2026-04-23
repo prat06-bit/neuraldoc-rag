@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+      <title>Form Validation and Display</title>
+
+           <script>
+           function showData() {
+let name = document.getElementById("name").value; let email = document.getElementById("email").value; let mobile = document.getElementById("mobile").value;
+let gender = document.querySelector('input[name="gender"]:checked'); let color = document.getElementById("color").value;
+if (name === "" || email === "" || mobile === "" || !gender) { alert("All fields are required!");
+return;
+}
+ 
+if (mobile.length != 10 || isNaN(mobile)) { alert("Enter valid 10-digit mobile number"); return;
+}
+
+
+// Combine data
+let result = "Name: " + name + "\n" + "Email: " + email + "\n" + "Mobile No: " + mobile + "\n" + "Gender: " + gender.value + "\n" + "Favourite Colour: " + color;
+
+// Display in textbox document.getElementById("output").value = result;
+}
+</script>
+</head>
+
+
+<body>
+
+
+<h2>User Form</h2>
+
+Name: <input type="text" id="name"><br><br>
+
+Email: <input type="email" id="email"><br><br>
+
+Mobile No: <input type="text" id="mobile"><br><br>
+
+Gender:
+<input type="radio" name="gender" value="Male"> Male
+ 
+<input type="radio" name="gender" value="Female"> Female
+<br><br>
+
+
+Favourite Colour:
+<input type="color" id="color"><br><br>
+
+
+<button onclick="showData()">Submit</button>
+
+
+<h3>Entered Details:</h3>
+<textarea id="output" rows="6" cols="40"></textarea>
+
+
+</body>
+</html>

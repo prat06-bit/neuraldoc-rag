@@ -1,8 +1,3 @@
-"""Configuration management for the RAG system.
-
-Loads settings from config.yaml and overlays environment variable overrides.
-"""
-
 from __future__ import annotations
 
 import os

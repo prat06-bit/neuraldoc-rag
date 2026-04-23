@@ -1,12 +1,13 @@
 class RAGError(Exception):
-        """Base exception for all RAG system errors."""
+    """Base exception for all RAG system errors."""
+
 
 class ConfigurationError(RAGError):
-        """Raised when configuration loading or validation fails."""
-    pass
+    """Raised when configuration loading or validation fails."""
+
 
 class InsufficientEvidenceError(RAGError):
-         """Raised when re-ranked context scores fall below the similarity threshold."""
+    """Raised when re-ranked context scores fall below the similarity threshold."""
 
     def __init__(
         self,

@@ -1,4 +1,7 @@
+"""Dev utility — generates sample.pdf for testing the RAG pipeline."""
+
 from fpdf import FPDF
+
 
 class SamplePDF(FPDF):
     def header(self):
@@ -174,8 +177,8 @@ def build():
         pdf.multi_cell(0, 6, ref)
         pdf.ln(1)
 
-    pdf.output("sample.pdf")
-    print("sample.pdf created successfully.")
+    pdf.output("tests/fixtures/sample.pdf")
+    print("tests/fixtures/sample.pdf created successfully.")
 
 
 if __name__ == "__main__":

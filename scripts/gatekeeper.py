@@ -7,12 +7,12 @@ Runs the full RAG pipeline against a Golden Dataset and exits with:
 
 Usage
 -----
-    uv run python gatekeeper.py
-    uv run python gatekeeper.py --dataset golden_dataset.json --threshold 0.85
+    uv run python scripts/gatekeeper.py
+    uv run python scripts/gatekeeper.py --dataset tests/fixtures/golden_dataset.json --threshold 0.85
 
 Integrate into CI (GitHub Actions example):
     - name: RAG Quality Gate
-      run: uv run python gatekeeper.py
+      run: uv run python scripts/gatekeeper.py
 """
 
 from __future__ import annotations
@@ -22,12 +22,15 @@ import json
 import sys
 from pathlib import Path
 
+from rag.pipeline import Pipeline
+from rag.evaluation.ragas_evaluator import RAGASEvaluator
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="RAG quality gate for CI.")
     parser.add_argument(
         "--dataset",
-        default="golden_dataset.json",
+        default="tests/fixtures/golden_dataset.json",
         help="Path to golden dataset JSON file.",
     )
     parser.add_argument(
@@ -38,7 +41,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--pdf",
-        default="sample.pdf",
+        default="tests/fixtures/sample.pdf",
         help="PDF to index for evaluation.",
     )
     return parser.parse_args()
@@ -53,39 +56,9 @@ def load_golden_dataset(path: str) -> list[dict]:
         return json.load(f)
 
 
-def build_pipeline(pdf_path: str):  # type: ignore[return]
-    """Initialise and return (retriever, graph, evaluator, cfg)."""
-    from rag.config import load_config
-    from rag.ingestion.chunker import Chunker
-    from rag.ingestion.pdf_parser import ParserFactory
-    from rag.retrieval.hybrid_retriever import HybridRetriever
-    from rag.retrieval.vector_store import VectorStore
-    from rag.generation.graph import RAGGraph
-    from rag.evaluation.ragas_evaluator import RAGASEvaluator
-
-    cfg = load_config()
-    print(f"[INFO] Model: {cfg.generation.ollama_model} | PDF: {pdf_path}")
-
-    chunks = Chunker(cfg.chunking).chunk(
-        ParserFactory.create(cfg.ingestion.parser_strategy, cfg.ingestion).parse(pdf_path)
-    )
-    print(f"[INFO] Chunks indexed: {len(chunks)}")
-
-    store = VectorStore(cfg.retrieval)
-    store.add_chunks(chunks)
-
-    retriever = HybridRetriever(store, cfg.retrieval)
-    retriever.build_bm25(chunks)
-
-    graph = RAGGraph(cfg.generation, retriever)
-    evaluator = RAGASEvaluator(cfg.generation)
-
-    return retriever, graph, evaluator, cfg
-
-
 def run_evaluation(
-    graph,
-    evaluator,
+    pipe: Pipeline,
+    evaluator: RAGASEvaluator,
     dataset: list[dict],
     threshold: float,
 ) -> tuple[bool, list[dict]]:
@@ -105,7 +78,7 @@ def run_evaluation(
         print(f"\n[{i}/{len(dataset)}] Query: {query}")
 
         # Run RAG
-        rag_result = graph.run(query)
+        rag_result = pipe.query(query)
         answer: str = rag_result["response"]
         retrieved = rag_result.get("retrieved", [])
         contexts = [sc.chunk.text for sc in retrieved]
@@ -200,11 +173,15 @@ def main() -> None:
     dataset = load_golden_dataset(args.dataset)
     print(f"[INFO] Loaded {len(dataset)} golden dataset entries.")
 
-    retriever, graph, evaluator, cfg = build_pipeline(args.pdf)
+    pipe = Pipeline()
+    print(f"[INFO] Model: {pipe.cfg.generation.ollama_model} | PDF: {args.pdf}")
 
-    all_passed, results = run_evaluation(
-        graph, evaluator, dataset, args.threshold
-    )
+    chunks = pipe.ingest(args.pdf)
+    print(f"[INFO] Chunks indexed: {len(chunks)}")
+
+    evaluator = RAGASEvaluator(pipe.cfg.generation)
+
+    all_passed, results = run_evaluation(pipe, evaluator, dataset, args.threshold)
 
     print_summary(results, all_passed)
 

@@ -79,7 +79,7 @@ Built as a portfolio project demonstrating **ML Engineering** and **MLOps** skil
 │                  │       │  PDF → Chunks → Embed → ChromaDB │
 │  Observability   │       │  BM25 ──────────────────────┐    │
 │  Layer           │       │  ChromaDB (dense) ──────────┤    │
-└──────────────────┘       │                    RRF Fusion│    │
+└──────────────────┘       │                   RRF Fusion│    │
                            │  Top-20 → Cross-Encoder ────┤    │
                            │                   Best-5    │    │
                            │  LangGraph → Ollama llama3.1│    │

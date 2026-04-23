@@ -17,7 +17,7 @@ class BasePDFParser(ABC):
         self.config = config
 
     @abstractmethod
-    def parse(self, path: str | Path) -> ParsedDocument:
+    def parse(self, path: str | Path) -> ParsedDocument: ...
 
 # pdfplumber strategy 
 
@@ -120,7 +120,7 @@ _partition_pdf_fn: Optional[Callable[..., Any]] = None
 _UNSTRUCTURED_AVAILABLE = False
 
 try:
-    from unstructured.partition.pdf import (  
+    from unstructured.partition.pdf import (  # type: ignore[import-not-found]
         partition_pdf as _imported_partition_pdf,
     )
     _partition_pdf_fn = _imported_partition_pdf
