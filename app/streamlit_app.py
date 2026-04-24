@@ -11,6 +11,7 @@ This file is intentionally slim — it owns only:
   4. Route dispatch → app/pages/{landing, chat, analytics_page}
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -20,13 +21,22 @@ _PROJECT_ROOT = str(Path(__file__).resolve().parent.parent)
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-import requests
+# Load .env file (NVIDIA_API_KEY, OPENAI_API_KEY, etc.)
+_env_path = Path(_PROJECT_ROOT) / ".env"
+if _env_path.exists():
+    for line in _env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip())
+
 import streamlit as st
 
 from app.analytics import get_stats
 from app.pages.analytics_page import render_analytics
 from app.pages.chat import render_chat
 from app.pages.landing import render_landing
+from rag.pipeline import Pipeline
 
 # ── Page config ──────────────────────────────────────────────────────────────
 
@@ -38,7 +48,9 @@ for k, v in [("page","landing"),("messages",[]),("active_tab","chat"),
     if k not in st.session_state:
         st.session_state[k] = v
 
-API_BASE = "http://localhost:8000"
+# Shared pipeline — initialised once, reused across Streamlit reruns
+if "pipe" not in st.session_state:
+    st.session_state.pipe = Pipeline()
 
 if st.query_params.get("launch") == "1":
     st.query_params.clear()
@@ -226,31 +238,19 @@ div[data-baseweb="notification"][kind="info"] *,
   100%{{background-position:10% 5%,90% 85%,55% 45%;}}}}
 </style>""")
 
-# ── Health check ─────────────────────────────────────────────────────────────
+# ── Pipeline status ──────────────────────────────────────────────────────────
 
-def get_health():
-    try:
-        r = requests.get(f"{API_BASE}/health", timeout=3).json()
-        r["_reachable"] = True
-        return r
-    except Exception:
-        return {"pipeline_ready":False,"total_chunks":0,"indexed_files":[],"_reachable":False}
-
-h = get_health()
-api_ok = h.get("_reachable", False)
-ready  = h.get("pipeline_ready", False)
-chunks = h.get("total_chunks", 0)
-files  = h.get("indexed_files", [])
+pipe: Pipeline = st.session_state.pipe
+ready  = pipe.is_ready
+chunks = len(pipe.all_chunks)
+files  = pipe.indexed_files
 
 if ready:
     _bs = "color:#059669;background:rgba(5,150,105,0.08);border:1.5px solid rgba(5,150,105,0.3);"
     _bd = "#059669"; _bt = f"Ready &middot; {chunks} chunks"
-elif api_ok:
-    _bs = "color:#D97706;background:rgba(217,119,6,0.08);border:1.5px solid rgba(217,119,6,0.3);"
-    _bd = "#D97706"; _bt = "API online &mdash; No docs indexed"
 else:
-    _bs = "color:#DC2626;background:rgba(220,38,38,0.08);border:1.5px solid rgba(220,38,38,0.3);"
-    _bd = "#DC2626"; _bt = "API offline"
+    _bs = "color:#D97706;background:rgba(217,119,6,0.08);border:1.5px solid rgba(217,119,6,0.3);"
+    _bd = "#D97706"; _bt = "No docs indexed"
 
 # ── Navbar ───────────────────────────────────────────────────────────────────
 
@@ -364,6 +364,6 @@ if st.session_state.page == "landing":
     render_landing()
 elif st.session_state.active_tab == "analytics":
     stats = get_stats()
-    render_analytics(stats=stats, api_ok=api_ok, ready=ready, chunks=chunks, files=files)
+    render_analytics(stats=stats, api_ok=True, ready=ready, chunks=chunks, files=files)
 else:
-    render_chat(ready=ready, chunks=chunks, files=files)
+    render_chat(pipe=pipe, ready=ready, chunks=chunks, files=files)

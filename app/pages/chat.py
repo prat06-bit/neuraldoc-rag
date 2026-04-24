@@ -1,10 +1,17 @@
-"""Chat page — document upload, QA interface, chat history."""
+"""Chat page — document upload, QA interface, chat history.
+
+Uses Pipeline directly (no HTTP calls) so the app is fully
+self-contained and deployable on Streamlit Cloud.
+"""
 
 from __future__ import annotations
 
+import shutil
+import tempfile
+import time
 from datetime import datetime
+from pathlib import Path
 
-import requests
 import streamlit as st
 
 from app.analytics import record_query
@@ -14,11 +21,13 @@ from app.chat_history import (
     load_conversation,
     save_conversation,
 )
+from rag.pipeline import Pipeline
 
-API_BASE = "http://localhost:8000"
+UPLOAD_DIR = Path("uploaded_pdfs")
 
 
 def render_chat(
+    pipe: Pipeline,
     ready: bool,
     chunks: int,
     files: list[str],
@@ -134,14 +143,15 @@ def render_chat(
 
         if st.button("Clear Index", key="clear_idx", use_container_width=False):
             try:
-                r = requests.delete(f"{API_BASE}/index", timeout=15)
-                if r.status_code == 200:
-                    st.success("Index cleared.")
-                    st.rerun()
-                else:
-                    st.error(f"Error: {r.text}")
-            except Exception:
-                st.error("API offline.")
+                pipe.clear()
+                # Also delete uploaded PDFs
+                if UPLOAD_DIR.exists():
+                    shutil.rmtree(UPLOAD_DIR)
+                    UPLOAD_DIR.mkdir(exist_ok=True)
+                st.success("Index cleared.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error clearing index: {e}")
 
         uploaded = st.file_uploader("Upload PDF", type=["pdf"], label_visibility="hidden")
         if uploaded:
@@ -154,19 +164,18 @@ def render_chat(
             if st.button("Index Document", use_container_width=True, key="idx_btn"):
                 with st.spinner("Processing PDF..."):
                     try:
-                        resp = requests.post(f"{API_BASE}/ingest",
-                            files={"file":(uploaded.name,uploaded,"application/pdf")},
-                            timeout=120)
-                        if resp.status_code == 200:
-                            d = resp.json()
-                            st.success(f"Indexed {d['chunks_indexed']} chunks from {d['filename']}")
-                            st.rerun()
-                        else:
-                            st.error(f"Error: {resp.text}")
-                    except requests.exceptions.ConnectionError:
-                        st.error("API offline. Run: uv run uvicorn app.api:app --reload --port 8000")
+                        # Save uploaded file to disk
+                        UPLOAD_DIR.mkdir(exist_ok=True)
+                        save_path = UPLOAD_DIR / (uploaded.name or "upload.pdf")
+                        with open(save_path, "wb") as f:
+                            f.write(uploaded.getbuffer())
+
+                        # Ingest via Pipeline directly
+                        new_chunks = pipe.ingest(str(save_path))
+                        st.success(f"Indexed {len(new_chunks)} chunks from {uploaded.name}")
+                        st.rerun()
                     except Exception as e:
-                        st.error(str(e))
+                        st.error(f"Indexing failed: {e}")
 
         if files:
             st.html("""<div style="font-size:10px;font-weight:700;color:var(--t3);
@@ -363,19 +372,19 @@ def render_chat(
             else:
                 with st.spinner("Thinking..."):
                     try:
-                        resp = requests.post(f"{API_BASE}/query",
-                            json={"query":query}, timeout=120)
-                        if resp.status_code == 200:
-                            d = resp.json()
-                            st.session_state.messages.extend([
-                                {"role":"user","content":query},
-                                {"role":"assistant","content":d["answer"],
-                                 "references":d["references"],"refused":d["refused"],
-                                 "latency_ms":d["latency_ms"]}])
-                            record_query(query=query, latency_ms=d["latency_ms"],
-                                         refused=d["refused"])
-                            st.rerun()
-                        else:
-                            st.error(f"API error: {resp.json().get('detail',resp.text)}")
-                    except requests.exceptions.ConnectionError:
-                        st.error("Cannot reach API. Run: uv run uvicorn app.api:app --reload --port 8000")
+                        start = time.perf_counter()
+                        result = pipe.query(query)
+                        latency_ms = round((time.perf_counter() - start) * 1000, 1)
+
+                        st.session_state.messages.extend([
+                            {"role": "user", "content": query},
+                            {"role": "assistant", "content": result["response"],
+                             "references": result["references"],
+                             "refused": result["refused"],
+                             "latency_ms": latency_ms}
+                        ])
+                        record_query(query=query, latency_ms=latency_ms,
+                                     refused=result["refused"])
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Query failed: {e}")

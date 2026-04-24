@@ -130,10 +130,12 @@ class RAGGraph:
             return self._get_ollama_llm()
         elif provider == "openai":
             return self._get_openai_llm()
+        elif provider == "nvidia":
+            return self._get_nvidia_llm()
         else:
             raise ValueError(
                 f"Unknown provider '{provider}'. "
-                "Set config.generation.provider to 'ollama' or 'openai'."
+                "Set config.generation.provider to 'ollama', 'openai', or 'nvidia'."
             )
 
     def _get_ollama_llm(self):  
@@ -166,6 +168,29 @@ class RAGGraph:
             )
         return ChatOpenAI(
             model=self.config.openai_model,
+            temperature=self.config.temperature,
+            max_tokens=self.config.max_tokens,
+            api_key=api_key,
+        )
+
+    def _get_nvidia_llm(self):
+        """NVIDIA NIM endpoint — OpenAI-compatible API."""
+        try:
+            from langchain_openai import ChatOpenAI
+        except ImportError as exc:
+            raise ImportError(
+                "langchain-openai is required. Install with: uv add langchain-openai"
+            ) from exc
+
+        api_key = os.environ.get("NVIDIA_API_KEY", "")
+        if not api_key:
+            raise EnvironmentError(
+                "NVIDIA_API_KEY environment variable is not set. "
+                "Get one at https://build.nvidia.com"
+            )
+        return ChatOpenAI(
+            model=self.config.nvidia_model,
+            base_url=self.config.nvidia_base_url,
             temperature=self.config.temperature,
             max_tokens=self.config.max_tokens,
             api_key=api_key,
