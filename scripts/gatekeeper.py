@@ -1,20 +1,3 @@
-"""
-Gatekeeper — CI evaluation script.
-
-Runs the full RAG pipeline against a Golden Dataset and exits with:
-    0  — all checks passed (faithfulness >= threshold, citations present)
-    1  — one or more checks failed
-
-Usage
------
-    uv run python scripts/gatekeeper.py
-    uv run python scripts/gatekeeper.py --dataset tests/fixtures/golden_dataset.json --threshold 0.85
-
-Integrate into CI (GitHub Actions example):
-    - name: RAG Quality Gate
-      run: uv run python scripts/gatekeeper.py
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -62,11 +45,6 @@ def run_evaluation(
     dataset: list[dict],
     threshold: float,
 ) -> tuple[bool, list[dict]]:
-    """
-    Run each golden dataset entry through the pipeline and evaluate.
-
-    Returns (all_passed, results_list).
-    """
     results: list[dict] = []
     all_passed = True
 
