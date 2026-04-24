@@ -40,6 +40,8 @@ class GenerationConfig(BaseModel):
     ollama_model: str = "llama3.1:8b"
     ollama_base_url: str = "http://localhost:11434"
     openai_model: str = "gpt-4o"
+    nvidia_model: str = "meta/llama-3.3-70b-instruct"
+    nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
     temperature: float = 0.0
     max_tokens: int = 2048
 

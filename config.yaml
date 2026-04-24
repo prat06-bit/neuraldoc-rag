@@ -1,4 +1,4 @@
-﻿domain: "medical_research"
+domain: "medical_research"
 ingestion:
   parser_strategy: "pdfplumber"
   header_font_size_threshold: 13.0
@@ -17,11 +17,13 @@ retrieval:
   cross_encoder_model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
   similarity_threshold: -10.0
 generation:
-  provider: "ollama"
+  provider: "nvidia"
   ollama_model: "llama3.1:8b"
   ollama_base_url: "http://localhost:11434"
   openai_model: "gpt-4o"
-  temperature: 0.0
+  nvidia_model: "meta/llama-3.3-70b-instruct"
+  nvidia_base_url: "https://integrate.api.nvidia.com/v1"
+  temperature: 0.2
   max_tokens: 2048
 evaluation:
   faithfulness_threshold: 0.85
