@@ -1,8 +1,3 @@
-"""
-Core data models for the RAG pipeline.
-IMPORTANT: Never import from any other rag.* module here.
-"""
-
 from __future__ import annotations
 from typing import Any
 from pydantic import BaseModel, Field

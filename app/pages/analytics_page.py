@@ -1,9 +1,6 @@
-"""Analytics dashboard page — soft pastel SaaS theme."""
-
 from __future__ import annotations
 
 import streamlit as st
-
 
 def render_analytics(
     stats: dict,
@@ -12,9 +9,8 @@ def render_analytics(
     chunks: int,
     files: list[str],
 ) -> None:
-    """Render the analytics dashboard tab."""
 
-    # ── Recent queries rows ──────────────────────────────────────────────────
+    #  Recent queries rows 
     recent_rows = ""
     for q in stats["recent"]:
         icon = "✕" if q["refused"] else "✓"
@@ -43,7 +39,7 @@ def render_analytics(
     ans_pct = round((stats['answered']/stats['total_queries']*100) if stats['total_queries'] else 0)
     ref_pct = round((stats['refused']/stats['total_queries']*100) if stats['total_queries'] else 0)
 
-    # ── Card builder helper ──────────────────────────────────────────────────
+    #  Card builder helper 
     def metric_card(value, label, color, delay, extra=""):
         return f"""
         <div style="background:#FFFFFF;border:1px solid rgba(45,43,85,0.05);
@@ -61,14 +57,14 @@ def render_analytics(
           {extra}
         </div>"""
 
-    # ── Progress bar helper ──────────────────────────────────────────────────
+    #  Progress bar helper 
     def progress_bar(pct, color):
         return f"""<div style="margin-top:12px;height:3px;border-radius:4px;
           background:rgba(45,43,85,0.05);overflow:hidden;">
           <div style="height:100%;background:{color};border-radius:4px;
             width:{pct}%;transition:width 1.2s cubic-bezier(0.4,0,0.2,1);"></div></div>"""
 
-    # ── Render ───────────────────────────────────────────────────────────────
+    #  Render 
     st.html(f"""
     <style>
     /* Analytics page overrides */
@@ -92,7 +88,7 @@ def render_analytics(
           Query <em style="font-style:italic;color:var(--v);">Analytics</em></div>
       </div>
 
-      <!-- ═══ Metric Cards ═══ -->
+      <!--  Metric Cards  -->
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px;">
 
         {metric_card(stats['total_queries'], "Total Queries", "var(--v)", ".05s")}
@@ -111,7 +107,7 @@ def render_analytics(
 
       </div>
 
-      <!-- ═══ Recent Queries ═══ -->
+      <!--  Recent Queries  -->
       <div style="background:#FFFFFF;border:1px solid rgba(45,43,85,0.05);
         border-radius:20px;padding:28px 30px;margin-bottom:20px;
         box-shadow:0 1px 4px rgba(45,43,85,0.03),0 4px 24px rgba(124,92,252,0.04);

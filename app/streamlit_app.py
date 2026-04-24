@@ -1,27 +1,13 @@
-"""
-NeuralDoc — Streamlit entry point.
-
-Run with:
-    streamlit run app/streamlit_app.py
-
-This file is intentionally slim — it owns only:
-  1. Page config & global CSS
-  2. Session-state init
-  3. Navbar
-  4. Route dispatch → app/pages/{landing, chat, analytics_page}
-"""
-
 import os
 import sys
 from pathlib import Path
 
-# Ensure the project root is on sys.path so `app.*` resolves to the
-# app/ *package* even if a stale `app.py` file still exists at the root.
+
 _PROJECT_ROOT = str(Path(__file__).resolve().parent.parent)
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-# Load .env file (NVIDIA_API_KEY, OPENAI_API_KEY, etc.)
+# Load .env file
 _env_path = Path(_PROJECT_ROOT) / ".env"
 if _env_path.exists():
     for line in _env_path.read_text(encoding="utf-8").splitlines():
@@ -38,8 +24,7 @@ from app.pages.chat import render_chat
 from app.pages.landing import render_landing
 from rag.pipeline import Pipeline
 
-# ── Page config ──────────────────────────────────────────────────────────────
-
+#  Page config 
 st.set_page_config(page_title="NeuralDoc", page_icon="N", layout="wide",
                    initial_sidebar_state="collapsed")
 
@@ -66,8 +51,7 @@ if st.query_params.get("darkmode") == "off":
     st.query_params.clear()
     st.session_state.dark_mode = False
 
-# ── Theme CSS ────────────────────────────────────────────────────────────────
-
+#  Theme CSS 
 def css_vars():
     if st.session_state.dark_mode:
         return """
@@ -97,7 +81,7 @@ def css_vars():
       --navbar-bg:rgba(255,255,255,0.92);--navbar-bd:rgba(124,92,252,0.08);
     """
 
-# ── Global CSS ───────────────────────────────────────────────────────────────
+#  Global CSS 
 
 st.html(f"""<style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Instrument+Serif:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -229,7 +213,7 @@ div[role="alert"]:has(svg[data-testid="stIconInfo"]) {{
   100%{{background-position:10% 5%,90% 85%,55% 45%;}}}}
 </style>""")
 
-# ── Pipeline status ──────────────────────────────────────────────────────────
+#  Pipeline status 
 
 pipe: Pipeline = st.session_state.pipe
 ready  = pipe.is_ready
@@ -243,7 +227,7 @@ else:
     _bs = "color:#D97706;background:rgba(217,119,6,0.08);border:1.5px solid rgba(217,119,6,0.3);"
     _bd = "#D97706"; _bt = "No docs indexed"
 
-# ── Navbar ───────────────────────────────────────────────────────────────────
+#  Navbar 
 
 dm = st.session_state.dark_mode
 dm_icon = "☀" if dm else "☽"
@@ -349,7 +333,7 @@ st.html(f"""<script>
 }})();
 </script>""")
 
-# ── Route dispatch ───────────────────────────────────────────────────────────
+#  Route dispatch 
 
 if st.session_state.page == "landing":
     render_landing()

@@ -1,7 +1,4 @@
-"""Dev utility — generates sample.pdf for testing the RAG pipeline."""
-
 from fpdf import FPDF
-
 
 class SamplePDF(FPDF):
     def header(self):

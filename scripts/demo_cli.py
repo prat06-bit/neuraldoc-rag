@@ -1,5 +1,3 @@
-"""Quick CLI demo — ingests sample.pdf and runs a single query."""
-
 from rag.pipeline import Pipeline
 
 

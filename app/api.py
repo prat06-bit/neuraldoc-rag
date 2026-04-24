@@ -1,5 +1,3 @@
-"""FastAPI server — uses rag.pipeline.Pipeline as the single backend."""
-
 from __future__ import annotations
 
 import shutil
@@ -29,11 +27,11 @@ app.add_middleware(
 UPLOAD_DIR = Path("uploaded_pdfs")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-# --- Shared pipeline instance ---
+#  Shared pipeline instance   
 pipe = Pipeline()
 
 
-# --- Request / Response models ---
+#  Request / Response models   
 
 class QueryRequest(BaseModel):
     query: str
@@ -63,7 +61,7 @@ class IngestResponse(BaseModel):
     total_chunks: int
 
 
-# --- Endpoints ---
+#  Endpoints  
 
 @app.get("/health")
 def health() -> dict[str, Any]:

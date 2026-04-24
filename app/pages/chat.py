@@ -1,9 +1,3 @@
-"""Chat page — document upload, QA interface, chat history.
-
-Uses Pipeline directly (no HTTP calls) so the app is fully
-self-contained and deployable on Streamlit Cloud.
-"""
-
 from __future__ import annotations
 
 import shutil
@@ -32,9 +26,7 @@ def render_chat(
     chunks: int,
     files: list[str],
 ) -> None:
-    """Render the chat + upload interface."""
 
-    # --- Page-level CSS overrides ---
     st.html("""<style>
     [data-testid="stAppViewContainer"]{background:var(--bg)!important;}
     [data-testid="stAppViewContainer"]::before{
@@ -111,12 +103,10 @@ def render_chat(
         else:
             st.html('<div style="height:44px;"></div>')
 
-    # --- Outer padding wrapper ---
     st.html('<div style="height:6px;"></div>')
 
     col_chat, col_right = st.columns([3, 2], gap="large")
 
-    # ==================  RIGHT COLUMN — upload & history  ==================
     with col_right:
         st.html("""<div class="upload-card">
           <div style="display:flex;align-items:center;justify-content:space-between;
@@ -232,7 +222,7 @@ def render_chat(
                         st.rerun()
             st.html('</div>')
 
-    # ==================  LEFT COLUMN — chat  ==================
+    #   LEFT COLUMN chat  
     with col_chat:
         st.html(f"""<div class="chat-card">
           <div style="display:flex;align-items:flex-start;
@@ -357,7 +347,7 @@ def render_chat(
               </div>
             </div>""")
 
-        # --- Input bar ---
+        # Input bar 
         qc, bc = st.columns([4, 2])
         with qc:
             query = st.text_input("Question",

@@ -40,8 +40,6 @@ class GenerationConfig(BaseModel):
     ollama_model: str = "llama3.1:8b"
     ollama_base_url: str = "http://localhost:11434"
     openai_model: str = "gpt-4o"
-    nvidia_model: str = "meta/llama-3.3-70b-instruct"
-    nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
     temperature: float = 0.0
     max_tokens: int = 2048
 
@@ -63,14 +61,6 @@ class RAGConfig(BaseModel):
 
 
 def load_config(config_path: str | Path | None = None) -> RAGConfig:
-    """Load configuration from YAML file with environment variable overrides.
-
-    Environment variable overrides follow the pattern:
-        RAG_<SECTION>_<KEY> = value
-    For example:
-        RAG_RETRIEVAL_ALPHA=0.7
-        RAG_GENERATION_MODEL_NAME=gpt-4o-mini
-    """
     path = Path(config_path) if config_path else _DEFAULT_CONFIG_PATH
 
     if not path.exists():
@@ -85,7 +75,6 @@ def load_config(config_path: str | Path | None = None) -> RAGConfig:
 
 
 def _apply_env_overrides(raw: dict[str, Any]) -> None:
-    """Overlay RAG_* environment variables onto the raw config dict."""
     prefix = "RAG_"
     for key, value in os.environ.items():
         if not key.startswith(prefix):
@@ -97,7 +86,7 @@ def _apply_env_overrides(raw: dict[str, Any]) -> None:
         if section in raw and isinstance(raw[section], dict):
             try:
                 numeric = float(value)
-                value = int(numeric) if numeric == int(numeric) else numeric  # type: ignore[assignment]
+                value = int(numeric) if numeric == int(numeric) else numeric  
             except (ValueError, TypeError):
                 pass
             raw[section][field_name] = value
