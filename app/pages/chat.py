@@ -10,6 +10,8 @@ import streamlit as st
 
 from app.analytics import record_query
 from app.chat_history import (
+    delete_all_conversations,
+    delete_conversation,
     export_as_markdown,
     load_all_conversations,
     load_conversation,
@@ -204,30 +206,44 @@ def render_chat(
           </div></div>""")
 
         # Chat History
-        convs = load_all_conversations()
-        if convs:
-            st.html("""<div class="history-card">
-              <div style="font-size:10px;font-weight:700;color:var(--v);
-                letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">
-                Chat History</div>""")
-            for i, conv in enumerate(convs[:5]):
-                ts = conv["timestamp"][:10]
-                title = conv["title"][:40] + ("…" if len(conv["title"]) > 40 else "")
-                n = len([m for m in conv["messages"] if m["role"]=="user"])
-                st.html(f"""<div style="padding:8px 12px;border-radius:var(--r);
-                  border:1px solid var(--bd2);margin-bottom:6px;
-                  display:flex;align-items:center;gap:8px;transition:all 0.15s;white-space:nowrap;"
-                  onmouseover="this.style.borderColor='var(--vpb)';this.style.background='var(--vp)';this.style.transform='translateX(2px)'"
-                  onmouseout="this.style.borderColor='var(--bd2)';this.style.background='';this.style.transform=''">
-                  <div style="flex:1;min-width:0;overflow:hidden;">
-                    <span style="font-size:12px;font-weight:500;color:var(--t1);
-                      text-overflow:ellipsis;overflow:hidden;white-space:nowrap;display:block;">{title}</span>
-                    <span style="font-size:10px;color:var(--t3);">{ts} &middot; {n} {'query' if n==1 else 'queries'}</span>
-                  </div>
-                </div>""")
-                if st.button("Load", key=f"ld_{conv['id']}_{i}", use_container_width=True):
-                    st.session_state.messages = load_conversation(conv["id"])
+    convs = load_all_conversations()
+    if convs:
+            show = convs[:5]
+ 
+            # Header + Clear All on same row
+            h1, h2 = st.columns([3, 1])
+            with h1:
+                st.html("""<div style="font-size:10px;font-weight:700;color:var(--v);
+                  letter-spacing:0.1em;text-transform:uppercase;margin:14px 0 6px;">
+                  Chat History</div>""")
+            with h2:
+                if st.button("Clear All", key="clear_all_hist", use_container_width=True):
+                    delete_all_conversations()
                     st.rerun()
+ 
+            # One tab per conversation — Streamlit renders these as a horizontal tab bar
+            tab_labels = [
+                conv["title"][:18] + ("…" if len(conv["title"]) > 18 else "")
+                for conv in show
+            ]
+            tabs = st.tabs(tab_labels)
+ 
+            for tab, conv in zip(tabs, show):
+                with tab:
+                    ts = conv["timestamp"][:10]
+                    n = len([m for m in conv["messages"] if m["role"] == "user"])
+                    st.caption(f"{ts} · {n} {'query' if n == 1 else 'queries'}")
+                    b1, b2 = st.columns(2)
+                    with b1:
+                        if st.button("Load", key=f"ld_{conv['id']}",
+                                     use_container_width=True):
+                            st.session_state.messages = load_conversation(conv["id"])
+                            st.rerun()
+                    with b2:
+                        if st.button("🗑 Delete", key=f"del_{conv['id']}",
+                                     use_container_width=True):
+                            delete_conversation(conv["id"])
+                            st.rerun()
             st.html('</div>')
 
     #   LEFT COLUMN chat  

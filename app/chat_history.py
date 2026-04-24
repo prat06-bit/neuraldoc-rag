@@ -5,6 +5,7 @@ from pathlib import Path
 
 HISTORY_FILE = Path("chat_history.json")
 
+
 def _load_raw() -> list:
     if not HISTORY_FILE.exists():
         return []
@@ -13,8 +14,12 @@ def _load_raw() -> list:
     except Exception:
         return []
 
+
 def _save_raw(data: list) -> None:
-    HISTORY_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    HISTORY_FILE.write_text(
+        json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+
 
 def save_conversation(messages: list, title: str | None = None) -> str:
     if not messages:
@@ -22,7 +27,9 @@ def save_conversation(messages: list, title: str | None = None) -> str:
     all_convs = _load_raw()
     conv_id = str(uuid.uuid4())[:8]
     if title is None:
-        first_user = next((m["content"] for m in messages if m["role"] == "user"), "Untitled")
+        first_user = next(
+            (m["content"] for m in messages if m["role"] == "user"), "Untitled"
+        )
         title = first_user[:48] + ("…" if len(first_user) > 48 else "")
     all_convs.append({
         "id": conv_id,
@@ -33,8 +40,10 @@ def save_conversation(messages: list, title: str | None = None) -> str:
     _save_raw(all_convs)
     return conv_id
 
+
 def load_all_conversations() -> list:
     return list(reversed(_load_raw()))
+
 
 def load_conversation(conv_id: str) -> list:
     for conv in _load_raw():
@@ -42,9 +51,17 @@ def load_conversation(conv_id: str) -> list:
             return conv["messages"]
     return []
 
+
 def delete_conversation(conv_id: str) -> None:
+    """Remove a single conversation by ID."""
     data = [c for c in _load_raw() if c["id"] != conv_id]
     _save_raw(data)
+
+
+def delete_all_conversations() -> None:
+    """Wipe entire history file."""
+    _save_raw([])
+
 
 def export_as_markdown(messages: list, title: str = "Chat Export") -> str:
     lines = [f"# {title}", f"_Exported {datetime.now().strftime('%Y-%m-%d %H:%M')}_\n"]

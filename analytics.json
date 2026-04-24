@@ -27,9 +27,37 @@
       "refused": false,
       "model": "llama3.1:8b",
       "timestamp": "2026-04-24T11:18:57.331930"
+    },
+    {
+      "query": "supervised learning",
+      "latency_ms": 19448.9,
+      "refused": false,
+      "model": "llama3.1:8b",
+      "timestamp": "2026-04-24T14:04:30.333134"
+    },
+    {
+      "query": "supervised learning",
+      "latency_ms": 9935.4,
+      "refused": false,
+      "model": "llama3.1:8b",
+      "timestamp": "2026-04-24T14:05:09.797979"
+    },
+    {
+      "query": "supervised learning",
+      "latency_ms": 6200.8,
+      "refused": false,
+      "model": "llama3.1:8b",
+      "timestamp": "2026-04-24T14:05:36.630518"
+    },
+    {
+      "query": "name of student",
+      "latency_ms": 16183.0,
+      "refused": false,
+      "model": "llama3.1:8b",
+      "timestamp": "2026-04-24T14:12:27.218562"
     }
   ],
-  "total": 4,
+  "total": 8,
   "refused": 0,
-  "total_latency_ms": 94949.4
+  "total_latency_ms": 146717.5
 }
