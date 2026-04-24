@@ -212,22 +212,22 @@ def render_chat(
                 Chat History</div>""")
             for i, conv in enumerate(convs[:5]):
                 ts = conv["timestamp"][:10]
-                title = conv["title"][:34] + ("…" if len(conv["title"]) > 34 else "")
+                title = conv["title"][:40] + ("…" if len(conv["title"]) > 40 else "")
                 n = len([m for m in conv["messages"] if m["role"]=="user"])
-                hc1, hc2 = st.columns([4, 1])
-                with hc1:
-                    st.html(f"""<div style="padding:8px 10px;border-radius:var(--r);
-                      border:1px solid var(--bd2);margin-bottom:5px;cursor:pointer;transition:all 0.15s;"
-                      onmouseover="this.style.borderColor='var(--vpb)';this.style.background='var(--vp)';this.style.transform='translateX(2px)'"
-                      onmouseout="this.style.borderColor='var(--bd2)';this.style.background='';this.style.transform=''">
-                      <div style="font-size:12px;font-weight:500;color:var(--t1);">{title}</div>
-                      <div style="font-size:10px;color:var(--t3);margin-top:2px;">
-                        {ts} &middot; {n} {'query' if n==1 else 'queries'}</div>
-                    </div>""")
-                with hc2:
-                    if st.button("Load", key=f"ld_{conv['id']}_{i}", use_container_width=True):
-                        st.session_state.messages = load_conversation(conv["id"])
-                        st.rerun()
+                st.html(f"""<div style="padding:8px 12px;border-radius:var(--r);
+                  border:1px solid var(--bd2);margin-bottom:6px;
+                  display:flex;align-items:center;gap:8px;transition:all 0.15s;white-space:nowrap;"
+                  onmouseover="this.style.borderColor='var(--vpb)';this.style.background='var(--vp)';this.style.transform='translateX(2px)'"
+                  onmouseout="this.style.borderColor='var(--bd2)';this.style.background='';this.style.transform=''">
+                  <div style="flex:1;min-width:0;overflow:hidden;">
+                    <span style="font-size:12px;font-weight:500;color:var(--t1);
+                      text-overflow:ellipsis;overflow:hidden;white-space:nowrap;display:block;">{title}</span>
+                    <span style="font-size:10px;color:var(--t3);">{ts} &middot; {n} {'query' if n==1 else 'queries'}</span>
+                  </div>
+                </div>""")
+                if st.button("Load", key=f"ld_{conv['id']}_{i}", use_container_width=True):
+                    st.session_state.messages = load_conversation(conv["id"])
+                    st.rerun()
             st.html('</div>')
 
     #   LEFT COLUMN chat  
