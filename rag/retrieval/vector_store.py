@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -6,15 +6,24 @@ from typing import Any
 from rag.config import RetrievalConfig
 from rag.models import ChunkMetadata, DocumentChunk
 
+import os
+import tempfile
+
 @dataclass
 class ScoredChunk:
     chunk: DocumentChunk
     score: float
 
+def _default_persist_dir() -> str:
+    """Use /tmp on Streamlit Cloud (read-only filesystem), local dir otherwise."""
+    if os.environ.get("STREAMLIT_SERVER_HEADLESS") or os.path.exists("/mount"):
+        return os.path.join(tempfile.gettempdir(), "neuraldoc_chroma_db")
+    return "chroma_db"
+
 class VectorStore:
-    def __init__(self, config: RetrievalConfig, persist_dir: str | Path = "chroma_db", collection: str = "rag_chunks") -> None:
+    def __init__(self, config: RetrievalConfig, persist_dir: str | Path | None = None, collection: str = "rag_chunks") -> None:
         self.config = config
-        self.persist_dir = str(Path(persist_dir).resolve())
+        self.persist_dir = str(Path(persist_dir or _default_persist_dir()).resolve())
         self.collection_name = collection
         self._client = None
         self._collection = None

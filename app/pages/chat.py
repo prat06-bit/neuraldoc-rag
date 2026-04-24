@@ -17,7 +17,15 @@ from app.chat_history import (
 )
 from rag.pipeline import Pipeline
 
-UPLOAD_DIR = Path("uploaded_pdfs")
+import os as _os
+import tempfile as _tempfile
+
+def _upload_dir() -> Path:
+    if _os.environ.get("STREAMLIT_SERVER_HEADLESS") or _os.path.exists("/mount"):
+        return Path(_tempfile.gettempdir()) / "neuraldoc_uploads"
+    return Path("uploaded_pdfs")
+
+UPLOAD_DIR = _upload_dir()
 
 
 def render_chat(
