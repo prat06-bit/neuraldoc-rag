@@ -53,13 +53,11 @@ def load_conversation(conv_id: str) -> list:
 
 
 def delete_conversation(conv_id: str) -> None:
-    """Remove a single conversation by ID."""
     data = [c for c in _load_raw() if c["id"] != conv_id]
     _save_raw(data)
 
 
 def delete_all_conversations() -> None:
-    """Wipe entire history file."""
     _save_raw([])
 
 
@@ -71,6 +69,6 @@ def export_as_markdown(messages: list, title: str = "Chat Export") -> str:
         if m.get("references"):
             lines.append("References: " + ", ".join(m["references"]) + "\n")
         if m.get("refused"):
-            lines.append("_⚠ Refusal triggered — insufficient evidence_\n")
+            lines.append(" Refusal triggered — insufficient evidence_\n")
         lines.append("---\n")
     return "\n".join(lines)
