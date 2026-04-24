@@ -45,11 +45,6 @@ def run_evaluation(
     dataset: list[dict],
     threshold: float,
 ) -> tuple[bool, list[dict]]:
-    """
-    Run each golden dataset entry through the pipeline and evaluate.
-
-    Returns (all_passed, results_list).
-    """
     results: list[dict] = []
     all_passed = True
 
