@@ -34,8 +34,8 @@ class RAGGraph:
 
     # Public API
 
-    def run(self, query: str) -> dict[str, Any]:      
-       initial_state: RAGState = {
+    def run(self, query: str) -> dict[str, Any]:
+        initial_state: RAGState = {
             "query": query,
             "retrieved": [],
             "context_passages": [],

@@ -35,7 +35,7 @@ class Pipeline:
 
     @property
     def is_ready(self) -> bool:
-        return self._graph is not None and len(self.all_chunks) > 0
+        return len(self.all_chunks) > 0
 
     @property
     def graph(self):

@@ -52,9 +52,9 @@ Built as a portfolio project demonstrating **ML Engineering** and **MLOps** skil
 - **Persistent Chat History** — auto-saved conversations, load any past session
 - **Export as Markdown** — download chats with citations as `.md` files
 - **Live Query Analytics** — refusal rate, avg latency, rolling 200-query window
-- **Dark / Light Mode** — full theme switching
-- **FastAPI Backend** — REST API with `/ingest`, `/query`, `/health` endpoints
-- **Streamlit Frontend** — minimal SaaS dashboard UI
+- **Dark / Light Mode** — full theme switching with soft pastel light theme
+- **FastAPI Backend** — REST API with `/ingest`, `/query`, `/health`, `/config` endpoints
+- **Streamlit Frontend** — modular SaaS dashboard UI with page routing
 
 ---
 
@@ -70,15 +70,18 @@ Built as a portfolio project demonstrating **ML Engineering** and **MLOps** skil
 │   Chat Interface      │   POST /query   → RAG query         │
 │   Analytics Dashboard │   GET  /health  → pipeline status   │
 │   Dark/Light Mode     │   DELETE /index → wipe index        │
+│                       │   GET  /config  → current config    │
+│                       │   POST /config/update → hot reload  │
 └───────────────────────┴─────────────────────────────────────┘
            │                          │
            ▼                          ▼
 ┌──────────────────┐       ┌──────────────────────────────────┐
-│  chat_history.py │       │         RAG Pipeline             │
-│  analytics.py    │       │                                  │
-│                  │       │  PDF → Chunks → Embed → ChromaDB │
-│  Observability   │       │  BM25 ──────────────────────┐    │
-│  Layer           │       │  ChromaDB (dense) ──────────┤    │
+│  chat_history.py │       │      rag/pipeline.py             │
+│  analytics.py    │       │   (shared Pipeline factory)      │
+│                  │       │                                  │
+│  Observability   │       │  PDF → Chunks → Embed → ChromaDB │
+│  Layer           │       │  BM25 ──────────────────────┐    │
+│                  │       │  ChromaDB (dense) ──────────┤    │
 └──────────────────┘       │                   RRF Fusion│    │
                            │  Top-20 → Cross-Encoder ────┤    │
                            │                   Best-5    │    │
@@ -120,7 +123,7 @@ pdfplumber → tiktoken chunker → sentence-transformers
 
 NeuralDoc includes a lightweight **query observability pipeline** — a foundational MLOps component.
 
-### What's tracked (`analytics.py`)
+### What's tracked (`app/analytics.py`)
 | Metric | Description | Resume Line |
 |--------|-------------|-------------|
 | **Refusal Rate** | % of queries where context was insufficient | Measures retrieval quality |
@@ -175,10 +178,10 @@ cd NeuralDoc
 uv sync
 
 # 3. Start the FastAPI backend
-uv run uvicorn api:app --reload --port 8000
+uv run uvicorn app.api:app --reload --port 8000
 
 # 4. In a new terminal, start the Streamlit frontend
-uv run streamlit run streamlit_app.py
+uv run streamlit run app/streamlit_app.py
 ```
 
 Open `http://localhost:8501` in your browser.
@@ -206,32 +209,62 @@ gatekeeper:
 
 ```
 NeuralDoc/
-├── streamlit_app.py          # Main UI (landing, chat, analytics)
-├── api.py                    # FastAPI backend
-├── chat_history.py           # Persistent conversation storage
-├── analytics.py              # Query observability tracker
-├── config.yaml               # Model + retrieval config
-├── gatekeeper.py             # CI evaluation script
-├── golden_dataset.json       # Evaluation test cases
+├── config.yaml                    # Model + retrieval + chunking config
+├── pyproject.toml                 # Project metadata and dependencies
 │
-├── rag/
-│   ├── config.py
-│   ├── models.py
-│   ├── exceptions.py
-│   ├── ingestion/
-│   │   ├── pdf_parser.py     # pdfplumber extraction
-│   │   └── chunker.py        # tiktoken chunking
-│   ├── retrieval/
-│   │   ├── vector_store.py   # ChromaDB interface
-│   │   └── hybrid_retriever.py  # BM25 + RRF + reranker
-│   ├── generation/
-│   │   ├── graph.py          # LangGraph RAG state machine
-│   │   └── prompts.py        # System / user prompts
-│   └── evaluation/
-│       └── ragas_evaluator.py
+├── app/                           # Application layer
+│   ├── __init__.py
+│   ├── api.py                     # FastAPI backend (uses rag.Pipeline)
+│   ├── streamlit_app.py           # Streamlit entry point (config, CSS, navbar, routing)
+│   ├── analytics.py               # Query observability tracker
+│   ├── chat_history.py            # Persistent conversation storage
+│   └── pages/                     # Streamlit page modules
+│       ├── __init__.py
+│       ├── landing.py             # Landing / hero page
+│       ├── chat.py                # Chat interface + document upload
+│       └── analytics_page.py      # Analytics dashboard
 │
-└── chroma_db/                # ChromaDB persistence (auto-created)
+├── rag/                           # Core RAG engine
+│   ├── __init__.py
+│   ├── config.py                  # Pydantic config models + YAML loader
+│   ├── models.py                  # Data models (DocumentChunk, ParsedPage, etc.)
+│   ├── exceptions.py              # Custom exceptions (InsufficientEvidenceError)
+│   ├── pipeline.py                # Shared Pipeline factory (ingest → query → clear)
+│   ├── ingestion/                 # PDF parsing and chunking
+│   │   ├── pdf_parser.py          # pdfplumber + unstructured strategies
+│   │   └── chunker.py             # tiktoken-based semantic chunking
+│   ├── retrieval/                 # Hybrid search and reranking
+│   │   ├── vector_store.py        # ChromaDB interface
+│   │   └── hybrid_retriever.py    # BM25 + RRF fusion + cross-encoder reranker
+│   ├── generation/                # LLM answer generation
+│   │   ├── graph.py               # LangGraph RAG state machine
+│   │   └── prompts.py             # System / user prompt templates
+│   └── evaluation/                # Quality evaluation
+│       └── ragas_evaluator.py     # RAGAS faithfulness scoring
+│
+├── scripts/                       # Dev and CI utilities
+│   ├── demo_cli.py                # Quick CLI demo (ingest + query)
+│   ├── gatekeeper.py              # CI quality gate (golden dataset evaluation)
+│   └── generate_sample_pdf.py     # Generate test PDF fixture
+│
+├── tests/                         # Test suite
+│   ├── fixtures/                  # Test data (sample.pdf, golden_dataset.json)
+│   ├── test_chunker.py
+│   ├── test_gatekeeper.py
+│   └── test_hybrid_retriever.py
+│
+└── chroma_db/                     # ChromaDB persistence (auto-created)
 ```
+
+### Key design decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| **`rag/pipeline.py`** | Single `Pipeline` class eliminates 3× duplicated init code across API, CLI, and CI scripts |
+| **`app/pages/` split** | The original 1,080-line `app.py` monolith is now 4 focused modules (~200 lines each) |
+| **`app/analytics.py` + `app/chat_history.py`** | Persistence modules co-located with the UI that consumes them |
+| **`scripts/` directory** | Dev tooling and CI scripts separated from application code |
+| **Lazy graph build** | `Pipeline.graph` is constructed on first query, not on startup — faster cold starts |
 
 ---
 
@@ -250,7 +283,7 @@ curl -X POST http://localhost:8000/ingest \
 {
   "filename": "document.pdf",
   "chunks_indexed": 42,
-  "status": "success"
+  "total_chunks": 42
 }
 ```
 
@@ -266,8 +299,9 @@ curl -X POST http://localhost:8000/query \
 **Response:**
 ```json
 {
-  "answer": "The main finding is... [Source: document.pdf, p.3]",
-  "references": ["document.pdf, p.3", "document.pdf, p.7"],
+  "query": "What is the main finding?",
+  "answer": "The main finding is... [Source: document, p.3]",
+  "references": ["document, p.3", "document, p.7"],
   "refused": false,
   "latency_ms": 1842.3
 }
@@ -283,14 +317,31 @@ curl http://localhost:8000/health
 **Response:**
 ```json
 {
+  "status": "ok",
   "pipeline_ready": true,
   "total_chunks": 42,
-  "indexed_files": ["/uploads/document.pdf"]
+  "indexed_files": ["uploaded_pdfs/document.pdf"]
 }
 ```
 
+### `GET /config`
+Current pipeline configuration.
+
+```bash
+curl http://localhost:8000/config
+```
+
+### `POST /config/update`
+Hot-reload generation settings without restarting.
+
+```bash
+curl -X POST http://localhost:8000/config/update \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "ollama", "ollama_model": "llama3.1:8b", "temperature": 0.1}'
+```
+
 ### `DELETE /index`
-Wipe the ChromaDB index and BM25 index.
+Wipe the ChromaDB index, BM25 index, and uploaded PDFs.
 
 ```bash
 curl -X DELETE http://localhost:8000/index
@@ -318,7 +369,7 @@ curl -X DELETE http://localhost:8000/index
 
 ## Demo
 
-> **API offline?** Start the backend first: `uv run uvicorn api:app --reload --port 8000`
+> **API offline?** Start the backend first: `uv run uvicorn app.api:app --reload --port 8000`
 
 1. Open `http://localhost:8501`
 2. Click **Open App**
@@ -335,10 +386,13 @@ Run the gatekeeper to evaluate faithfulness on the golden dataset:
 
 ```bash
 # Default threshold (0.75 recommended for local models)
-uv run python gatekeeper.py --threshold 0.75
+uv run python scripts/gatekeeper.py --threshold 0.75
 
 # Strict mode
-uv run python gatekeeper.py --threshold 0.85
+uv run python scripts/gatekeeper.py --threshold 0.85
+
+# Custom PDF and dataset
+uv run python scripts/gatekeeper.py --pdf tests/fixtures/sample.pdf --dataset tests/fixtures/golden_dataset.json
 ```
 
 The gatekeeper uses RAGAS faithfulness scoring. A score below threshold blocks the pipeline — this is the "hard refusal gate" in action.
@@ -352,6 +406,7 @@ If you're using this project for your resume:
 - *"Built a production-grade RAG system with hybrid BM25 + dense vector retrieval, cross-encoder reranking, and a hard refusal gate — achieving 0% hallucination rate on the golden test dataset"*
 - *"Implemented query observability pipeline tracking refusal rate and p50 latency across a 200-query rolling window"*
 - *"Designed and deployed a LangGraph state machine for attributed answer generation with inline citations"*
+- *"Architected a modular pipeline factory (`rag/pipeline.py`) consumed by API, CLI, and CI — eliminating code duplication across 3 entry points"*
 - *"Built persistent chat history and Markdown export features for knowledge portability"*
 
 ---

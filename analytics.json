@@ -1,0 +1,14 @@
+{
+  "queries": [
+    {
+      "query": "what is machine learning",
+      "latency_ms": 53483.8,
+      "refused": false,
+      "model": "llama3.1:8b",
+      "timestamp": "2026-04-23T23:28:05.620141"
+    }
+  ],
+  "total": 1,
+  "refused": 0,
+  "total_latency_ms": 53483.8
+}
