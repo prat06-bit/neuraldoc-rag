@@ -1,12 +1,9 @@
-"""Landing page — hero, features, pipeline, tech stack."""
-
 from __future__ import annotations
 
 import streamlit as st
 
 
 def render_landing() -> None:
-    """Render the full landing page."""
     st.html("""
     <style>
     .land{min-height:calc(100vh - 56px);background:var(--bg);position:relative;overflow:hidden;}
@@ -180,7 +177,7 @@ def render_landing() -> None:
           <div class="p-arr">&#8594;</div>
           <div class="p-step"><div class="p-lbl">Rerank</div><div class="p-sub">cross-enc</div></div>
           <div class="p-arr">&#8594;</div>
-          <div class="p-step"><div class="p-lbl">Generate</div><div class="p-sub">llama3.1</div></div>
+          <div class="p-step"><div class="p-lbl">Generate</div><div class="p-sub">llama-3.3-70b</div></div>
           <div class="p-arr">&#8594;</div>
           <div class="p-step"><div class="p-lbl">Cite</div><div class="p-sub">attributed</div></div>
         </div>
@@ -192,7 +189,7 @@ def render_landing() -> None:
         <div class="tags">
           <span class="tag tg">pdfplumber</span><span class="tag tg">ChromaDB</span>
           <span class="tag tg">sentence-transformers</span><span class="tag tv">LangGraph</span>
-          <span class="tag tv">langchain-ollama</span><span class="tag tv">llama3.1:8b</span>
+          <span class="tag tv">langchain-openai</span><span class="tag tv">llama-3.3-70b</span>
           <span class="tag tc">BM25 + RRF</span><span class="tag tc">cross-encoder</span>
           <span class="tag tp">FastAPI</span><span class="tag tp">Streamlit</span>
           <span class="tag tam">Python 3.14</span>
@@ -201,7 +198,7 @@ def render_landing() -> None:
 
       <div class="foot">
         <span>NeuralDoc &mdash; Production RAG System</span>
-        <span>Ollama &middot; ChromaDB &middot; LangGraph &middot; FastAPI</span>
+        <span>llama &middot; ChromaDB &middot; LangGraph &middot; FastAPI</span>
       </div>
     </div>
     </div>""")

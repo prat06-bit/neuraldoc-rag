@@ -358,7 +358,7 @@ def render_chat(
             </div>""")
 
         # --- Input bar ---
-        qc, bc = st.columns([6, 1])
+        qc, bc = st.columns([4, 2])
         with qc:
             query = st.text_input("Question",
                 placeholder="Ask anything about your documents...",

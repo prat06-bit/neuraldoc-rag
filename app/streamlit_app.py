@@ -163,58 +163,42 @@ section[data-testid="stSidebar"],#MainMenu,footer{{display:none!important;height
   box-shadow:var(--sh)!important;}}
 hr{{border-color:var(--bd2)!important;}}
 
-/* Streamlit alerts — visible on light background */
-[data-testid="stAlert"],.stAlert {{
+/* Streamlit alerts — force dark readable text on all notifications */
+[data-testid="stAlert"] {{
   border-radius:var(--r)!important;
   font-family:'Inter','Plus Jakarta Sans',sans-serif!important;
   font-size:13.5px!important;font-weight:500!important;
   padding:12px 18px!important;margin:8px 0!important;
   animation:slideUp 0.3s ease both;
 }}
-/* Error */
-div[data-baseweb="notification"][kind="negative"],
-.stAlert [data-testid="stNotificationContentError"],
-[data-testid="stAlert"]:has([data-testid="stNotificationContentError"]) {{
-  background:#FEF2F2!important;border:1.5px solid #FECACA!important;
-  color:#991B1B!important;
+/* Force ALL alert text to dark */
+[data-testid="stAlert"] *,
+[data-testid="stAlert"] p,
+[data-testid="stAlert"] span,
+[data-testid="stAlert"] div,
+[role="alert"] *,
+.stAlert * {{
+  color:#1a1a2e!important;
 }}
-div[data-baseweb="notification"][kind="negative"] *,
-[data-testid="stNotificationContentError"],
-[data-testid="stNotificationContentError"] * {{
-  color:#991B1B!important;
-}}
-/* Warning */
-div[data-baseweb="notification"][kind="warning"],
-[data-testid="stAlert"]:has([data-testid="stNotificationContentWarning"]) {{
+/* Warning — amber tint */
+[data-testid="stAlert"][data-baseweb*="warning"],
+div[role="alert"]:has(svg[data-testid="stIconWarning"]) {{
   background:#FFFBEB!important;border:1.5px solid #FDE68A!important;
-  color:#92400E!important;
 }}
-div[data-baseweb="notification"][kind="warning"] *,
-[data-testid="stNotificationContentWarning"],
-[data-testid="stNotificationContentWarning"] * {{
-  color:#92400E!important;
+/* Error — red tint */
+[data-testid="stAlert"][data-baseweb*="negative"],
+div[role="alert"]:has(svg[data-testid="stIconError"]) {{
+  background:#FEF2F2!important;border:1.5px solid #FECACA!important;
 }}
-/* Success */
-div[data-baseweb="notification"][kind="positive"],
-[data-testid="stAlert"]:has([data-testid="stNotificationContentSuccess"]) {{
+/* Success — green tint */
+[data-testid="stAlert"][data-baseweb*="positive"],
+div[role="alert"]:has(svg[data-testid="stIconSuccess"]) {{
   background:#F0FFF4!important;border:1.5px solid #C6F6D5!important;
-  color:#276749!important;
 }}
-div[data-baseweb="notification"][kind="positive"] *,
-[data-testid="stNotificationContentSuccess"],
-[data-testid="stNotificationContentSuccess"] * {{
-  color:#276749!important;
-}}
-/* Info */
-div[data-baseweb="notification"][kind="info"],
-[data-testid="stAlert"]:has([data-testid="stNotificationContentInfo"]) {{
+/* Info — blue tint */
+[data-testid="stAlert"][data-baseweb*="info"],
+div[role="alert"]:has(svg[data-testid="stIconInfo"]) {{
   background:#EBF8FF!important;border:1.5px solid #BEE3F8!important;
-  color:#2A4365!important;
-}}
-div[data-baseweb="notification"][kind="info"] *,
-[data-testid="stNotificationContentInfo"],
-[data-testid="stNotificationContentInfo"] * {{
-  color:#2A4365!important;
 }}
 /* Exception */
 .stException {{
@@ -222,6 +206,13 @@ div[data-baseweb="notification"][kind="info"] *,
   border-radius:var(--r)!important;padding:14px 18px!important;
 }}
 .stException * {{ color:#991B1B!important; }}
+
+/* Spinner text */
+[data-testid="stSpinner"],
+[data-testid="stSpinner"] *,
+.stSpinner, .stSpinner * {{
+  color:#1a1a2e!important;
+}}
 
 /* Animations  */
 @keyframes slideUp{{from{{opacity:0;transform:translateY(16px);}}to{{opacity:1;transform:translateY(0);}}}}
