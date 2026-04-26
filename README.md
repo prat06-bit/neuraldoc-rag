@@ -85,7 +85,7 @@ Built as a portfolio project demonstrating **ML Engineering** and **MLOps** skil
 └──────────────────┘       │                   RRF Fusion│    │
                            │  Top-20 → Cross-Encoder ────┤    │
                            │                   Best-5    │    │
-                           │  LangGraph → Ollama llama3.1│    │
+                           │ LangGraph → nvidia llama3.3 │    │
                            │  → Cited Answer ────────────┘    │
                            └──────────────────────────────────┘
 ```
@@ -160,7 +160,7 @@ Query → record_query(q, latency_ms, refused) → analytics.json
 ### Prerequisites
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) package manager
-- [Ollama](https://ollama.com) with `llama3.1:8b` pulled
+
 
 ```bash
 # Pull the model
