@@ -45,7 +45,7 @@ Built as a portfolio project demonstrating **ML Engineering** and **MLOps** skil
 | **Keyword Search** | BM25 | Sparse retrieval |
 | **Fusion** | Reciprocal Rank Fusion | Hybrid dense + sparse |
 | **Reranking** | cross-encoder/ms-marco-MiniLM-L-6-v2 | Top-20 → best-5 |
-| **Generation** | llama3.1:8b via Ollama | Local LLM inference |
+| **Generation** | llama3.3:70b via Nvidia | Nvidia API  
 | **Orchestration** | LangGraph | State machine RAG graph |
 
 ### Application Features
@@ -85,7 +85,7 @@ Built as a portfolio project demonstrating **ML Engineering** and **MLOps** skil
 └──────────────────┘       │                   RRF Fusion│    │
                            │  Top-20 → Cross-Encoder ────┤    │
                            │                   Best-5    │    │
-                           │  LangGraph → Ollama llama3.1│    │
+                           │ LangGraph → nvidia llama3.3 │    │
                            │  → Cited Answer ────────────┘    │
                            └──────────────────────────────────┘
 ```
@@ -160,7 +160,7 @@ Query → record_query(q, latency_ms, refused) → analytics.json
 ### Prerequisites
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) package manager
-- [Ollama](https://ollama.com) with `llama3.1:8b` pulled
+
 
 ```bash
 # Pull the model
