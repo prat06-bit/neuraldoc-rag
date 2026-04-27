@@ -1,44 +1,80 @@
-# ── ENV / Secrets ──
+# ── ENV / Secrets ──────────────────────────────────────────────────────────────
 .env
 .env.*
 *.env
+secrets.yaml
 
-# ── Python ──
+# ── Python ─────────────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.pdb
+.Python
 
-# ── Virtual env ──
+# ── Virtual environments ────────────────────────────────────────────────────────
 venv/
 .venv/
 .env/
+env/
 
-# ── Logs ──
+# ── Build / dist ────────────────────────────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+
+# ── Type checking / linting ─────────────────────────────────────────────────────
+.mypy_cache/
+.pyright/
+pyrightconfig.json          # IDE-specific, not project config
+.ruff_cache/
+
+# ── Testing ─────────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ── Logs ────────────────────────────────────────────────────────────────────────
 *.log
+logs/
 
-# ── Data / uploads (RAG specific) ──
-*.pdf
-*.jsonl
-*.csv
-uploads/
-data/
+# ── RAG runtime data (NEVER commit these) ───────────────────────────────────────
+chroma_db/                  # vector store — rebuilt on ingest
+uploaded_pdfs/              # user uploads — ephemeral
+chat_history.json           # per-user session data
+analytics.json              # runtime metrics
 
-# ── Model / embeddings ──
-*.pkl
-*.faiss
-*.index
-*.bin
+# ── Streamlit ───────────────────────────────────────────────────────────────────
+.streamlit/secrets.toml     # API keys stored here
 
-# ── Streamlit cache ──
-.streamlit/
+# ── uv / package managers ───────────────────────────────────────────────────────
+uv.lock                     # lock file — commit only if you want reproducible installs
+                            # (remove this line if you want to pin deps in CI)
 
-# ── OS ──
+# ── OS junk ─────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# ── IDE ──
+# ── VS Code ─────────────────────────────────────────────────────────────────────
 .vscode/
+*.code-workspace
+
+# ── JetBrains ───────────────────────────────────────────────────────────────────
 .idea/
 
-.config.yaml
+# ── Jupyter ─────────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Misc temp files ─────────────────────────────────────────────────────────────
+*.tmp
+*.bak
+*.swp
+tempCodeRunnerFile.*
+Untitled*.html
+Untitled*.py
