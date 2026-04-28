@@ -12,7 +12,6 @@ from rag.retrieval.vector_store import VectorStore
 
 
 class Pipeline:
-
     def __init__(self, cfg: RAGConfig | None = None) -> None:
         self.cfg = cfg or load_config()
         self.store = VectorStore(self.cfg.retrieval)
