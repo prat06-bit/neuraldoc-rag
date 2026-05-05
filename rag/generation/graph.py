@@ -4,6 +4,9 @@ import os
 from pathlib import Path
 from typing import Any, TypedDict
 
+# pip install tenacity
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 from rag.config import GenerationConfig
 from rag.exceptions import InsufficientEvidenceError
 from rag.generation.prompts import REFUSAL_MESSAGE, SYSTEM_PROMPT, build_user_prompt
@@ -51,6 +54,32 @@ class RAGGraph:
             "retrieved": final_state["retrieved"],
         }
 
+    def stream(self, query: str):
+        """Yield str tokens; final item is a dict with references/refused."""
+        initial_state: RAGState = {
+            "query": query,
+            "retrieved": [],
+            "context_passages": [],
+            "response": "",
+            "refused": False,
+            "references": [],
+        }
+        retrieve_state = self._node_retrieve(dict(initial_state))  # type: ignore[arg-type]
+        if retrieve_state["refused"]:
+            refuse_state = self._node_refuse(retrieve_state)
+            yield refuse_state["response"]
+            yield {"references": [], "refused": True}
+            return
+        llm = self._get_llm()
+        from langchain_core.messages import HumanMessage, SystemMessage
+        user_prompt = build_user_prompt(query, retrieve_state["context_passages"])
+        full = ""
+        for chunk in llm.stream([SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=user_prompt)]):
+            token = chunk.content if hasattr(chunk, "content") else str(chunk)
+            full += token
+            yield token
+        yield {"references": self._extract_references(retrieve_state["context_passages"]), "refused": False}
+
     # Graph construction
 
     def _build_graph(self):  
@@ -93,16 +122,19 @@ class RAGGraph:
         llm = self._get_llm()
         user_prompt = build_user_prompt(state["query"], state["context_passages"])
 
-        try:
-            from langchain_core.messages import HumanMessage, SystemMessage  
-            messages = [
+        @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+        def _invoke():
+            from langchain_core.messages import HumanMessage, SystemMessage
+            return llm.invoke([
                 SystemMessage(content=SYSTEM_PROMPT),
                 HumanMessage(content=user_prompt),
-            ]
-            response = llm.invoke(messages)
+            ])
+
+        try:
+            response = _invoke()
             answer: str = response.content
         except Exception as exc:
-            answer = f"Generation failed: {exc}"
+            answer = f"Generation failed after retries: {exc}"
 
         state["response"] = answer
         state["references"] = self._extract_references(state["context_passages"])

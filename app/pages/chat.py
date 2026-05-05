@@ -164,16 +164,22 @@ def render_chat(
             if st.button("Index Document", use_container_width=True, key="idx_btn"):
                 with st.spinner("Processing PDF..."):
                     try:
-                        # Save uploaded file to disk
-                        UPLOAD_DIR.mkdir(exist_ok=True)
-                        save_path = UPLOAD_DIR / (uploaded.name or "upload.pdf")
-                        with open(save_path, "wb") as f:
-                            f.write(uploaded.getbuffer())
+                        raw_bytes = uploaded.getbuffer()
+                        if len(raw_bytes) > 20 * 1024 * 1024:
+                            st.error("File exceeds 20 MB limit.")
+                        elif raw_bytes[:4] != b"%PDF":
+                            st.error("Invalid file: not a PDF.")
+                        else:
+                            # Save uploaded file to disk
+                            UPLOAD_DIR.mkdir(exist_ok=True)
+                            save_path = UPLOAD_DIR / (uploaded.name or "upload.pdf")
+                            with open(save_path, "wb") as f:
+                                f.write(raw_bytes)
 
-                        # Ingest via Pipeline directly
-                        new_chunks = pipe.ingest(str(save_path))
-                        st.success(f"Indexed {len(new_chunks)} chunks from {uploaded.name}")
-                        st.rerun()
+                            # Ingest via Pipeline directly
+                            new_chunks = pipe.ingest(str(save_path))
+                            st.success(f"Indexed {len(new_chunks)} chunks from {uploaded.name}")
+                            st.rerun()
                     except Exception as e:
                         st.error(f"Indexing failed: {e}")
 
@@ -384,21 +390,31 @@ def render_chat(
             if not ready:
                 st.warning("Upload and index a PDF first.")
             else:
-                with st.spinner("Thinking..."):
-                    try:
-                        start = time.perf_counter()
-                        result = pipe.query(query)
-                        latency_ms = round((time.perf_counter() - start) * 1000, 1)
-
-                        st.session_state.messages.extend([
-                            {"role": "user", "content": query},
-                            {"role": "assistant", "content": result["response"],
-                             "references": result["references"],
-                             "refused": result["refused"],
-                             "latency_ms": latency_ms}
-                        ])
-                        record_query(query=query, latency_ms=latency_ms,
-                                     refused=result["refused"])
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Query failed: {e}")
+                try:
+                    start = time.perf_counter()
+                    stream = pipe.stream_query(query)
+                    tokens = []
+                    meta: dict = {}
+                    def _token_gen():
+                        for item in stream:
+                            if isinstance(item, dict):
+                                meta.update(item)
+                            else:
+                                tokens.append(item)
+                                yield item
+                    with st.chat_message("assistant"):
+                        response_text = st.write_stream(_token_gen())
+                    latency_ms = round((time.perf_counter() - start) * 1000, 1)
+                    st.session_state.messages.extend([
+                        {"role": "user", "content": query},
+                        {"role": "assistant", "content": response_text,
+                         "references": meta.get("references", []),
+                         "refused": meta.get("refused", False),
+                         "latency_ms": latency_ms}
+                    ])
+                    record_query(query=query, latency_ms=latency_ms,
+                                 refused=meta.get("refused", False),
+                                 username=st.session_state.get("_username", "default"))
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Query failed: {e}")

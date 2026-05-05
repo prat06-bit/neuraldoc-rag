@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 from rag.config import RetrievalConfig
 from rag.models import DocumentChunk
 from rag.retrieval.vector_store import ScoredChunk, VectorStore
@@ -67,7 +67,9 @@ class HybridRetriever:
         vector_results = self.vector_store.similarity_search(query, k=k_init)
         fused = reciprocal_rank_fusion([bm25_results, vector_results], k=self.config.rrf_k)
         reranked = self._reranker.rerank(query, fused[:k_init], k=k_out)
-        if reranked and reranked[0].score < self.config.similarity_threshold:
+        top3_scores = [sc.score for sc in reranked[:3]]
+        gate_score = sum(top3_scores) / len(top3_scores) if top3_scores else 0.0
+        if not reranked or gate_score < self.config.similarity_threshold:
             from rag.exceptions import InsufficientEvidenceError
-            raise InsufficientEvidenceError(max_score=reranked[0].score, threshold=self.config.similarity_threshold)
+            raise InsufficientEvidenceError(max_score=gate_score, threshold=self.config.similarity_threshold)
         return reranked

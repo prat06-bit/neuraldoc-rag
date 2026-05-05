@@ -20,6 +20,7 @@ import streamlit as st
 
 from app.analytics import get_stats
 from app.pages.analytics_page import render_analytics
+from app.pages.auth_page import render_auth_page
 from app.pages.chat import render_chat
 from app.pages.landing import render_landing
 from rag.pipeline import Pipeline
@@ -34,13 +35,29 @@ for k, v in [("page","landing"),("messages",[]),("active_tab","chat"),
         st.session_state[k] = v
 
 # Shared pipeline — initialised once, reused across Streamlit reruns
+import uuid as _uuid
+if "_session_id" not in st.session_state:
+    st.session_state["_session_id"] = _uuid.uuid4().hex[:12]
 if "pipe" not in st.session_state:
-    st.session_state.pipe = Pipeline()
+    from rag.config import load_config as _load_cfg
+    from rag.retrieval.vector_store import VectorStore as _VS
+    _cfg = _load_cfg()
+    _sid = st.session_state["_session_id"]
+    _store = _VS(_cfg.retrieval, collection=f"rag_{_sid}")
+    from rag.retrieval.hybrid_retriever import HybridRetriever as _HR
+    _retriever = _HR(_store, _cfg.retrieval)
+    _pipe = Pipeline(_cfg)
+    _pipe.store = _store
+    _pipe.retriever = _retriever
+    st.session_state.pipe = _pipe
 
 if st.query_params.get("launch") == "1":
     st.query_params.clear()
-    st.session_state.page = "app"
-    st.session_state.active_tab = "chat"
+    if st.session_state.get("_auth"):
+        st.session_state.page = "app"
+        st.session_state.active_tab = "chat"
+    else:
+        st.session_state.page = "auth"
     st.rerun()
 
 if st.query_params.get("darkmode") == "on":
@@ -292,13 +309,21 @@ with _home:
 
 with _chat:
     if st.button("Chat", key="_nav_chat", use_container_width=True):
-        st.session_state.page = "app"
-        st.session_state.active_tab = "chat"; st.rerun()
+        if st.session_state.get("_auth"):
+            st.session_state.page = "app"
+            st.session_state.active_tab = "chat"
+        else:
+            st.session_state.page = "auth"
+        st.rerun()
 
 with _anl:
     if st.button("Analytics", key="_nav_analytics", use_container_width=True):
-        st.session_state.page = "app"
-        st.session_state.active_tab = "analytics"; st.rerun()
+        if st.session_state.get("_auth"):
+            st.session_state.page = "app"
+            st.session_state.active_tab = "analytics"
+        else:
+            st.session_state.page = "auth"
+        st.rerun()
 
 with _dm_col:
     if st.button(dm_label, key="_nav_dark", use_container_width=True):
@@ -337,8 +362,12 @@ st.html(f"""<script>
 
 if st.session_state.page == "landing":
     render_landing()
+elif st.session_state.page == "auth" or (st.session_state.page == "app" and not st.session_state.get("_auth")):
+    st.session_state.page = "auth"
+    render_auth_page()
 elif st.session_state.active_tab == "analytics":
-    stats = get_stats()
+    _user = st.session_state.get("_username", "default")
+    stats = get_stats(username=_user)
     render_analytics(stats=stats, api_ok=True, ready=ready, chunks=chunks, files=files)
 else:
     render_chat(pipe=pipe, ready=ready, chunks=chunks, files=files)

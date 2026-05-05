@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pickle
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +10,8 @@ from rag.ingestion.pdf_parser import ParserFactory
 from rag.models import DocumentChunk
 from rag.retrieval.hybrid_retriever import HybridRetriever
 from rag.retrieval.vector_store import VectorStore
+
+_BM25_PATH = Path("bm25_index.pkl")
 
 
 class Pipeline:
@@ -20,6 +23,12 @@ class Pipeline:
         self._graph = None          # lazy — built on first query
         self.all_chunks: list[DocumentChunk] = []
         self.indexed_files: list[str] = []
+        if _BM25_PATH.exists():
+            try:
+                self.all_chunks = pickle.loads(_BM25_PATH.read_bytes())
+                self.retriever.build_bm25(self.all_chunks)
+            except Exception:
+                pass
 
     # Queries
     @property
@@ -38,6 +47,10 @@ class Pipeline:
         """Run a RAG query end-to-end.  Returns the graph output dict."""
         return self.graph.run(question)
 
+    def stream_query(self, question: str):
+        """Yield text tokens, then yield the full result dict as the last item."""
+        yield from self.graph.stream(question)
+
     # Ingestion
 
     def ingest(self, pdf_path: str | Path) -> list[DocumentChunk]:
@@ -51,6 +64,7 @@ class Pipeline:
         self.store.add_chunks(chunks)
         self.all_chunks.extend(chunks)
         self.retriever.build_bm25(self.all_chunks)
+        _BM25_PATH.write_bytes(pickle.dumps(self.all_chunks))
 
         self._graph = None
         self.indexed_files.append(pdf_path)
@@ -65,6 +79,7 @@ class Pipeline:
         self._graph = None
         self.all_chunks = []
         self.indexed_files = []
+        _BM25_PATH.unlink(missing_ok=True)
 
     def rebuild_graph(self) -> None:
         from rag.generation.graph import RAGGraph

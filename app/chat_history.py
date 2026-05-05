@@ -3,7 +3,11 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+# pip install filelock
+from filelock import FileLock
+
 HISTORY_FILE = Path("chat_history.json")
+_LOCK = FileLock(str(HISTORY_FILE) + ".lock")
 
 
 def _load_raw() -> list:
@@ -24,20 +28,21 @@ def _save_raw(data: list) -> None:
 def save_conversation(messages: list, title: str | None = None) -> str:
     if not messages:
         return ""
-    all_convs = _load_raw()
-    conv_id = str(uuid.uuid4())[:8]
-    if title is None:
-        first_user = next(
-            (m["content"] for m in messages if m["role"] == "user"), "Untitled"
-        )
-        title = first_user[:48] + ("…" if len(first_user) > 48 else "")
-    all_convs.append({
-        "id": conv_id,
-        "title": title,
-        "timestamp": datetime.now().isoformat(),
-        "messages": messages,
-    })
-    _save_raw(all_convs)
+    with _LOCK:
+        all_convs = _load_raw()
+        conv_id = str(uuid.uuid4())[:8]
+        if title is None:
+            first_user = next(
+                (m["content"] for m in messages if m["role"] == "user"), "Untitled"
+            )
+            title = first_user[:48] + ("…" if len(first_user) > 48 else "")
+        all_convs.append({
+            "id": conv_id,
+            "title": title,
+            "timestamp": datetime.now().isoformat(),
+            "messages": messages,
+        })
+        _save_raw(all_convs)
     return conv_id
 
 
@@ -53,12 +58,14 @@ def load_conversation(conv_id: str) -> list:
 
 
 def delete_conversation(conv_id: str) -> None:
-    data = [c for c in _load_raw() if c["id"] != conv_id]
-    _save_raw(data)
+    with _LOCK:
+        data = [c for c in _load_raw() if c["id"] != conv_id]
+        _save_raw(data)
 
 
 def delete_all_conversations() -> None:
-    _save_raw([])
+    with _LOCK:
+        _save_raw([])
 
 
 def export_as_markdown(messages: list, title: str = "Chat Export") -> str:

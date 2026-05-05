@@ -45,6 +45,7 @@ def run_evaluation(
     dataset: list[dict],
     threshold: float,
 ) -> tuple[bool, list[dict]]:
+
     results: list[dict] = []
     all_passed = True
 

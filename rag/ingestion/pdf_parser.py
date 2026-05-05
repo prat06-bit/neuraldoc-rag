@@ -33,6 +33,8 @@ class PDFPlumberParser(BasePDFParser):
             ) from exc
 
         path = Path(path).resolve()
+        if path.read_bytes()[:4] != b"%PDF":
+            raise ValueError(f"Not a valid PDF file: {path.name}")
         pages: list[ParsedPage] = []
 
         with pdfplumber.open(str(path)) as pdf:
