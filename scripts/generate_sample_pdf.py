@@ -23,7 +23,7 @@ def build():
     pdf.cell(0, 8, "Domain: Oncology | Version 1.0 | March 2025", ln=True, align="C")
     pdf.ln(6)
 
-    # Section 1
+    # Section 1 : medical data
     pdf.set_font("Helvetica", "B", 14)
     pdf.cell(0, 10, "1. Introduction", ln=True)
     pdf.set_font("Helvetica", "", 11)
