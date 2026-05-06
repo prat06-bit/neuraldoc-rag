@@ -30,7 +30,7 @@ wheels/
 .mypy_cache/
 .pyright/
 pyrightconfig.json
-Pyrightconfig . json
+Pyrightconfig . JSON
 .ruff_cache/
 
 # Testing    
