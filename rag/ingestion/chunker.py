@@ -63,6 +63,9 @@ class Chunker:
             if _is_heading(line, fs, self.config.min_tokens):
                 if current_lines:
                     sections.append((current_lines, current_heading))
+                elif current_heading:
+                    # Previous heading had no body text — keep it as content
+                    sections.append(([current_heading], ""))
                 current_heading = line.strip()
                 current_lines = []
             else:
@@ -70,6 +73,14 @@ class Chunker:
 
         if current_lines:
             sections.append((current_lines, current_heading))
+        elif current_heading:
+            # Last heading had no body text — keep it as content
+            sections.append(([current_heading], ""))
+
+        # Fallback: if no sections were produced, treat the whole page as one
+        if not sections and page.text.strip():
+            sections.append((lines, ""))
+
         table_sections: list[tuple[list[str], str]] = [
             ([tbl], f"{current_heading} [TABLE]") for tbl in page.tables
         ]

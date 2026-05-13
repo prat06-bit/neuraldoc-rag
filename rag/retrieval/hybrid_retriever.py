@@ -7,13 +7,21 @@ from rag.retrieval.vector_store import ScoredChunk, VectorStore
 class BM25Retriever:
     def __init__(self, chunks: list[DocumentChunk]) -> None:
         self.chunks = chunks
+        self._bm25 = None
+        if not chunks:
+            return
         try:
             from rank_bm25 import BM25Okapi
         except ImportError as exc:
             raise ImportError("Install with: uv add rank-bm25") from exc
-        self._bm25 = BM25Okapi([c.text.lower().split() for c in chunks])
+        corpus = [c.text.lower().split() for c in chunks]
+        # Filter out empty tokenised docs to avoid division-by-zero in BM25
+        if any(corpus):
+            self._bm25 = BM25Okapi(corpus)
 
     def search(self, query: str, k: int) -> list[ScoredChunk]:
+        if self._bm25 is None:
+            return []
         scores = self._bm25.get_scores(query.lower().split()).tolist()
         paired = sorted(zip(self.chunks, scores), key=lambda x: x[1], reverse=True)
         return [ScoredChunk(chunk=c, score=float(s)) for c, s in paired[:k]]
